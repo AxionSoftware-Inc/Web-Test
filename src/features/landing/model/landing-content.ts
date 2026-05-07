@@ -1,8 +1,8 @@
 export const domains = [
-  { name: "Programming", metric: "1,240 tasks", tone: "bg-emerald-500" },
-  { name: "Mathematics", metric: "860 proofs", tone: "bg-blue-500" },
-  { name: "Physics", metric: "430 labs", tone: "bg-amber-500" },
-  { name: "Logic", metric: "310 puzzles", tone: "bg-rose-500" },
+  { name: "Programming", metric: "1,240 tasks", tone: "bg-emerald-500", href: "/tests/programming-arrays-intermediate" },
+  { name: "Mathematics", metric: "860 proofs", tone: "bg-blue-500", href: "/subjects/mathematics" },
+  { name: "Physics", metric: "430 labs", tone: "bg-amber-500", href: "/tests/physics-mechanics-beginner" },
+  { name: "Logic", metric: "310 puzzles", tone: "bg-rose-500", href: "/questions" },
 ];
 
 export const platformModules = [
@@ -53,6 +53,7 @@ export const roadmap = [
 export const subjectTracks = [
   {
     title: "Programming",
+    href: "/tests/programming-arrays-intermediate",
     skills: ["Algorithms", "Data structures", "Debugging", "System design"],
   },
   {
@@ -62,10 +63,12 @@ export const subjectTracks = [
   },
   {
     title: "Physics",
+    href: "/tests/physics-mechanics-beginner",
     skills: ["Mechanics", "Electricity", "Waves", "Simulation labs"],
   },
   {
     title: "Logic",
+    href: "/questions",
     skills: ["Deduction", "Combinatorics", "Pattern reasoning", "Puzzles"],
   },
 ];

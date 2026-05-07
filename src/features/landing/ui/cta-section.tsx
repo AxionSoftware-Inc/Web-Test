@@ -13,16 +13,18 @@ export function CtaSection() {
             </p>
             <h2 className="mt-2 text-3xl font-semibold">Endi real route va layoutlarni quramiz.</h2>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-black/62">
-              Landing tayyor bo&apos;lgach, keyingi bosqich: dashboard, subjects,
-              problems va practice sahifalarining modular skeletonini qo&apos;yish.
+              Asosiy yo&apos;nalishlar tayyor: test katalogi, fanlar, practice,
+              question bank, natijalar va dashboardga landingdan bevosita o&apos;tish mumkin.
             </p>
           </div>
-          <Link
-            href="/test-generator"
-            className="w-fit rounded-md bg-[#276a5b] px-5 py-3 text-sm font-semibold text-white"
-          >
-            Open test generator
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/tests" className="w-fit rounded-md bg-[#276a5b] px-5 py-3 text-sm font-semibold text-white">
+              Open tests
+            </Link>
+            <Link href="/test-generator" className="w-fit rounded-md border border-black/10 px-5 py-3 text-sm font-semibold">
+              Test generator
+            </Link>
+          </div>
         </div>
       </Container>
     </section>

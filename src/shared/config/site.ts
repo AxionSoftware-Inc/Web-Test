@@ -3,9 +3,9 @@ export const siteConfig = {
   description:
     "Global adaptive practice platform for programming, physics, mathematics and more.",
   navItems: [
-    { label: "Subjects", href: "#subjects" },
-    { label: "Modules", href: "#modules" },
-    { label: "Loop", href: "#learning-loop" },
-    { label: "Roadmap", href: "#roadmap" },
+    { label: "Tests", href: "/tests" },
+    { label: "Subjects", href: "/subjects" },
+    { label: "Practice", href: "/practice" },
+    { label: "Questions", href: "/questions" },
   ],
 };

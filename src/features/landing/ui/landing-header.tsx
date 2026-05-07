@@ -15,17 +15,17 @@ export function LandingHeader() {
         </Link>
         <div className="hidden items-center gap-7 text-sm font-medium text-black/60 md:flex">
           {siteConfig.navItems.map((item) => (
-            <a key={item.href} href={item.href}>
+            <Link key={item.href} href={item.href}>
               {item.label}
-            </a>
+            </Link>
           ))}
         </div>
-        <a
-          href="#roadmap"
+        <Link
+          href="/tests"
           className="rounded-md bg-[#151713] px-4 py-2 text-sm font-semibold text-white"
         >
-          Start build
-        </a>
+          Start test
+        </Link>
       </nav>
     </Container>
   );

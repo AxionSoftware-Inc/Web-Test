@@ -1,12 +1,14 @@
-import { ArrowRight, Calculator, GraduationCap, Target } from "lucide-react";
+import { ArrowRight, Binary, BookOpen, Calculator, ChartNoAxesColumn, CircleDot, FunctionSquare, Grid3X3, Infinity, PieChart, Sigma, Triangle } from "lucide-react";
 import Link from "next/link";
 
 import {
-  mathematicsLevels,
   mathematicsSkills,
   mathematicsTests,
+  mathematicsTopics,
+  getMathematicsTestsByTopic,
 } from "@/features/subjects/mathematics/model/mathematics-content";
 import { Container } from "@/shared/ui/container";
+import { GlassCard } from "@/shared/ui/glass-card";
 
 export function MathematicsPage() {
   return (
@@ -22,17 +24,17 @@ export function MathematicsPage() {
                 Mathematics module
               </p>
               <h1 className="max-w-3xl text-5xl font-semibold leading-tight">
-                Matematikani daraja, topic va test session orqali o&apos;rganish.
+                Matematikani bo&apos;limlar orqali o&apos;rganish va test qilish.
               </h1>
               <p className="mt-5 max-w-2xl text-sm leading-6 text-black/62">
-                Bu birinchi to&apos;liq fan vertical slice: landingdan matematika
-                moduliga o&apos;tiladi, daraja bo&apos;yicha test tanlanadi, test
-                ishlanadi va natija review qilinadi.
+                Avval bo&apos;limni tanlang: algebra, geometry, calculus yoki linear algebra.
+                Daraja va testlar har bir bo&apos;lim ichida chiqadi, shunda user o&apos;zi
+                izlayotgan mavzuga tez kiradi.
               </p>
             </div>
             <div className="grid gap-3 rounded-lg border border-black/10 bg-white p-4 sm:grid-cols-3">
+              <Metric label="Topics" value={mathematicsTopics.length} />
               <Metric label="Tests" value={mathematicsTests.length} />
-              <Metric label="Levels" value={mathematicsLevels.length} />
               <Metric label="Skills" value={mathematicsSkills.length} />
             </div>
           </div>
@@ -40,80 +42,35 @@ export function MathematicsPage() {
 
         <section className="py-8">
           <div className="mb-5 flex items-center gap-2">
-            <GraduationCap className="size-5 text-[#276a5b]" />
-            <h2 className="text-2xl font-semibold">Darajani tanlang</h2>
+            <BookOpen className="size-5 text-[#276a5b]" />
+            <h2 className="text-2xl font-semibold">Bo&apos;limni tanlang</h2>
           </div>
-          <div className="grid gap-4 lg:grid-cols-3">
-            {mathematicsLevels.map((level) => {
-              const levelTests = mathematicsTests.filter((test) => test.difficulty === level.difficulty);
-              const firstTest = levelTests[0];
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+            {mathematicsTopics.map((topic) => {
+              const topicTests = getMathematicsTestsByTopic(topic.title);
+              const Icon = topicIcons[topic.slug] ?? BookOpen;
 
               return (
-                <article key={level.difficulty} className="rounded-lg border border-black/10 bg-white p-5">
-                  <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#276a5b]">
-                    {level.title}
-                  </p>
-                  <p className="mt-3 text-sm leading-6 text-black/62">{level.copy}</p>
-                  <p className="mt-5 text-sm font-medium">{levelTests.length} ta test</p>
-                  {firstTest ? (
+                <GlassCard key={topic.slug} className="flex min-h-[210px] flex-col justify-between p-5">
+                  <div>
+                    <div className="grid size-14 place-items-center rounded-2xl bg-[#edf7f3] text-[#276a5b]">
+                      <Icon className="size-7" />
+                    </div>
+                    <h3 className="mt-5 text-xl font-semibold">{topic.title}</h3>
+                  </div>
+                  <div className="mt-5 flex flex-wrap items-center gap-2">
                     <Link
-                      href={`/subjects/mathematics/tests/${firstTest.id}`}
-                      className="mt-4 inline-flex items-center gap-2 rounded-md bg-[#151713] px-4 py-2 text-sm font-semibold text-white"
+                      href={`/subjects/mathematics/topics/${topic.slug}`}
+                      className="inline-flex items-center gap-2 rounded-md bg-[#151713] px-4 py-2 text-sm font-semibold text-white"
                     >
-                      Start {level.title}
+                      Open topic
                       <ArrowRight className="size-4" />
                     </Link>
-                  ) : (
-                    <span className="mt-4 inline-block rounded-md border border-black/10 px-4 py-2 text-sm text-black/45">
-                      Coming soon
-                    </span>
-                  )}
-                </article>
+                    <span className="text-sm text-black/45">{topicTests.length} test</span>
+                  </div>
+                </GlassCard>
               );
             })}
-          </div>
-        </section>
-
-        <section className="grid gap-5 pb-8 lg:grid-cols-[0.75fr_1.25fr]">
-          <aside className="rounded-lg border border-black/10 bg-white p-5">
-            <div className="mb-4 flex items-center gap-2">
-              <Target className="size-5 text-[#276a5b]" />
-              <h2 className="font-semibold">Skill map</h2>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {mathematicsSkills.map((skill) => (
-                <span key={skill} className="rounded-md border border-black/10 bg-[#fbfbf8] px-3 py-2 text-sm">
-                  {skill}
-                </span>
-              ))}
-            </div>
-          </aside>
-
-          <div className="rounded-lg border border-black/10 bg-white p-5">
-            <div className="mb-4 flex items-center gap-2">
-              <Calculator className="size-5 text-[#276a5b]" />
-              <h2 className="font-semibold">Mavjud matematika testlari</h2>
-            </div>
-            <div className="grid gap-3">
-              {mathematicsTests.map((test) => (
-                <Link
-                  key={test.id}
-                  href={`/subjects/mathematics/tests/${test.id}`}
-                  className="flex flex-col justify-between gap-3 rounded-md border border-black/10 bg-[#fbfbf8] p-4 sm:flex-row sm:items-center"
-                >
-                  <div>
-                    <p className="font-semibold">{test.title}</p>
-                    <p className="mt-1 text-sm text-black/55">
-                      {test.category} / {test.difficulty} / {test.estimatedMinutes} min
-                    </p>
-                  </div>
-                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#276a5b]">
-                    Open test
-                    <ArrowRight className="size-4" />
-                  </span>
-                </Link>
-              ))}
-            </div>
           </div>
         </section>
       </Container>
@@ -129,3 +86,16 @@ function Metric({ label, value }: { label: string; value: number }) {
     </div>
   );
 }
+
+const topicIcons: Record<string, typeof BookOpen> = {
+  arithmetic: Calculator,
+  algebra: FunctionSquare,
+  geometry: Triangle,
+  trigonometry: CircleDot,
+  calculus: Infinity,
+  "linear-algebra": Grid3X3,
+  probability: PieChart,
+  statistics: ChartNoAxesColumn,
+  "differential-equations": Sigma,
+  "discrete-math": Binary,
+};

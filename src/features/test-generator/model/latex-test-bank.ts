@@ -146,6 +146,45 @@ Find \(\frac{d}{dx}(5x+7)\).
 \end{question}`,
   },
   {
+    id: "math-algebra-functions-intermediate",
+    title: "Algebra Functions and Systems",
+    subject: "mathematics",
+    category: "Algebra",
+    difficulty: "intermediate",
+    estimatedMinutes: 11,
+    latex: String.raw`\section{Algebra functions}
+
+\begin{question}
+If \(f(x)=x^2-3x\), find \(f(5)\).
+\begin{choices}
+\choice 5
+\choice 10
+\choice 15
+\choice 20
+\end{choices}
+\answer{10}
+\explanation{Substitute \(x=5\): \(25-15=10\).}
+\end{question}
+
+\begin{question}
+Solve the system: \(x+y=7\), \(x-y=1\). Find \(x\).
+\answer{4}
+\explanation{Add the equations: \(2x=8\), so \(x=4\).}
+\end{question}
+
+\begin{question}
+Which expression is equivalent to \((x+2)^2\)?
+\begin{choices}
+\choice \(x^2+2x+4\)
+\choice \(x^2+4x+4\)
+\choice \(x^2+4\)
+\choice \(2x^2+4\)
+\end{choices}
+\answer{\(x^2+4x+4\)}
+\explanation{Use \((a+b)^2=a^2+2ab+b^2\).}
+\end{question}`,
+  },
+  {
     id: "math-number-theory-advanced",
     title: "Number Theory Challenge",
     subject: "mathematics",
@@ -170,6 +209,39 @@ Find the remainder when \(7^{4}\) is divided by \(10\).
 If \(a\equiv 2 \pmod 5\) and \(b\equiv 3 \pmod 5\), find \(ab \pmod 5\).
 \answer{1}
 \explanation{\(ab\equiv 2\cdot3=6\equiv1\pmod5\).}
+\end{question}`,
+  },
+  {
+    id: "math-algebra-polynomials-advanced",
+    title: "Advanced Algebra Patterns",
+    subject: "mathematics",
+    category: "Algebra",
+    difficulty: "advanced",
+    estimatedMinutes: 14,
+    latex: String.raw`\section{Advanced algebra}
+
+\begin{question}
+If \(x+\frac{1}{x}=3\), find \(x^2+\frac{1}{x^2}\).
+\begin{choices}
+\choice 5
+\choice 7
+\choice 9
+\choice 11
+\end{choices}
+\answer{7}
+\explanation{Square both sides: \(x^2+2+\frac{1}{x^2}=9\), so the value is 7.}
+\end{question}
+
+\begin{question}
+Find the sum of roots of \(2x^2-6x+5=0\).
+\answer{3}
+\explanation{For \(ax^2+bx+c=0\), sum of roots is \(-b/a=6/2=3\).}
+\end{question}
+
+\begin{question}
+If \(a-b=4\) and \(ab=5\), find \(a^2+b^2\).
+\answer{26}
+\explanation{\((a-b)^2=a^2-2ab+b^2\). So \(16=a^2+b^2-10\), hence \(a^2+b^2=26\).}
 \end{question}`,
   },
 ];
