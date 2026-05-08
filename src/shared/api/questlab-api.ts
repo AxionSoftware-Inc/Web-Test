@@ -57,6 +57,26 @@ export type ApiLevel = {
   tests: ApiTest[];
 };
 
+export type CreateTestQuestionPayload = {
+  type: ApiQuestion["type"];
+  prompt: string;
+  options: string[];
+  answer: string;
+  explanation: string;
+  skills: number[];
+};
+
+export type CreateTestPayload = {
+  title: string;
+  slug: string;
+  subject: number;
+  topic: number;
+  difficulty: ApiTest["difficulty"];
+  estimated_minutes: number;
+  passing_score: number;
+  questions: CreateTestQuestionPayload[];
+};
+
 export type ApiAnswer = {
   id: number;
   session: number;
@@ -74,6 +94,30 @@ export type ApiSession = {
   submitted_at: string | null;
   answers: ApiAnswer[];
   created_at: string;
+};
+
+export type ApiProfileSummary = {
+  name: string;
+  level: string;
+  tests_taken: number;
+  average_score: number;
+  math_mastery: number;
+  answered_questions: number;
+  correct_answers: number;
+  topic_progress: Array<{ topic: string; slug: string; value: number; attempts: number }>;
+  weekly_activity: Array<{ day: string; value: number }>;
+  recent_tests: Array<{
+    id: number;
+    title: string;
+    slug: string;
+    topic: string;
+    difficulty: ApiTest["difficulty"];
+    score: number;
+    correct: number;
+    total: number;
+    submitted_at: string;
+  }>;
+  recommendations: Array<{ title: string; description: string; href: string }>;
 };
 
 export async function apiGet<T>(path: string): Promise<T> {
@@ -95,6 +139,7 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
 
 export const questApi = {
   subjects: () => apiGet<ApiSubject[]>("/subjects/"),
+  topics: (subjectSlug?: string) => apiGet<ApiTopic[]>(`/topics/${subjectSlug ? `?subject=${subjectSlug}` : ""}`),
   subjectTopics: (subjectSlug: string) => apiGet<ApiTopic[]>(`/subjects/${subjectSlug}/topics/`),
   topicLevels: (topicSlug: string) => apiGet<ApiLevel[]>(`/topics/${topicSlug}/levels/`),
   topicTests: (topicSlug: string, difficulty?: string) =>
@@ -102,9 +147,11 @@ export const questApi = {
   questions: () => apiGet<ApiQuestion[]>("/questions/"),
   question: (id: string) => apiGet<ApiQuestion>(`/questions/${id}/`),
   test: (testSlug: string) => apiGet<ApiTest>(`/tests/${testSlug}/`),
+  createTest: (payload: CreateTestPayload) => apiPost<ApiTest>("/tests/", payload),
   startTest: (testSlug: string) => apiPost<ApiSession>(`/tests/${testSlug}/start/`),
   session: (sessionId: string) => apiGet<ApiSession>(`/sessions/${sessionId}/`),
   answer: (sessionId: string, payload: { question: number; value: string; is_flagged?: boolean }) =>
     apiPost<ApiSession>(`/sessions/${sessionId}/answer/`, payload),
   submit: (sessionId: string) => apiPost<ApiSession>(`/sessions/${sessionId}/submit/`),
+  profileSummary: () => apiGet<ApiProfileSummary>("/profile/summary/"),
 };

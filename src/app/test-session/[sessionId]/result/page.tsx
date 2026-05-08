@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { TestShell } from "@/features/test-engine/ui/test-shell";
 import { questApi } from "@/shared/api/questlab-api";
@@ -35,6 +36,14 @@ export default async function Page({ params }: PageProps) {
             <div className="rounded-md bg-[#edf7f3] p-4"><p className="text-sm text-black/55">Correct</p><p className="mt-1 text-2xl font-semibold">{correct}/{questions.length}</p></div>
             <div className="rounded-md bg-[#fbfbf8] p-4"><p className="text-sm text-black/55">Answered</p><p className="mt-1 text-2xl font-semibold">{answered}</p></div>
             <div className="rounded-md bg-[#f8eeee] p-4"><p className="text-sm text-black/55">Skipped</p><p className="mt-1 text-2xl font-semibold">{questions.length - answered}</p></div>
+          </div>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href={`/results/${sessionId}`} className="rounded-2xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white">
+              Open detailed result
+            </Link>
+            <Link href={`/results/${sessionId}/analysis`} className="rounded-2xl border border-black/10 bg-white px-5 py-3 text-sm font-semibold">
+              Mistake analysis
+            </Link>
           </div>
         </div>
       </section>
