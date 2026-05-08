@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 
-import { getQuestionBankItem } from "@/features/questions/model/question-bank";
+import { questApi } from "@/shared/api/questlab-api";
 import { Container } from "@/shared/ui/container";
 import { GlassCard } from "@/shared/ui/glass-card";
 
@@ -15,11 +14,7 @@ export const metadata: Metadata = {
 
 export default async function Page({ params }: PageProps) {
   const { questionId } = await params;
-  const question = getQuestionBankItem(questionId);
-
-  if (!question) {
-    notFound();
-  }
+  await questApi.question(questionId);
 
   return (
     <main className="min-h-screen bg-[#f7f7f2] text-[#151713]">

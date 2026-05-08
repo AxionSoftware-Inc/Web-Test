@@ -1,61 +1,57 @@
 import type { Metadata } from "next";
 
-import { createSessionId, getTestOrThrow, getTestQuestions, platformTests } from "@/features/test-engine/model/test-engine-content";
 import { PrimaryLink, SecondaryLink, StatCard, TestShell } from "@/features/test-engine/ui/test-shell";
+import { questApi } from "@/shared/api/questlab-api";
+import { LatexText } from "@/shared/ui/latex-text";
 
 type PageProps = {
   params: Promise<{ testSlug: string }>;
 };
 
-export function generateStaticParams() {
-  return platformTests.map((test) => ({ testSlug: test.id }));
-}
-
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { testSlug } = await params;
-  const test = getTestOrThrow(testSlug);
+  const test = await questApi.test(testSlug);
 
   return {
     title: `${test.title} | QuestLab`,
-    description: `${test.category} ${test.difficulty} test with a structured QuestLab session flow.`,
+    description: `${test.topic_slug} ${test.difficulty} test with a structured QuestLab session flow.`,
   };
 }
 
 export default async function Page({ params }: PageProps) {
   const { testSlug } = await params;
-  const test = getTestOrThrow(testSlug);
-  const questions = getTestQuestions(testSlug);
-  const sessionId = createSessionId(testSlug);
+  const test = await questApi.test(testSlug);
+  const questions = test.test_questions.map((item) => item.question);
   const questionTypes = Array.from(new Set(questions.map((question) => question.type)));
-  const topicSlug = test.category.toLowerCase().replace(/\s+/g, "-");
+  const topicSlug = test.topic_slug;
 
   return (
     <TestShell
-      eyebrow={`${test.subject} / ${test.category}`}
+      eyebrow={`${test.subject_slug} / ${test.topic_slug}`}
       title={test.title}
       description="Boshlashdan oldin test nimani tekshirishi, qancha vaqt olishi va natijada qanday feedback chiqishini ko'rib oling."
       actions={
         <>
-          <PrimaryLink href={`/test-session/${sessionId}`}>Start test</PrimaryLink>
-          <SecondaryLink href={`/tests/${test.id}/instructions`}>Read rules</SecondaryLink>
+          <PrimaryLink href={`/tests/${test.slug}/start`}>Start test</PrimaryLink>
+          <SecondaryLink href={`/tests/${test.slug}/instructions`}>Read rules</SecondaryLink>
         </>
       }
     >
       <section className="grid gap-4 py-8 md:grid-cols-4">
         <StatCard label="Questions" value={String(questions.length)} />
-        <StatCard label="Time limit" value={`${test.estimatedMinutes} min`} />
+        <StatCard label="Time limit" value={`${test.estimated_minutes} min`} />
         <StatCard label="Difficulty" value={test.difficulty} />
-        <StatCard label="Passing score" value="70%" />
+        <StatCard label="Passing score" value={`${test.passing_score}%`} />
       </section>
       <section className="grid gap-5 pb-8 lg:grid-cols-[1fr_0.42fr]">
         <div className="grid gap-5">
           <div className="rounded-lg border border-black/10 bg-white p-5">
             <h2 className="text-xl font-semibold">What this test checks</h2>
             <p className="mt-3 text-sm leading-6 text-black/62">
-              This assessment focuses on {test.category.toLowerCase()} in {test.subject}. It is short enough for a quick diagnostic, but structured enough to expose weak spots before you move into practice or a full course.
+              This assessment focuses on {test.topic_slug} in {test.subject_slug}. It is short enough for a quick diagnostic, but structured enough to expose weak spots before you move into practice or a full course.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
-              {[test.category, test.subject, test.difficulty, "timed assessment", ...questionTypes].map((item) => (
+              {[test.topic_slug, test.subject_slug, test.difficulty, "timed assessment", ...questionTypes].map((item) => (
                 <span key={item} className="rounded-md bg-[#edf7f3] px-3 py-2 text-sm font-semibold text-[#276a5b]">
                   {item}
                 </span>
@@ -72,7 +68,7 @@ export default async function Page({ params }: PageProps) {
                     <p className="text-sm font-semibold text-[#276a5b]">Question {index + 1}</p>
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-black/45">{question.type}</p>
                   </div>
-                  <p className="mt-3 line-clamp-2 text-sm leading-6 text-black/68">{question.prompt}</p>
+                  <p className="mt-3 line-clamp-2 text-sm leading-6 text-black/68"><LatexText text={question.prompt} /></p>
                 </div>
               ))}
             </div>
@@ -120,8 +116,8 @@ export default async function Page({ params }: PageProps) {
               Start directly if you already know the rules. Open rules if this is an exam-style attempt.
             </p>
             <div className="mt-5 grid gap-3">
-              <PrimaryLink href={`/test-session/${sessionId}`}>Start test</PrimaryLink>
-              <SecondaryLink href={`/tests/${test.id}/instructions`}>Read rules</SecondaryLink>
+              <PrimaryLink href={`/tests/${test.slug}/start`}>Start test</PrimaryLink>
+              <SecondaryLink href={`/tests/${test.slug}/instructions`}>Read rules</SecondaryLink>
             </div>
           </div>
         </aside>

@@ -1,16 +1,11 @@
 import { ArrowRight, Binary, BookOpen, Calculator, ChartNoAxesColumn, CircleDot, FunctionSquare, Grid3X3, Infinity, PieChart, Sigma, Triangle } from "lucide-react";
 import Link from "next/link";
 
-import {
-  mathematicsSkills,
-  mathematicsTests,
-  mathematicsTopics,
-  getMathematicsTestsByTopic,
-} from "@/features/subjects/mathematics/model/mathematics-content";
+import type { ApiTopic } from "@/shared/api/questlab-api";
 import { Container } from "@/shared/ui/container";
 import { GlassCard } from "@/shared/ui/glass-card";
 
-export function MathematicsPage() {
+export function MathematicsPage({ topics }: { topics: ApiTopic[] }) {
   return (
     <main className="min-h-screen bg-[#f7f7f2] text-[#151713]">
       <Container className="py-8">
@@ -33,9 +28,9 @@ export function MathematicsPage() {
               </p>
             </div>
             <div className="grid gap-3 rounded-lg border border-black/10 bg-white p-4 sm:grid-cols-3">
-              <Metric label="Topics" value={mathematicsTopics.length} />
-              <Metric label="Tests" value={mathematicsTests.length} />
-              <Metric label="Skills" value={mathematicsSkills.length} />
+              <Metric label="Topics" value={topics.length} />
+              <Metric label="Tests" value={topics.reduce((sum, topic) => sum + topic.test_count, 0)} />
+              <Metric label="Source" value="API" />
             </div>
           </div>
         </header>
@@ -46,8 +41,7 @@ export function MathematicsPage() {
             <h2 className="text-2xl font-semibold">Bo&apos;limni tanlang</h2>
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-            {mathematicsTopics.map((topic) => {
-              const topicTests = getMathematicsTestsByTopic(topic.title);
+            {topics.map((topic) => {
               const Icon = topicIcons[topic.slug] ?? BookOpen;
 
               return (
@@ -66,7 +60,7 @@ export function MathematicsPage() {
                       Open topic
                       <ArrowRight className="size-4" />
                     </Link>
-                    <span className="text-sm text-black/45">{topicTests.length} test</span>
+                    <span className="text-sm text-black/45">{topic.test_count} test</span>
                   </div>
                 </GlassCard>
               );
@@ -78,7 +72,7 @@ export function MathematicsPage() {
   );
 }
 
-function Metric({ label, value }: { label: string; value: number }) {
+function Metric({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="rounded-md bg-[#f7f7f2] p-4 text-center">
       <p className="text-3xl font-semibold">{value}</p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Building2, FlaskConical, Home, Languages, LayoutDashboard, SearchCheck, UserRound } from "lucide-react";
+import { BookOpen, Building2, FlaskConical, Home, LayoutDashboard, SearchCheck, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -13,7 +13,6 @@ const navItems = [
   { label: "Tests", href: "/tests", icon: LayoutDashboard },
   { label: "Diagnosis", href: "/diagnosis", icon: SearchCheck },
   { label: "Schools", href: "/schools", icon: Building2 },
-  { label: "Languages", href: "/languages", icon: Languages },
 ];
 
 export function AppHeader() {

@@ -1,8 +1,7 @@
 import { ArrowRight, CheckCircle2, Clock, Layers3, Target } from "lucide-react";
 import Link from "next/link";
 
-import { mathematicsTests } from "@/features/subjects/mathematics/model/mathematics-content";
-import { createSessionId } from "@/features/test-engine/model/test-engine-content";
+import type { ApiLevel } from "@/shared/api/questlab-api";
 import { Container } from "@/shared/ui/container";
 
 const algebraLevels = [
@@ -40,10 +39,10 @@ const algebraRoadmap = [
   "Algebraic proofs",
 ];
 
-const algebraTests = mathematicsTests.filter((test) => test.category === "Algebra");
-const primaryTest = algebraTests[0];
+export function AlgebraTopicPage({ levels }: { levels: ApiLevel[] }) {
+  const allTests = levels.flatMap((level) => level.tests);
+  const primaryTest = allTests[0];
 
-export function AlgebraTopicPage() {
   return (
     <main className="min-h-screen bg-[#f7f7f2] text-[#151713]">
       <Container className="py-8">
@@ -63,13 +62,13 @@ export function AlgebraTopicPage() {
             <div className="mt-6 flex flex-wrap gap-3">
               {primaryTest ? (
                 <Link
-                  href={`/test-session/${createSessionId(primaryTest.id)}`}
+                  href={`/tests/${primaryTest.slug}/start`}
                   className="rounded-md bg-[#151713] px-5 py-3 text-sm font-semibold text-white"
                 >
                   Start Algebra Test
                 </Link>
               ) : null}
-              <Link href="/tests/math-quadratic-beginner" className="rounded-md border border-black/10 px-5 py-3 text-sm font-semibold">
+              <Link href={primaryTest ? `/tests/${primaryTest.slug}` : "/tests"} className="rounded-md border border-black/10 px-5 py-3 text-sm font-semibold">
                 View test details
               </Link>
             </div>
@@ -88,38 +87,38 @@ export function AlgebraTopicPage() {
         </header>
 
         <section className="grid gap-4 py-8 lg:grid-cols-3">
-          {algebraLevels.map((level) => (
-            <article key={level.title} className="rounded-lg border border-black/10 bg-white p-5">
+          {levels.map((level, index) => {
+            const meta = algebraLevels[index] ?? algebraLevels[0];
+            return (
+            <article key={level.difficulty} className="rounded-lg border border-black/10 bg-white p-5">
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-2xl font-semibold">{level.title}</h2>
+                <h2 className="text-2xl font-semibold">{level.label}</h2>
                 <span className="rounded-md bg-[#edf7f3] px-3 py-1 text-xs font-semibold uppercase tracking-[0.1em] text-[#276a5b]">
-                  {level.status}
+                  {meta.status}
                 </span>
               </div>
-              <p className="mt-3 text-sm leading-6 text-black/62">{level.copy}</p>
+              <p className="mt-3 text-sm leading-6 text-black/62">{meta.copy}</p>
               <div className="mt-5 h-2 rounded bg-black/10">
-                <div className="h-2 rounded bg-[#276a5b]" style={{ width: `${level.mastery}%` }} />
+                <div className="h-2 rounded bg-[#276a5b]" style={{ width: `${meta.mastery}%` }} />
               </div>
-              <p className="mt-2 text-sm font-semibold">{level.mastery}% mastery</p>
+              <p className="mt-2 text-sm font-semibold">{meta.mastery}% mastery</p>
               <div className="mt-5 flex flex-wrap gap-2">
-                {level.skills.map((skill) => (
+                {meta.skills.map((skill) => (
                   <span key={skill} className="rounded-md border border-black/10 bg-[#fbfbf8] px-3 py-2 text-sm text-black/62">
                     {skill}
                   </span>
                 ))}
               </div>
               <div className="mt-5 grid gap-2 border-t border-black/10 pt-5">
-                {algebraTests
-                  .filter((test) => test.difficulty === level.title.toLowerCase())
-                  .map((test) => (
-                    <div key={test.id} className="rounded-md bg-[#fbfbf8] p-3">
+                {level.tests.map((test) => (
+                    <div key={test.slug} className="rounded-md bg-[#fbfbf8] p-3">
                       <p className="text-sm font-semibold">{test.title}</p>
-                      <p className="mt-1 text-xs text-black/50">{test.estimatedMinutes} min / {test.difficulty}</p>
+                      <p className="mt-1 text-xs text-black/50">{test.estimated_minutes} min / {test.difficulty}</p>
                       <div className="mt-3 flex flex-wrap gap-2">
-                        <Link href={`/test-session/${createSessionId(test.id)}`} className="rounded-md bg-[#151713] px-3 py-2 text-xs font-semibold text-white">
+                        <Link href={`/tests/${test.slug}/start`} className="rounded-md bg-[#151713] px-3 py-2 text-xs font-semibold text-white">
                           Start test
                         </Link>
-                        <Link href={`/tests/${test.id}`} className="rounded-md border border-black/10 px-3 py-2 text-xs font-semibold">
+                        <Link href={`/tests/${test.slug}`} className="rounded-md border border-black/10 px-3 py-2 text-xs font-semibold">
                           Details
                         </Link>
                       </div>
@@ -127,7 +126,7 @@ export function AlgebraTopicPage() {
                   ))}
               </div>
             </article>
-          ))}
+          )})}
         </section>
 
         <section className="grid gap-5 lg:grid-cols-[1fr_360px]">
@@ -156,10 +155,10 @@ export function AlgebraTopicPage() {
                 <h2 className="text-xl font-semibold">Available tests</h2>
               </div>
               <div className="mt-4 grid gap-3">
-                {algebraTests.map((test) => (
-                  <Link key={test.id} href={`/tests/${test.id}`} className="rounded-md border border-black/10 bg-[#fbfbf8] p-4">
+                {allTests.map((test) => (
+                  <Link key={test.slug} href={`/tests/${test.slug}`} className="rounded-md border border-black/10 bg-[#fbfbf8] p-4">
                     <p className="font-semibold">{test.title}</p>
-                    <p className="mt-1 text-sm text-black/55">{test.difficulty} / {test.estimatedMinutes} min</p>
+                    <p className="mt-1 text-sm text-black/55">{test.difficulty} / {test.estimated_minutes} min</p>
                     <span className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-[#276a5b]">
                       Open
                       <ArrowRight className="size-4" />
@@ -175,7 +174,7 @@ export function AlgebraTopicPage() {
                 Quadratic equations basics testini ishlang, keyin wrong answer review orqali zaif joylarni belgilang.
               </p>
               {primaryTest ? (
-                <Link href={`/test-session/${createSessionId(primaryTest.id)}`} className="mt-5 block rounded-md bg-[#8fd6bd] px-4 py-3 text-center text-sm font-semibold text-[#151713]">
+                <Link href={`/tests/${primaryTest.slug}/start`} className="mt-5 block rounded-md bg-[#8fd6bd] px-4 py-3 text-center text-sm font-semibold text-[#151713]">
                   Start now
                 </Link>
               ) : null}

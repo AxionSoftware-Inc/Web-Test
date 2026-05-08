@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { getQuestionBankItems } from "@/features/questions/model/question-bank";
+import { questApi } from "@/shared/api/questlab-api";
 import { Container } from "@/shared/ui/container";
 import { GlassCard } from "@/shared/ui/glass-card";
+import { LatexText } from "@/shared/ui/latex-text";
 
 export const metadata: Metadata = {
   title: "Questions | QuestLab",
 };
 
-export default function Page() {
-  const questions = getQuestionBankItems();
+export default async function Page() {
+  const questions = await questApi.questions();
 
   return (
     <main className="min-h-screen bg-[#f7f7f2] text-[#151713]">
@@ -25,15 +26,15 @@ export default function Page() {
 
         <section className="grid gap-4 py-8 md:grid-cols-2 xl:grid-cols-3">
           {questions.map((question) => (
-            <Link key={question.bankId} href={`/questions/${question.bankId}`}>
+            <Link key={question.id} href={`/questions/${question.id}`}>
               <GlassCard className="h-full p-5">
                 <div className="flex items-center justify-between gap-3">
                   <span className="rounded-xl bg-[#edf7f3] px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-[#276a5b]">
-                    {question.topic}
+                    {question.difficulty}
                   </span>
-                  <span className="text-xs font-semibold uppercase tracking-[0.1em] text-black/45">{question.difficulty}</span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.1em] text-black/45">{question.type}</span>
                 </div>
-                <p className="mt-5 line-clamp-3 text-sm leading-6 text-black/70">{question.prompt}</p>
+                <p className="mt-5 line-clamp-3 text-sm leading-6 text-black/70"><LatexText text={question.prompt} /></p>
                 <p className="mt-5 text-sm font-semibold text-[#276a5b]">Open question</p>
               </GlassCard>
             </Link>

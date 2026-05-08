@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 
-import { getSessionTestOrThrow } from "@/features/test-engine/model/test-engine-content";
-import { PrimaryLink, SecondaryLink, TestShell } from "@/features/test-engine/ui/test-shell";
+import { BackendSubmitButton } from "@/features/test-engine/ui/backend-submit-button";
+import { SecondaryLink, TestShell } from "@/features/test-engine/ui/test-shell";
+import { questApi } from "@/shared/api/questlab-api";
 
 type PageProps = {
   params: Promise<{ sessionId: string }>;
@@ -13,7 +14,8 @@ export const metadata: Metadata = {
 
 export default async function Page({ params }: PageProps) {
   const { sessionId } = await params;
-  const test = getSessionTestOrThrow(sessionId);
+  const session = await questApi.session(sessionId);
+  const test = await questApi.test(session.test_slug);
 
   return (
     <TestShell
@@ -22,7 +24,7 @@ export default async function Page({ params }: PageProps) {
       description="After submit, the session moves to result and question-level review. In production this route will persist final answers."
       actions={
         <>
-          <PrimaryLink href={`/test-session/${sessionId}/result`}>Confirm submit</PrimaryLink>
+          <BackendSubmitButton sessionId={sessionId} />
           <SecondaryLink href={`/test-session/${sessionId}/review`}>Back to review</SecondaryLink>
         </>
       }
