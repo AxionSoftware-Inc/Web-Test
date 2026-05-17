@@ -9,6 +9,7 @@ const cards = [
   { title: "Mistakes", href: "/mistakes", icon: TriangleAlert, copy: "Wrong answers and weak skills." },
   { title: "Questions", href: "/questions", icon: BookOpen, copy: "Question bank with LaTeX." },
   { title: "Teacher", href: "/teacher/classes", icon: GraduationCap, copy: "Classes, assignments, results." },
+  { title: "Classes", href: "/classes", icon: GraduationCap, copy: "Public class catalog." },
   { title: "Exam packs", href: "/exam-packs", icon: PackageCheck, copy: "Paid or private test packs." },
 ];
 
@@ -22,7 +23,7 @@ export function SubjectMapSection() {
             Add test
           </Link>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {cards.map((card) => {
             const Icon = card.icon;
             return (

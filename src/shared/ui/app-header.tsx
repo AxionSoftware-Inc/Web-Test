@@ -5,12 +5,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/shared/lib/cn";
+import { RoleSwitcher } from "@/shared/ui/role-switcher";
 
 const navItems = [
   { label: "Home", href: "/", icon: Home },
   { label: "Tests", href: "/tests", icon: LayoutDashboard },
   { label: "Mistakes", href: "/mistakes", icon: TriangleAlert },
   { label: "Teacher", href: "/teacher/classes", icon: GraduationCap },
+  { label: "Classes", href: "/classes", icon: GraduationCap },
   { label: "School", href: "/schools", icon: Building2 },
   { label: "Packs", href: "/exam-packs", icon: PackageCheck },
   { label: "Add", href: "/crud", icon: Plus },
@@ -53,16 +55,19 @@ export function AppHeader() {
           })}
         </nav>
 
-        <Link
-          href="/profile"
-          aria-label="Open profile"
-          className={cn(
-            "grid size-10 place-items-center rounded-xl border border-black/8 bg-white text-black/65 shadow-[0_10px_30px_rgba(0,0,0,0.04)]",
-            pathname.startsWith("/profile") && "bg-[#151713] text-white",
-          )}
-        >
-          <UserRound className="size-5" />
-        </Link>
+        <div className="flex items-center gap-2">
+          <RoleSwitcher />
+          <Link
+            href="/profile"
+            aria-label="Open profile"
+            className={cn(
+              "grid size-10 place-items-center rounded-xl border border-black/8 bg-white text-black/65 shadow-[0_10px_30px_rgba(0,0,0,0.04)]",
+              pathname.startsWith("/profile") && "bg-[#151713] text-white",
+            )}
+          >
+            <UserRound className="size-5" />
+          </Link>
+        </div>
       </div>
     </header>
   );
