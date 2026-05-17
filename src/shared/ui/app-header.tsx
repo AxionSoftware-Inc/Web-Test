@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Building2, FlaskConical, GraduationCap, Home, LayoutDashboard, PackageCheck, Plus, SearchCheck, TriangleAlert, UserRound } from "lucide-react";
+import { Building2, GraduationCap, Home, LayoutDashboard, PackageCheck, Plus, TriangleAlert, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -8,13 +8,10 @@ import { cn } from "@/shared/lib/cn";
 
 const navItems = [
   { label: "Home", href: "/", icon: Home },
-  { label: "Math", href: "/subjects/mathematics", icon: BookOpen },
-  { label: "Algebra", href: "/subjects/mathematics/topics/algebra", icon: FlaskConical },
   { label: "Tests", href: "/tests", icon: LayoutDashboard },
-  { label: "Diagnosis", href: "/diagnosis", icon: SearchCheck },
   { label: "Mistakes", href: "/mistakes", icon: TriangleAlert },
-  { label: "Schools", href: "/schools", icon: Building2 },
   { label: "Teacher", href: "/teacher/classes", icon: GraduationCap },
+  { label: "School", href: "/schools", icon: Building2 },
   { label: "Packs", href: "/exam-packs", icon: PackageCheck },
   { label: "Add", href: "/crud", icon: Plus },
 ];
@@ -35,7 +32,7 @@ export function AppHeader() {
           </span>
         </Link>
 
-        <nav className="flex max-w-[68vw] items-center gap-1 overflow-x-auto rounded-2xl border border-black/8 bg-white p-1 shadow-[0_10px_30px_rgba(0,0,0,0.04)] md:max-w-none">
+        <nav className="flex max-w-[66vw] items-center gap-1 overflow-x-auto rounded-2xl border border-black/8 bg-white p-1 shadow-[0_10px_30px_rgba(0,0,0,0.04)] md:max-w-none">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);

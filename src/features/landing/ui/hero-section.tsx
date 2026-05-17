@@ -1,58 +1,47 @@
 import Link from "next/link";
-import { BookOpenCheck, GraduationCap, PackageCheck, TriangleAlert } from "lucide-react";
 
 import { Container } from "@/shared/ui/container";
 
+const stats = [
+  ["Flow", "Test -> Result -> Fix"],
+  ["For", "Students, teachers, schools"],
+  ["Core", "Algebra MVP"],
+];
+
 export function HeroSection() {
   return (
-    <section className="border-b border-black/10 bg-[#fcfcf7]">
-      <Container className="grid gap-8 pb-10 pt-8 lg:grid-cols-[1fr_400px] lg:items-center">
-        <div className="max-w-3xl">
-          <p className="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-[#276a5b]">
-            Skill-based math testing
-          </p>
-          <h1 className="text-4xl font-semibold leading-[1.04] sm:text-6xl">
-            Algebra test qiling. Xatoni toping. Keyingi qadamni oling.
+    <section className="border-b border-black/10 bg-[#fbfbf6]">
+      <Container className="py-14">
+        <div className="mx-auto max-w-4xl text-center">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#276a5b]">QuestLab MVP</p>
+          <h1 className="mt-5 text-5xl font-semibold leading-[1.02] tracking-tight sm:text-7xl">
+            Skill-based test platform.
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-black/62">
-            QuestLab hozir Algebra uchun real backendli test, result, mistake bank, teacher class va exam pack oqimlarini bir joyga yigadi.
+          <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-black/60">
+            Test ishlang, natijani skill bo‘yicha ko‘ring, xatoni mistake bankda tuzating. Teacher class va exam pack oqimlari ham bitta platformada.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/subjects/mathematics/topics/algebra" className="rounded-xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white">
-              Open Algebra
-            </Link>
-            <Link href="/tests" className="rounded-xl bg-[#276a5b] px-5 py-3 text-sm font-semibold text-white">
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Link href="/tests" className="rounded-2xl bg-[#151713] px-6 py-3 text-sm font-semibold text-white">
               Start test
             </Link>
-            <Link href="/profile" className="rounded-xl border border-black/10 bg-white px-5 py-3 text-sm font-semibold">
-              View profile
+            <Link href="/teacher/classes" className="rounded-2xl border border-black/10 bg-white px-6 py-3 text-sm font-semibold">
+              Teacher module
+            </Link>
+            <Link href="/exam-packs" className="rounded-2xl border border-black/10 bg-white px-6 py-3 text-sm font-semibold">
+              Exam packs
             </Link>
           </div>
         </div>
 
-        <div className="rounded-[28px] border border-black/8 bg-white p-5 shadow-[0_18px_55px_rgba(21,23,19,0.08)]">
-          <div className="grid grid-cols-2 gap-3">
-            <HeroTile icon={<BookOpenCheck className="size-5" />} label="Tests" href="/tests" value="Backend" />
-            <HeroTile icon={<TriangleAlert className="size-5" />} label="Mistakes" href="/mistakes" value="Diagnosis" />
-            <HeroTile icon={<GraduationCap className="size-5" />} label="Classes" href="/teacher/classes" value="Tutor" />
-            <HeroTile icon={<PackageCheck className="size-5" />} label="Packs" href="/exam-packs" value="Exam" />
-          </div>
-          <div className="mt-5 rounded-2xl bg-[#151713] p-4 text-white">
-            <p className="text-sm font-semibold text-white/64">Core loop</p>
-            <p className="mt-2 text-lg font-semibold">Test - Result - Mistake analysis - Retake</p>
-          </div>
+        <div className="mx-auto mt-10 grid max-w-4xl gap-3 rounded-[28px] border border-black/8 bg-white p-3 shadow-[0_18px_55px_rgba(21,23,19,0.06)] md:grid-cols-3">
+          {stats.map(([label, value]) => (
+            <div key={label} className="rounded-2xl bg-[#fbfbf6] p-4 text-center">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/36">{label}</p>
+              <p className="mt-2 text-sm font-semibold">{value}</p>
+            </div>
+          ))}
         </div>
       </Container>
     </section>
-  );
-}
-
-function HeroTile({ icon, label, value, href }: { icon: React.ReactNode; label: string; value: string; href: string }) {
-  return (
-    <Link href={href} className="rounded-2xl border border-black/8 bg-[#fbfbf6] p-4 hover:bg-white">
-      <span className="text-[#276a5b]">{icon}</span>
-      <p className="mt-4 text-lg font-semibold">{label}</p>
-      <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-black/38">{value}</p>
-    </Link>
   );
 }
