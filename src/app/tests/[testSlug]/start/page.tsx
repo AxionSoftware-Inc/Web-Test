@@ -1,6 +1,4 @@
-import { redirect } from "next/navigation";
-
-import { questApi } from "@/shared/api/questlab-api";
+import { StartTestClient } from "@/features/tests/ui/start-test-client";
 
 type PageProps = {
   params: Promise<{ testSlug: string }>;
@@ -8,7 +6,5 @@ type PageProps = {
 
 export default async function Page({ params }: PageProps) {
   const { testSlug } = await params;
-  const session = await questApi.startTest(testSlug);
-
-  redirect(`/test-session/${session.id}/question/1`);
+  return <StartTestClient testSlug={testSlug} />;
 }

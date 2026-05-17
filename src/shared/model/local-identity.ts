@@ -1,0 +1,38 @@
+"use client";
+
+function fallbackId(prefix: string) {
+  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export function getLocalIdentity(key: string, prefix: string) {
+  if (typeof window === "undefined") return fallbackId(prefix);
+  const existing = window.localStorage.getItem(key);
+  if (existing) return existing;
+  const next = typeof crypto !== "undefined" && "randomUUID" in crypto ? `${prefix}_${crypto.randomUUID()}` : fallbackId(prefix);
+  window.localStorage.setItem(key, next);
+  return next;
+}
+
+export function getStudentCode() {
+  return getLocalIdentity("questlab-student-code", "student");
+}
+
+export function getCreatorCode() {
+  return getLocalIdentity("questlab-creator-code", "creator");
+}
+
+export function getTeacherManageCode(slug?: string) {
+  return getLocalIdentity(slug ? `questlab-teacher-manage:${slug}` : "questlab-teacher-manage", "teacher");
+}
+
+export function saveTeacherManageCode(slug: string, code: string) {
+  if (typeof window !== "undefined" && code) window.localStorage.setItem(`questlab-teacher-manage:${slug}`, code);
+}
+
+export function getPackManageCode(slug?: string) {
+  return getLocalIdentity(slug ? `questlab-pack-manage:${slug}` : "questlab-pack-manage", "pack");
+}
+
+export function savePackManageCode(slug: string, code: string) {
+  if (typeof window !== "undefined" && code) window.localStorage.setItem(`questlab-pack-manage:${slug}`, code);
+}

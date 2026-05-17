@@ -57,6 +57,7 @@ export type ApiTest = {
   estimated_minutes: number;
   passing_score: number;
   status: "draft" | "published";
+  creator_name: string;
   test_questions: ApiTestQuestion[];
 };
 
@@ -85,6 +86,9 @@ export type CreateTestPayload = {
   estimated_minutes: number;
   passing_score: number;
   status: ApiTest["status"];
+  creator_name?: string;
+  creator_code?: string;
+  manage_key?: string;
   questions: CreateTestQuestionPayload[];
 };
 
@@ -101,6 +105,8 @@ export type ApiSession = {
   test: number;
   test_title: string;
   test_slug: string;
+  student_name: string;
+  student_code: string;
   status: "in_progress" | "submitted";
   submitted_at: string | null;
   answers: ApiAnswer[];
@@ -138,6 +144,7 @@ export type ApiTeacherClass = {
   teacher_name: string;
   visibility: "public" | "private";
   join_code: string;
+  manage_code: string;
   description: string;
   student_count: number;
   assignment_count: number;
@@ -201,6 +208,7 @@ export type ApiExamPack = {
   exam_type: string;
   visibility: "public" | "private";
   access_code: string;
+  manage_code: string;
   price_label: string;
   is_active: boolean;
   item_count: number;
@@ -301,18 +309,21 @@ export const questApi = {
   updateTest: (
     testSlug: string,
     payload: Partial<Pick<ApiTest, "title" | "slug" | "subject" | "topic" | "difficulty" | "estimated_minutes" | "passing_score" | "status">> & {
+      creator_name?: string;
+      creator_code?: string;
+      manage_key?: string;
       questions?: CreateTestQuestionPayload[];
     },
   ) =>
     apiPatch<ApiTest>(`/tests/${testSlug}/`, payload),
-  deleteTest: (testSlug: string) => apiDelete<ApiTest | undefined>(`/tests/${testSlug}/`),
-  startTest: (testSlug: string) => apiPost<ApiSession>(`/tests/${testSlug}/start/`),
+  deleteTest: (testSlug: string, manageKey?: string) => apiDelete<ApiTest | undefined>(`/tests/${testSlug}/${manageKey ? `?manage_key=${encodeURIComponent(manageKey)}` : ""}`),
+  startTest: (testSlug: string, payload?: { student_name?: string; student_code?: string }) => apiPost<ApiSession>(`/tests/${testSlug}/start/`, payload),
   session: (sessionId: string) => apiGet<ApiSession>(`/sessions/${sessionId}/`),
   answer: (sessionId: string, payload: { question: number; value: string; is_flagged?: boolean }) =>
     apiPost<ApiSession>(`/sessions/${sessionId}/answer/`, payload),
   submit: (sessionId: string) => apiPost<ApiSession>(`/sessions/${sessionId}/submit/`),
-  profileSummary: () => apiGet<ApiProfileSummary>("/profile/summary/"),
-  mistakesSummary: () => apiGet<ApiMistakesSummary>("/mistakes/summary/"),
+  profileSummary: (studentCode?: string) => apiGet<ApiProfileSummary>(`/profile/summary/${studentCode ? `?student_code=${encodeURIComponent(studentCode)}` : ""}`),
+  mistakesSummary: (studentCode?: string) => apiGet<ApiMistakesSummary>(`/mistakes/summary/${studentCode ? `?student_code=${encodeURIComponent(studentCode)}` : ""}`),
   classes: () => apiGet<ApiTeacherClass[]>("/classes/"),
   classDetail: (slug: string) => apiGet<ApiTeacherClass>(`/classes/${slug}/`),
   createClass: (payload: {
@@ -321,16 +332,17 @@ export const questApi = {
     teacher_name: string;
     visibility: "public" | "private";
     join_code: string;
+    manage_code?: string;
     description: string;
   }) => apiPost<ApiTeacherClass>("/classes/", payload),
   classAssignments: (slug: string) => apiGet<ApiClassAssignment[]>(`/classes/${slug}/assignments/`),
-  createClassAssignment: (slug: string, payload: { test: number; title: string; is_active: boolean }) =>
+  createClassAssignment: (slug: string, payload: { test: number; title: string; is_active: boolean; manage_code?: string }) =>
     apiPost<ApiClassAssignment>(`/classes/${slug}/assignments/`, payload),
   joinClass: (slug: string, payload: { student_name: string; join_code?: string; student_code?: string }) =>
     apiPost<{ id: number; name: string; student_code: string }>(`/classes/${slug}/join/`, payload),
-  startClassAssignment: (slug: string, assignmentId: number, payload: { student_name: string; join_code?: string }) =>
+  startClassAssignment: (slug: string, assignmentId: number, payload: { student_name: string; join_code?: string; student_code?: string }) =>
     apiPost<ApiSession>(`/classes/${slug}/assignments/${assignmentId}/start/`, payload),
-  classResults: (slug: string) => apiGet<ApiClassResults>(`/classes/${slug}/results/`),
+  classResults: (slug: string, manageCode?: string) => apiGet<ApiClassResults>(`/classes/${slug}/results/${manageCode ? `?manage_code=${encodeURIComponent(manageCode)}` : ""}`),
   examPacks: () => apiGet<ApiExamPack[]>("/exam-packs/"),
   examPack: (slug: string) => apiGet<ApiExamPack>(`/exam-packs/${slug}/`),
   createExamPack: (payload: {
@@ -340,13 +352,14 @@ export const questApi = {
     exam_type: string;
     visibility: "public" | "private";
     access_code: string;
+    manage_code?: string;
     price_label: string;
     is_active: boolean;
   }) => apiPost<ApiExamPack>("/exam-packs/", payload),
   examPackItems: (slug: string) => apiGet<ApiExamPackItem[]>(`/exam-packs/${slug}/items/`),
-  createExamPackItem: (slug: string, payload: { test: number; title: string; order: number; is_required: boolean }) =>
+  createExamPackItem: (slug: string, payload: { test: number; title: string; order: number; is_required: boolean; manage_code?: string }) =>
     apiPost<ApiExamPackItem>(`/exam-packs/${slug}/items/`, payload),
-  startExamPackItem: (slug: string, itemId: number, payload: { student_name: string; access_code?: string }) =>
+  startExamPackItem: (slug: string, itemId: number, payload: { student_name: string; access_code?: string; student_code?: string }) =>
     apiPost<ApiSession>(`/exam-packs/${slug}/items/${itemId}/start/`, payload),
-  examPackResults: (slug: string) => apiGet<ApiExamPackResults>(`/exam-packs/${slug}/results/`),
+  examPackResults: (slug: string, manageCode?: string) => apiGet<ApiExamPackResults>(`/exam-packs/${slug}/results/${manageCode ? `?manage_code=${encodeURIComponent(manageCode)}` : ""}`),
 };

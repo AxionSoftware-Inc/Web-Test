@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import type { ApiTest } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
+import { getTeacherManageCode } from "@/shared/model/local-identity";
 
 export function AssignTestClient({ classSlug, tests }: { classSlug: string; tests: ApiTest[] }) {
   const router = useRouter();
@@ -18,7 +19,7 @@ export function AssignTestClient({ classSlug, tests }: { classSlug: string; test
     setSaving(true);
     setError("");
     try {
-      await questApi.createClassAssignment(classSlug, { test: testId, title, is_active: isActive });
+      await questApi.createClassAssignment(classSlug, { test: testId, title, is_active: isActive, manage_code: getTeacherManageCode(classSlug) });
       router.push(`/teacher/classes/${classSlug}`);
       router.refresh();
     } catch (err) {

@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import type { ApiClassAssignment, ApiTeacherClass } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
+import { getStudentCode } from "@/shared/model/local-identity";
 
 export function StudentClassClient({ classroom, assignments }: { classroom: ApiTeacherClass; assignments: ApiClassAssignment[] }) {
   const [studentName, setStudentName] = useState("");
@@ -70,8 +71,9 @@ function AssignmentCard({
     setStarting(true);
     onError("");
     try {
-      await questApi.joinClass(classroom.slug, { student_name: studentName, join_code: joinCode });
-      const session = await questApi.startClassAssignment(classroom.slug, assignment.id, { student_name: studentName, join_code: joinCode });
+      const studentCode = getStudentCode();
+      await questApi.joinClass(classroom.slug, { student_name: studentName, join_code: joinCode, student_code: studentCode });
+      const session = await questApi.startClassAssignment(classroom.slug, assignment.id, { student_name: studentName, join_code: joinCode, student_code: studentCode });
       router.push(`/test-session/${session.id}/question/1`);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Start failed.");

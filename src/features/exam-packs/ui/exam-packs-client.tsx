@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import type { ApiExamPack } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
+import { getPackManageCode, savePackManageCode } from "@/shared/model/local-identity";
 import { Eyebrow, FieldShell, PremiumPanel, premiumInputClass } from "@/shared/ui/premium-shell";
 
 function slugify(value: string) {
@@ -33,9 +34,11 @@ export function ExamPacksClient({ initialPacks }: { initialPacks: ApiExamPack[] 
         exam_type: examType,
         visibility,
         access_code: visibility === "private" ? accessCode : "",
+        manage_code: getPackManageCode(),
         price_label: priceLabel,
         is_active: true,
       });
+      savePackManageCode(pack.slug, pack.manage_code);
       setPacks((items) => [pack, ...items]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Exam pack create failed.");

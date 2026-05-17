@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import type { ApiTest } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
+import { getPackManageCode } from "@/shared/model/local-identity";
 
 export function PackItemClient({ packSlug, tests }: { packSlug: string; tests: ApiTest[] }) {
   const router = useRouter();
@@ -19,7 +20,7 @@ export function PackItemClient({ packSlug, tests }: { packSlug: string; tests: A
     setSaving(true);
     setError("");
     try {
-      await questApi.createExamPackItem(packSlug, { test: testId, title, order, is_required: isRequired });
+      await questApi.createExamPackItem(packSlug, { test: testId, title, order, is_required: isRequired, manage_code: getPackManageCode(packSlug) });
       router.push(`/exam-packs/${packSlug}`);
       router.refresh();
     } catch (err) {

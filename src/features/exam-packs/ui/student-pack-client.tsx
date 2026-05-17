@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import type { ApiExamPack, ApiExamPackItem } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
+import { getStudentCode } from "@/shared/model/local-identity";
 
 export function StudentPackClient({ pack, items }: { pack: ApiExamPack; items: ApiExamPackItem[] }) {
   const [studentName, setStudentName] = useState("");
@@ -64,7 +65,7 @@ function PackItemCard({
     setStarting(true);
     onError("");
     try {
-      const session = await questApi.startExamPackItem(pack.slug, item.id, { student_name: studentName, access_code: accessCode });
+      const session = await questApi.startExamPackItem(pack.slug, item.id, { student_name: studentName, access_code: accessCode, student_code: getStudentCode() });
       router.push(`/test-session/${session.id}/question/1`);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Start failed.");

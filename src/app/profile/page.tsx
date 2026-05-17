@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { ProfilePage } from "@/features/profile/ui/profile-page";
+import { ProfileClient } from "@/features/profile/ui/profile-client";
 import { questApi } from "@/shared/api/questlab-api";
 
 export const metadata: Metadata = {
@@ -13,5 +13,5 @@ export const dynamic = "force-dynamic";
 export default async function Page() {
   const summary = await questApi.profileSummary();
 
-  return <ProfilePage summary={summary} />;
+  return <ProfileClient initialSummary={summary} />;
 }

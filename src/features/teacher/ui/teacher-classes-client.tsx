@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import type { ApiTeacherClass } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
+import { getTeacherManageCode, saveTeacherManageCode } from "@/shared/model/local-identity";
 import { Eyebrow, FieldShell, PremiumPanel, premiumInputClass } from "@/shared/ui/premium-shell";
 
 function slugify(value: string) {
@@ -32,8 +33,10 @@ export function TeacherClassesClient({ initialClasses }: { initialClasses: ApiTe
         teacher_name: teacherName,
         visibility,
         join_code: visibility === "private" ? joinCode : "",
+        manage_code: getTeacherManageCode(),
         description,
       });
+      saveTeacherManageCode(classroom.slug, classroom.manage_code);
       setClasses((items) => [classroom, ...items]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Class create failed.");

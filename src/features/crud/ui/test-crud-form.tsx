@@ -14,6 +14,7 @@ import type {
 } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { cn } from "@/shared/lib/cn";
+import { getCreatorCode } from "@/shared/model/local-identity";
 import { LatexText } from "@/shared/ui/latex-text";
 
 const blankQuestion = (): CreateTestQuestionPayload => ({
@@ -52,6 +53,7 @@ export function TestCrudForm({ subjects, topics, tests: initialTests, skills }: 
   const [slug, setSlug] = useState("custom-algebra-test");
   const [minutes, setMinutes] = useState(10);
   const [passingScore, setPassingScore] = useState(70);
+  const [creatorName, setCreatorName] = useState("Creator");
   const [questions, setQuestions] = useState<CreateTestQuestionPayload[]>([blankQuestion(), blankQuestion()]);
   const [createdTest, setCreatedTest] = useState<ApiTest | null>(null);
   const [tests, setTests] = useState(initialTests);
@@ -79,6 +81,7 @@ export function TestCrudForm({ subjects, topics, tests: initialTests, skills }: 
       return;
     }
     try {
+      const creatorCode = getCreatorCode();
       const test = editingSlug
         ? await questApi.updateTest(editingSlug, {
             title,
@@ -88,6 +91,9 @@ export function TestCrudForm({ subjects, topics, tests: initialTests, skills }: 
             estimated_minutes: minutes,
             passing_score: passingScore,
             status,
+            creator_name: creatorName,
+            creator_code: creatorCode,
+            manage_key: creatorCode,
             questions: questions.map((question) => ({
               ...question,
               options: question.options.filter(Boolean),
@@ -102,6 +108,9 @@ export function TestCrudForm({ subjects, topics, tests: initialTests, skills }: 
         estimated_minutes: minutes,
         passing_score: passingScore,
         status,
+        creator_name: creatorName,
+        creator_code: creatorCode,
+        manage_key: creatorCode,
         questions: questions.map((question) => ({
           ...question,
           options: question.options.filter(Boolean),
@@ -139,7 +148,7 @@ export function TestCrudForm({ subjects, topics, tests: initialTests, skills }: 
 
   async function removeTest(test: ApiTest) {
     try {
-      const deleted = await questApi.deleteTest(test.slug);
+      const deleted = await questApi.deleteTest(test.slug, getCreatorCode());
       if (deleted) {
         setTests((items) => items.map((item) => (item.slug === test.slug ? deleted : item)));
       } else {
@@ -186,6 +195,14 @@ export function TestCrudForm({ subjects, topics, tests: initialTests, skills }: 
             <input
               value={slug}
               onChange={(event) => setSlug(slugify(event.target.value))}
+              className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-base outline-none focus:border-black/30"
+            />
+          </label>
+          <label className="grid gap-2 text-sm font-semibold text-black/65">
+            Creator
+            <input
+              value={creatorName}
+              onChange={(event) => setCreatorName(event.target.value)}
               className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-base outline-none focus:border-black/30"
             />
           </label>
