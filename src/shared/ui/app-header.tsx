@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Building2, FlaskConical, Home, LayoutDashboard, Plus, SearchCheck, UserRound } from "lucide-react";
+import { BookOpen, Building2, FlaskConical, GraduationCap, Home, LayoutDashboard, PackageCheck, Plus, SearchCheck, TriangleAlert, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -12,7 +12,10 @@ const navItems = [
   { label: "Algebra", href: "/subjects/mathematics/topics/algebra", icon: FlaskConical },
   { label: "Tests", href: "/tests", icon: LayoutDashboard },
   { label: "Diagnosis", href: "/diagnosis", icon: SearchCheck },
+  { label: "Mistakes", href: "/mistakes", icon: TriangleAlert },
   { label: "Schools", href: "/schools", icon: Building2 },
+  { label: "Teacher", href: "/teacher/classes", icon: GraduationCap },
+  { label: "Packs", href: "/exam-packs", icon: PackageCheck },
   { label: "Add", href: "/crud", icon: Plus },
 ];
 
@@ -20,7 +23,7 @@ export function AppHeader() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-black/8 bg-[#fbfbf6]/88 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-black/8 bg-[#fbfbf6]/96 supports-[backdrop-filter]:bg-[#fbfbf6]/88 supports-[backdrop-filter]:backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-8 lg:px-10">
         <Link href="/" className="flex items-center gap-3">
           <span className="grid size-10 place-items-center rounded-xl bg-[#151713] text-sm font-bold text-white shadow-sm">
@@ -32,7 +35,7 @@ export function AppHeader() {
           </span>
         </Link>
 
-        <nav className="max-w-[68vw] overflow-x-auto flex items-center gap-1 rounded-2xl border border-black/8 bg-white/82 p-1 shadow-[0_10px_30px_rgba(0,0,0,0.05)] md:max-w-none">
+        <nav className="flex max-w-[68vw] items-center gap-1 overflow-x-auto rounded-2xl border border-black/8 bg-white p-1 shadow-[0_10px_30px_rgba(0,0,0,0.04)] md:max-w-none">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -57,7 +60,7 @@ export function AppHeader() {
           href="/profile"
           aria-label="Open profile"
           className={cn(
-            "grid size-10 place-items-center rounded-xl border border-black/8 bg-white/82 text-black/65 shadow-[0_10px_30px_rgba(0,0,0,0.05)]",
+            "grid size-10 place-items-center rounded-xl border border-black/8 bg-white text-black/65 shadow-[0_10px_30px_rgba(0,0,0,0.04)]",
             pathname.startsWith("/profile") && "bg-[#151713] text-white",
           )}
         >

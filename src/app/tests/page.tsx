@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: "Browse assessment tests by subject, topic, difficulty and duration.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function Page() {
   const tests = await questApi.topicTests("algebra");
 

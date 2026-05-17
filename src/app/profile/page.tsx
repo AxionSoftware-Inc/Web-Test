@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   description: "Learner profile, math progress, test history and skill analytics.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function Page() {
   const summary = await questApi.profileSummary();
 

@@ -3,6 +3,11 @@
 :root {
   --background: #f7f7f2;
   --foreground: #151713;
+  --surface: #ffffff;
+  --surface-soft: #fbfbf6;
+  --brand: #276a5b;
+  --ink: #151713;
+  --line: rgba(21, 23, 19, 0.1);
 }
 
 @theme inline {
@@ -16,6 +21,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  text-rendering: optimizeLegibility;
 }
 
 html {
@@ -32,4 +38,8 @@ a {
 
 a:hover {
   opacity: 0.82;
+}
+
+::selection {
+  background: rgba(143, 214, 189, 0.5);
 }

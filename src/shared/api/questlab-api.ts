@@ -17,6 +17,15 @@ export type ApiTopic = {
   test_count: number;
 };
 
+export type ApiSkill = {
+  id: number;
+  topic: number;
+  topic_slug: string;
+  title: string;
+  slug: string;
+  description: string;
+};
+
 export type ApiQuestion = {
   id: number;
   subject: number;
@@ -47,6 +56,7 @@ export type ApiTest = {
   difficulty: "beginner" | "intermediate" | "advanced";
   estimated_minutes: number;
   passing_score: number;
+  status: "draft" | "published";
   test_questions: ApiTestQuestion[];
 };
 
@@ -74,6 +84,7 @@ export type CreateTestPayload = {
   difficulty: ApiTest["difficulty"];
   estimated_minutes: number;
   passing_score: number;
+  status: ApiTest["status"];
   questions: CreateTestQuestionPayload[];
 };
 
@@ -120,10 +131,124 @@ export type ApiProfileSummary = {
   recommendations: Array<{ title: string; description: string; href: string }>;
 };
 
+export type ApiTeacherClass = {
+  id: number;
+  name: string;
+  slug: string;
+  teacher_name: string;
+  visibility: "public" | "private";
+  join_code: string;
+  description: string;
+  student_count: number;
+  assignment_count: number;
+  assignments: ApiClassAssignment[];
+  created_at: string;
+};
+
+export type ApiClassAssignment = {
+  id: number;
+  classroom: number;
+  test: number;
+  test_title: string;
+  test_slug: string;
+  difficulty: ApiTest["difficulty"];
+  question_count: number;
+  title: string;
+  opens_at: string | null;
+  closes_at: string | null;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type ApiClassResults = {
+  classroom: ApiTeacherClass;
+  attempts: number;
+  average_score: number;
+  results: Array<{
+    session_id: number;
+    student_name: string;
+    test_title: string;
+    test_slug: string;
+    assignment_id: number | null;
+    assignment_title: string;
+    score: number;
+    correct: number;
+    total: number;
+    submitted_at: string | null;
+  }>;
+  weak_skills: Array<{ skill: string; correct: number; total: number; percent: number }>;
+};
+
+export type ApiExamPackItem = {
+  id: number;
+  pack: number;
+  test: number;
+  test_title: string;
+  test_slug: string;
+  difficulty: ApiTest["difficulty"];
+  question_count: number;
+  title: string;
+  order: number;
+  is_required: boolean;
+  created_at: string;
+};
+
+export type ApiExamPack = {
+  id: number;
+  title: string;
+  slug: string;
+  description: string;
+  exam_type: string;
+  visibility: "public" | "private";
+  access_code: string;
+  price_label: string;
+  is_active: boolean;
+  item_count: number;
+  items: ApiExamPackItem[];
+  created_at: string;
+};
+
+export type ApiExamPackResults = {
+  pack: ApiExamPack;
+  attempts: number;
+  average_score: number;
+  results: Array<{
+    session_id: number;
+    student_name: string;
+    test_title: string;
+    test_slug: string;
+    item_id: number | null;
+    item_title: string;
+    score: number;
+    correct: number;
+    total: number;
+    submitted_at: string | null;
+  }>;
+};
+
+export type ApiMistakesSummary = {
+  mistakes: Array<{
+    session_id: number;
+    question_id: number;
+    test_title: string;
+    topic: string;
+    prompt: string;
+    user_answer: string;
+    correct_answer: string;
+    explanation: string;
+    skills: string[];
+  }>;
+  weak_skills: Array<{ skill: string; correct: number; total: number; percent: number }>;
+};
+
 export async function apiGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, { cache: "no-store" });
-  if (!res.ok) throw new Error(`API GET ${path} failed: ${res.status}`);
-  return res.json() as Promise<T>;
+  try {
+    const res = await fetch(`${API_BASE_URL}${path}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`API GET ${path} failed: ${res.status}`);
+    return res.json() as Promise<T>;
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : "Backend server is unavailable.");
+  }
 }
 
 export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
@@ -137,21 +262,91 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`API PATCH ${path} failed: ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
+export async function apiDelete<T>(path: string): Promise<T> {
+  const res = await fetch(`${API_BASE_URL}${path}`, { method: "DELETE", cache: "no-store" });
+  if (!res.ok) throw new Error(`API DELETE ${path} failed: ${res.status}`);
+  if (res.status === 204) return undefined as T;
+  return res.json() as Promise<T>;
+}
+
 export const questApi = {
   subjects: () => apiGet<ApiSubject[]>("/subjects/"),
   topics: (subjectSlug?: string) => apiGet<ApiTopic[]>(`/topics/${subjectSlug ? `?subject=${subjectSlug}` : ""}`),
+  skills: () => apiGet<ApiSkill[]>("/skills/"),
   subjectTopics: (subjectSlug: string) => apiGet<ApiTopic[]>(`/subjects/${subjectSlug}/topics/`),
   topicLevels: (topicSlug: string) => apiGet<ApiLevel[]>(`/topics/${topicSlug}/levels/`),
-  topicTests: (topicSlug: string, difficulty?: string) =>
-    apiGet<ApiTest[]>(`/topics/${topicSlug}/tests/${difficulty ? `?difficulty=${difficulty}` : ""}`),
+  topicTests: (topicSlug: string, difficulty?: string, status?: ApiTest["status"]) => {
+    const params = new URLSearchParams();
+    if (difficulty) params.set("difficulty", difficulty);
+    if (status) params.set("status", status);
+    const query = params.toString();
+    return apiGet<ApiTest[]>(`/topics/${topicSlug}/tests/${query ? `?${query}` : ""}`);
+  },
+  tests: () => apiGet<ApiTest[]>("/tests/"),
   questions: () => apiGet<ApiQuestion[]>("/questions/"),
   question: (id: string) => apiGet<ApiQuestion>(`/questions/${id}/`),
   test: (testSlug: string) => apiGet<ApiTest>(`/tests/${testSlug}/`),
   createTest: (payload: CreateTestPayload) => apiPost<ApiTest>("/tests/", payload),
+  updateTest: (
+    testSlug: string,
+    payload: Partial<Pick<ApiTest, "title" | "slug" | "subject" | "topic" | "difficulty" | "estimated_minutes" | "passing_score" | "status">> & {
+      questions?: CreateTestQuestionPayload[];
+    },
+  ) =>
+    apiPatch<ApiTest>(`/tests/${testSlug}/`, payload),
+  deleteTest: (testSlug: string) => apiDelete<ApiTest | undefined>(`/tests/${testSlug}/`),
   startTest: (testSlug: string) => apiPost<ApiSession>(`/tests/${testSlug}/start/`),
   session: (sessionId: string) => apiGet<ApiSession>(`/sessions/${sessionId}/`),
   answer: (sessionId: string, payload: { question: number; value: string; is_flagged?: boolean }) =>
     apiPost<ApiSession>(`/sessions/${sessionId}/answer/`, payload),
   submit: (sessionId: string) => apiPost<ApiSession>(`/sessions/${sessionId}/submit/`),
   profileSummary: () => apiGet<ApiProfileSummary>("/profile/summary/"),
+  mistakesSummary: () => apiGet<ApiMistakesSummary>("/mistakes/summary/"),
+  classes: () => apiGet<ApiTeacherClass[]>("/classes/"),
+  classDetail: (slug: string) => apiGet<ApiTeacherClass>(`/classes/${slug}/`),
+  createClass: (payload: {
+    name: string;
+    slug: string;
+    teacher_name: string;
+    visibility: "public" | "private";
+    join_code: string;
+    description: string;
+  }) => apiPost<ApiTeacherClass>("/classes/", payload),
+  classAssignments: (slug: string) => apiGet<ApiClassAssignment[]>(`/classes/${slug}/assignments/`),
+  createClassAssignment: (slug: string, payload: { test: number; title: string; is_active: boolean }) =>
+    apiPost<ApiClassAssignment>(`/classes/${slug}/assignments/`, payload),
+  joinClass: (slug: string, payload: { student_name: string; join_code?: string; student_code?: string }) =>
+    apiPost<{ id: number; name: string; student_code: string }>(`/classes/${slug}/join/`, payload),
+  startClassAssignment: (slug: string, assignmentId: number, payload: { student_name: string; join_code?: string }) =>
+    apiPost<ApiSession>(`/classes/${slug}/assignments/${assignmentId}/start/`, payload),
+  classResults: (slug: string) => apiGet<ApiClassResults>(`/classes/${slug}/results/`),
+  examPacks: () => apiGet<ApiExamPack[]>("/exam-packs/"),
+  examPack: (slug: string) => apiGet<ApiExamPack>(`/exam-packs/${slug}/`),
+  createExamPack: (payload: {
+    title: string;
+    slug: string;
+    description: string;
+    exam_type: string;
+    visibility: "public" | "private";
+    access_code: string;
+    price_label: string;
+    is_active: boolean;
+  }) => apiPost<ApiExamPack>("/exam-packs/", payload),
+  examPackItems: (slug: string) => apiGet<ApiExamPackItem[]>(`/exam-packs/${slug}/items/`),
+  createExamPackItem: (slug: string, payload: { test: number; title: string; order: number; is_required: boolean }) =>
+    apiPost<ApiExamPackItem>(`/exam-packs/${slug}/items/`, payload),
+  startExamPackItem: (slug: string, itemId: number, payload: { student_name: string; access_code?: string }) =>
+    apiPost<ApiSession>(`/exam-packs/${slug}/items/${itemId}/start/`, payload),
+  examPackResults: (slug: string) => apiGet<ApiExamPackResults>(`/exam-packs/${slug}/results/`),
 };

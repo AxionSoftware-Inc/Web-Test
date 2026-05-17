@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   description: "Algebra levels, tests, practice roadmap and progress for QuestLab mathematics MVP.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function Page() {
   const levels = await questApi.topicLevels("algebra");
   return <AlgebraTopicPage levels={levels} />;

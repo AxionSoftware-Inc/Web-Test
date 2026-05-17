@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   description: "Practice mathematics by level, topic and generated test sessions.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function Page() {
   const topics = await questApi.subjectTopics("mathematics");
   return <MathematicsPage topics={topics} />;

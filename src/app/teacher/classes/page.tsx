@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
 
-import { ExamPacksClient } from "@/features/exam-packs/ui/exam-packs-client";
+import { TeacherClassesClient } from "@/features/teacher/ui/teacher-classes-client";
 import { questApi } from "@/shared/api/questlab-api";
 import { PremiumPage } from "@/shared/ui/premium-shell";
 
 export const metadata: Metadata = {
-  title: "Exam Packs | QuestLab",
+  title: "Teacher Classes | QuestLab",
 };
 
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  const packs = await questApi.examPacks();
+  const classes = await questApi.classes();
 
   return (
     <PremiumPage>
-      <ExamPacksClient initialPacks={packs} />
+      <TeacherClassesClient initialClasses={classes} />
     </PremiumPage>
   );
 }
