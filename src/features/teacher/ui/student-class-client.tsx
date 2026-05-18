@@ -115,14 +115,16 @@ function AssignmentCard({
           <p className="text-lg font-semibold">{assignment.title}</p>
           <p className="mt-2 text-sm text-black/52">{assignment.test_title}</p>
         </div>
-        <span className="rounded-xl bg-[#edf7f3] px-3 py-2 text-xs font-semibold capitalize text-[#276a5b]">{assignment.difficulty}</span>
+            <span className="rounded-xl bg-[#edf7f3] px-3 py-2 text-xs font-semibold capitalize text-[#276a5b]">{assignment.mode}</span>
       </div>
       <div className="mt-5 grid grid-cols-2 gap-2">
         <Mini label="Questions" value={assignment.question_count} />
-        <Mini label="Status" value="Open" />
+        <Mini label="Attempts" value={assignment.mode === "homework" ? assignment.attempt_limit : "Live"} />
+        {assignment.mode === "homework" ? <Mini label="Due" value={assignment.due_at ? new Date(assignment.due_at).toLocaleDateString() : "No due"} /> : null}
+        {assignment.mode === "homework" ? <Mini label="Late" value={assignment.allow_late_submission ? "Allowed" : "Closed"} /> : <Mini label="Status" value="Open" />}
       </div>
       <button onClick={start} disabled={starting} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
-        {starting ? "Session ochilyapti..." : "Start test session"}
+        {starting ? "Ochilyapti..." : assignment.mode === "homework" ? "Start homework" : "Start test session"}
         <ArrowRight className="size-4" />
       </button>
     </article>

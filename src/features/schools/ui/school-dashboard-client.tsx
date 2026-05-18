@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, Building2, GraduationCap, Plus, Search, ShieldCheck, Trash2, UsersRound } from "lucide-react";
+import { BarChart3, Building2, GraduationCap, Link2, Palette, Plus, Search, ShieldCheck, Trash2, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -20,6 +20,12 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
   const [name, setName] = useState("Dirac Learning Center");
   const [owner, setOwner] = useState("School owner");
   const [description, setDescription] = useState("Teacherlar va classlar umumiy nazorati.");
+  const [portalSubdomain, setPortalSubdomain] = useState("dirac-school");
+  const [portalDomain, setPortalDomain] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [primaryColor, setPrimaryColor] = useState("#151713");
+  const [accentColor, setAccentColor] = useState("#8fd6bd");
+  const [studentInviteCode, setStudentInviteCode] = useState("STUDENT-DEMO");
   const [teacherName, setTeacherName] = useState("Math teacher");
   const [teacherEmail, setTeacherEmail] = useState("");
   const [selectedClasses, setSelectedClasses] = useState<number[]>([]);
@@ -48,6 +54,12 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
         manage_code: manageCode,
         visibility: "private",
         description,
+        portal_subdomain: slugify(portalSubdomain),
+        portal_domain: portalDomain,
+        logo_url: logoUrl,
+        primary_color: primaryColor,
+        accent_color: accentColor,
+        student_invite_code: studentInviteCode,
       });
       saveSchoolManageCode(school.slug, school.manage_code);
       setSchools((items) => [school, ...items]);
@@ -55,6 +67,30 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
       setNotice("School workspace yaratildi.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "School create failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveBranding() {
+    if (!activeSlug) return;
+    setBusy(true);
+    setNotice("");
+    try {
+      const updated = await questApi.updateSchool(activeSlug, {
+        portal_subdomain: slugify(portalSubdomain || activeSchool?.portal_subdomain || ""),
+        portal_domain: portalDomain,
+        logo_url: logoUrl,
+        primary_color: primaryColor,
+        accent_color: accentColor,
+        student_invite_code: studentInviteCode,
+        manage_code: getSchoolManageCode(activeSlug),
+      });
+      setSchools((items) => items.map((item) => (item.id === updated.id ? updated : item)));
+      setNotice("White-label portal sozlamalari saqlandi.");
+      await loadAnalytics(activeSlug);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Branding save failed.");
     } finally {
       setBusy(false);
     }
@@ -124,8 +160,28 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
               <div className="mt-4 grid gap-4">
                 <Input label="School name" value={name} onChange={setName} />
                 <Input label="Owner" value={owner} onChange={setOwner} />
+                <Input label="Portal subdomain" value={portalSubdomain} onChange={setPortalSubdomain} />
+                <Input label="Logo URL" value={logoUrl} onChange={setLogoUrl} />
                 <FieldShell label="Description"><textarea value={description} onChange={(event) => setDescription(event.target.value)} className={premiumInputClass} rows={3} /></FieldShell>
                 <button onClick={createSchool} disabled={busy} className="rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">Create school</button>
+              </div>
+            </Panel>
+
+            <Panel>
+              <Eyebrow>Branded portal</Eyebrow>
+              <div className="mt-4 grid gap-4">
+                <Input label="Custom domain" value={portalDomain} onChange={setPortalDomain} />
+                <Input label="Student invite code" value={studentInviteCode} onChange={setStudentInviteCode} />
+                <FieldShell label="Colors">
+                  <div className="grid grid-cols-2 gap-3">
+                    <input type="color" value={primaryColor} onChange={(event) => setPrimaryColor(event.target.value)} className="h-12 w-full rounded-2xl border border-black/10 bg-white p-2" />
+                    <input type="color" value={accentColor} onChange={(event) => setAccentColor(event.target.value)} className="h-12 w-full rounded-2xl border border-black/10 bg-white p-2" />
+                  </div>
+                </FieldShell>
+                <button onClick={saveBranding} disabled={busy || !activeSlug} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold disabled:opacity-50">
+                  <Palette className="size-4" />
+                  Save branding
+                </button>
               </div>
             </Panel>
 
@@ -152,6 +208,36 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
               <Metric icon={UsersRound} label="Students" value={analytics?.students_submitted ?? 0} />
               <Metric icon={BarChart3} label="Average" value={`${analytics?.average_score ?? 0}%`} />
             </section>
+
+            <Panel>
+              <div className="grid gap-5 lg:grid-cols-[1fr_320px] lg:items-center">
+                <div>
+                  <Eyebrow>White-label preview</Eyebrow>
+                  <h2 className="mt-2 text-2xl font-semibold">{activeSchool?.name ?? "School portal"}</h2>
+                  <p className="mt-2 text-sm text-black/55">
+                    Portal: {analytics?.portal_url || activeSchool?.portal_domain || (activeSchool?.portal_subdomain ? `https://${activeSchool.portal_subdomain}.yourplatform.com` : "Not configured")}
+                  </p>
+                  <p className="mt-2 text-sm text-black/55">Student invite: {activeSchool?.student_invite_code || "Not set"}</p>
+                </div>
+                <div className="rounded-3xl p-5 text-white" style={{ background: activeSchool?.primary_color || primaryColor }}>
+                  {activeSchool?.logo_url ? (
+                    <div className="mb-4 size-12 rounded-2xl bg-white bg-cover bg-center" style={{ backgroundImage: `url(${activeSchool.logo_url})` }} />
+                  ) : (
+                    <div className="mb-4 grid size-12 place-items-center rounded-2xl bg-white/15"><Building2 className="size-6" /></div>
+                  )}
+                  <p className="text-xl font-semibold">{activeSchool?.name ?? "School"}</p>
+                  <div className="mt-4 rounded-2xl px-4 py-3 text-sm font-semibold" style={{ background: activeSchool?.accent_color || accentColor, color: "#151713" }}>
+                    Branded student dashboard
+                  </div>
+                </div>
+              </div>
+              {analytics?.portal_url ? (
+                <button onClick={() => navigator.clipboard.writeText(analytics.portal_url)} className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold">
+                  <Link2 className="size-4" />
+                  Copy portal URL
+                </button>
+              ) : null}
+            </Panel>
 
             <Panel>
               <div className="flex flex-wrap items-center justify-between gap-3">

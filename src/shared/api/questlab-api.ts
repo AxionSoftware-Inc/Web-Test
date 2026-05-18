@@ -161,8 +161,14 @@ export type ApiClassAssignment = {
   difficulty: ApiTest["difficulty"];
   question_count: number;
   title: string;
+  mode: "session" | "homework";
   opens_at: string | null;
   closes_at: string | null;
+  due_at: string | null;
+  attempt_limit: number;
+  show_answers_after_deadline: boolean;
+  allow_late_submission: boolean;
+  grading_policy: "best" | "latest" | "first";
   is_active: boolean;
   created_at: string;
 };
@@ -179,10 +185,12 @@ export type ApiClassResults = {
     test_slug: string;
     assignment_id: number | null;
     assignment_title: string;
+    assignment_mode: ApiClassAssignment["mode"] | null;
     score: number;
     correct: number;
     total: number;
     submitted_at: string | null;
+    is_late: boolean;
   }>;
   weak_skills: Array<{ skill: string; correct: number; total: number; percent: number }>;
   students_total: number;
@@ -194,9 +202,16 @@ export type ApiClassResults = {
     assignment_title: string;
     test_title: string;
     test_slug: string;
+    mode: ApiClassAssignment["mode"];
+    due_at: string | null;
+    attempt_limit: number;
+    show_answers_after_deadline: boolean;
+    allow_late_submission: boolean;
+    grading_policy: ApiClassAssignment["grading_policy"];
     is_active: boolean;
     attempts: number;
     unique_students: number;
+    late_submissions: number;
     average_score: number;
   }>;
   student_progress: Array<{
@@ -298,6 +313,12 @@ export type ApiSchool = {
   manage_code: string;
   visibility: "public" | "private";
   description: string;
+  portal_subdomain: string;
+  portal_domain: string;
+  logo_url: string;
+  primary_color: string;
+  accent_color: string;
+  student_invite_code: string;
   teacher_count: number;
   teachers: ApiSchoolTeacher[];
   created_at: string;
@@ -305,6 +326,7 @@ export type ApiSchool = {
 
 export type ApiSchoolAnalytics = {
   school: ApiSchool;
+  portal_url: string;
   teacher_count: number;
   class_count: number;
   students_submitted: number;
@@ -448,19 +470,48 @@ export const questApi = {
     description: string;
   }) => apiPost<ApiTeacherClass>("/classes/", payload),
   classAssignments: (slug: string) => apiGet<ApiClassAssignment[]>(`/classes/${slug}/assignments/`),
-  createClassAssignment: (slug: string, payload: { test: number; title: string; is_active: boolean; manage_code?: string }) =>
+  createClassAssignment: (
+    slug: string,
+    payload: {
+      test: number;
+      title: string;
+      mode?: ApiClassAssignment["mode"];
+      is_active: boolean;
+      opens_at?: string | null;
+      closes_at?: string | null;
+      due_at?: string | null;
+      attempt_limit?: number;
+      show_answers_after_deadline?: boolean;
+      allow_late_submission?: boolean;
+      grading_policy?: ApiClassAssignment["grading_policy"];
+      manage_code?: string;
+    },
+  ) =>
     apiPost<ApiClassAssignment>(`/classes/${slug}/assignments/`, payload),
   bulkCreateClassAssignments: (
     slug: string,
     payload: {
       manage_code?: string;
-      assignments: Array<{ test?: number; test_slug?: string; title?: string; is_active?: boolean; opens_at?: string | null; closes_at?: string | null }>;
+      assignments: Array<{
+        test?: number;
+        test_slug?: string;
+        title?: string;
+        mode?: ApiClassAssignment["mode"];
+        is_active?: boolean;
+        opens_at?: string | null;
+        closes_at?: string | null;
+        due_at?: string | null;
+        attempt_limit?: number;
+        show_answers_after_deadline?: boolean;
+        allow_late_submission?: boolean;
+        grading_policy?: ApiClassAssignment["grading_policy"];
+      }>;
     },
   ) => apiPost<{ created: ApiClassAssignment[]; skipped: Array<{ test_slug: string; reason: string }> }>(`/classes/${slug}/assignments/bulk/`, payload),
   updateClassAssignment: (
     slug: string,
     assignmentId: number,
-    payload: Partial<Pick<ApiClassAssignment, "title" | "is_active" | "opens_at" | "closes_at">> & { manage_code?: string },
+    payload: Partial<Pick<ApiClassAssignment, "title" | "mode" | "is_active" | "opens_at" | "closes_at" | "due_at" | "attempt_limit" | "show_answers_after_deadline" | "allow_late_submission" | "grading_policy">> & { manage_code?: string },
   ) => apiPatch<ApiClassAssignment>(`/classes/${slug}/assignments/${assignmentId}/`, payload),
   deleteClassAssignment: (slug: string, assignmentId: number, manageCode?: string) =>
     apiDelete<ApiClassAssignment | undefined>(`/classes/${slug}/assignments/${assignmentId}/${manageCode ? `?manage_code=${encodeURIComponent(manageCode)}` : ""}`),
@@ -511,7 +562,17 @@ export const questApi = {
     manage_code?: string;
     visibility: "public" | "private";
     description: string;
+    portal_subdomain?: string;
+    portal_domain?: string;
+    logo_url?: string;
+    primary_color?: string;
+    accent_color?: string;
+    student_invite_code?: string;
   }) => apiPost<ApiSchool>("/schools/", payload),
+  updateSchool: (
+    slug: string,
+    payload: Partial<Pick<ApiSchool, "name" | "owner_name" | "visibility" | "description" | "portal_subdomain" | "portal_domain" | "logo_url" | "primary_color" | "accent_color" | "student_invite_code">> & { manage_code?: string },
+  ) => apiPatch<ApiSchool>(`/schools/${slug}/`, payload),
   schoolAnalytics: (slug: string) => apiGet<ApiSchoolAnalytics>(`/schools/${slug}/analytics/`),
   createSchoolTeacher: (slug: string, payload: { name: string; email?: string; teacher_code?: string; classes?: number[]; manage_code?: string }) =>
     apiPost<ApiSchoolTeacher>(`/schools/${slug}/teachers/`, payload),

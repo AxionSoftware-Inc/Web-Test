@@ -27,6 +27,7 @@ export function BackendSessionQuestionClient({
   const question = questions[questionIndex];
   const answerMap = useMemo(() => new Map(session.answers.map((answer) => [answer.question, answer])), [session.answers]);
   const current = answerMap.get(question.id);
+  const currentValue = optimisticAnswers[question.id] ?? current?.value ?? "";
   const answered = questions.filter((item) => answerMap.get(item.id)?.value).length;
   const flagged = questions.filter((item) => answerMap.get(item.id)?.is_flagged).length;
   const progress = Math.round((answered / questions.length) * 100);
@@ -58,7 +59,7 @@ export function BackendSessionQuestionClient({
   }
 
   async function toggleFlag() {
-    await saveAnswer(current?.value ?? "", !(current?.is_flagged ?? false));
+    await saveAnswer(currentValue, !(current?.is_flagged ?? false));
   }
 
   return (
@@ -126,7 +127,7 @@ export function BackendSessionQuestionClient({
           {question.options.length > 0 ? (
             <div className="mt-7 grid gap-3">
               {question.options.map((option, optionIndex) => {
-                const selected = (optimisticAnswers[question.id] ?? current?.value) === option;
+                const selected = currentValue === option;
                 return (
                   <button key={option} type="button" onClick={() => saveAnswer(option)} className={cn("flex items-start gap-3 rounded-lg border px-4 py-4 text-left text-sm leading-6 transition", selected ? "border-[#276a5b] bg-[#dff4eb] shadow-[0_0_0_3px_rgba(39,106,91,0.16)]" : "border-black/10 bg-[#fbfbf8] hover:border-black/25")}>
                     <span className={cn("grid size-7 shrink-0 place-items-center rounded-md border text-xs font-bold", selected ? "border-[#276a5b] bg-[#276a5b] text-white" : "border-black/10 bg-white text-black/55")}>
@@ -139,7 +140,7 @@ export function BackendSessionQuestionClient({
               })}
             </div>
           ) : (
-            <input value={current?.value ?? ""} onChange={(event) => saveAnswer(event.target.value)} placeholder="Answer" className="mt-7 w-full rounded-lg border border-black/10 bg-[#fbfbf8] px-4 py-4 text-sm outline-none focus:border-[#276a5b]" />
+            <input value={currentValue} onChange={(event) => saveAnswer(event.target.value)} placeholder="Answer" className="mt-7 w-full rounded-lg border border-black/10 bg-[#fbfbf8] px-4 py-4 text-sm font-semibold text-[#151713] caret-[#276a5b] outline-none focus:border-[#276a5b]" />
           )}
 
           <div className="mt-8 flex flex-col justify-between gap-3 sm:flex-row">

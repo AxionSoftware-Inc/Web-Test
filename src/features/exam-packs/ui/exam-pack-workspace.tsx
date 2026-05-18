@@ -21,6 +21,7 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const jsonRef = useRef<HTMLInputElement>(null);
 
   const rows = results.results;
   const csv = useMemo(() => [
@@ -114,6 +115,23 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
     }
   }
 
+  async function importJson(file: File) {
+    setBusy(true);
+    setNotice("");
+    try {
+      const raw = JSON.parse(await file.text()) as { items?: Array<{ test_slug?: string; title?: string; order?: number; is_required?: boolean; test?: number }> };
+      const body = Array.isArray(raw.items) ? raw.items : [];
+      const imported = await questApi.bulkCreateExamPackItems(pack.slug, { manage_code: getPackManageCode(pack.slug), items: body });
+      setItems((current) => [...current, ...imported.created].sort((a, b) => a.order - b.order));
+      setNotice(`${imported.created.length} ta JSON item import qilindi. ${imported.skipped.length} ta qator o'tkazib yuborildi.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "JSON import failed.");
+    } finally {
+      setBusy(false);
+      if (jsonRef.current) jsonRef.current.value = "";
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[#f7f7ef] px-5 py-8 text-[#151713] sm:px-8 lg:px-10">
       <div className="mx-auto max-w-7xl">
@@ -128,7 +146,9 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
                 <button onClick={() => download(`${pack.slug}-results.csv`, csv, "text/csv;charset=utf-8")} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]"><Download className="size-4" />Export CSV</button>
                 <button onClick={() => download(`${pack.slug}.json`, JSON.stringify({ pack, items, results }, null, 2), "application/json;charset=utf-8")} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]"><FileJson className="size-4" />Export JSON</button>
                 <button onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]"><Upload className="size-4" />Import CSV</button>
+                <button onClick={() => jsonRef.current?.click()} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]"><FileJson className="size-4" />Import JSON</button>
                 <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importCsv(file); }} />
+                <input ref={jsonRef} type="file" accept=".json,application/json" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importJson(file); }} />
               </div>
               {notice ? <p className="mt-4 rounded-2xl bg-[#fbfbf6] px-4 py-3 text-sm font-semibold text-black/62">{notice}</p> : null}
             </div>
@@ -174,6 +194,7 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
           </div>
           <aside className="grid gap-6">
             <section className="rounded-[28px] border border-black/8 bg-[#151713] p-5 text-white"><h2 className="text-2xl font-semibold">Weak skills</h2><div className="mt-4 grid gap-3">{results.weak_skills?.length ? results.weak_skills.map((skill) => <div key={skill.skill} className="rounded-2xl bg-white/8 p-4"><div className="flex justify-between text-sm font-semibold"><span>{skill.skill}</span><span>{skill.percent}%</span></div><div className="mt-3 h-2 rounded-full bg-white/12"><div className="h-2 rounded-full bg-[#8fd6bd]" style={{ width: `${skill.percent}%` }} /></div></div>) : <p className="text-sm text-white/65">Natijalar bo&apos;lsa weak skilllar chiqadi.</p>}</div></section>
+            <section className="rounded-[28px] border border-black/8 bg-white/82 p-5"><h2 className="text-2xl font-semibold">Pack qo&apos;shish usullari</h2><div className="mt-4 grid gap-3 text-sm text-black/58"><p><strong>Manual:</strong> bitta-bitta backend test tanlab qo&apos;shish.</p><p><strong>CSV:</strong> katta packni jadvaldan import qilish.</p><p><strong>JSON:</strong> boshqa akkaunt yoki backupdan pack itemlarni qayta yuklash.</p></div></section>
             <section className="rounded-[28px] border border-black/8 bg-white/82 p-5"><h2 className="text-2xl font-semibold">Import format</h2><div className="mt-4 rounded-2xl bg-[#fbfbf6] p-4 font-mono text-xs leading-6 text-black/62">test_slug,title,order,is_required<br />algebra-basics,Algebra warmup,1,true</div><button onClick={() => download("pack-template.csv", "test_slug,title,order,is_required\nalgebra-basics,Algebra warmup,1,true\n", "text/csv;charset=utf-8")} className="mt-4 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold">Download template</button></section>
           </aside>
         </section>

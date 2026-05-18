@@ -2,6 +2,7 @@
 
 import {
   BarChart3,
+  CalendarClock,
   CheckCircle2,
   Clipboard,
   Download,
@@ -38,6 +39,12 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
   const [assignments, setAssignments] = useState(initialAssignments);
   const [selectedTestId, setSelectedTestId] = useState(tests[0]?.id ?? 0);
   const [assignmentTitle, setAssignmentTitle] = useState(tests[0]?.title ?? "");
+  const [mode, setMode] = useState<ApiClassAssignment["mode"]>("session");
+  const [dueAt, setDueAt] = useState("");
+  const [attemptLimit, setAttemptLimit] = useState(1);
+  const [showAnswersAfterDeadline, setShowAnswersAfterDeadline] = useState(false);
+  const [allowLateSubmission, setAllowLateSubmission] = useState(false);
+  const [gradingPolicy, setGradingPolicy] = useState<ApiClassAssignment["grading_policy"]>("best");
   const [isActive, setIsActive] = useState(true);
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
@@ -73,11 +80,17 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
       const created = await questApi.createClassAssignment(classroom.slug, {
         test: selectedTestId,
         title: assignmentTitle || tests.find((test) => test.id === selectedTestId)?.title || "Class test",
+        mode,
+        due_at: mode === "homework" && dueAt ? new Date(dueAt).toISOString() : null,
+        attempt_limit: mode === "homework" ? Math.max(1, attemptLimit) : 1,
+        show_answers_after_deadline: mode === "homework" ? showAnswersAfterDeadline : false,
+        allow_late_submission: mode === "homework" ? allowLateSubmission : false,
+        grading_policy: mode === "homework" ? gradingPolicy : "best",
         is_active: isActive,
         manage_code: getTeacherManageCode(classroom.slug),
       });
       setAssignments((items) => [created, ...items]);
-      setNotice("Test session ochildi. Endi student linkini o'quvchilarga yuborishingiz mumkin.");
+      setNotice(mode === "homework" ? "Homework yaratildi. Linkni o'quvchilarga yuborishingiz mumkin." : "Test session ochildi. Endi student linkini o'quvchilarga yuborishingiz mumkin.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Test session ochishda xatolik.");
     } finally {
@@ -121,16 +134,32 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
     const text = await file.text();
     const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
     const rows = lines[0]?.toLowerCase().includes("test_slug") ? lines.slice(1) : lines;
-    const rowsToImport = [];
+    const rowsToImport: Array<{
+      test_slug: string;
+      title: string;
+      is_active: boolean;
+      mode: ApiClassAssignment["mode"];
+      due_at: string | null;
+      attempt_limit: number;
+      show_answers_after_deadline: boolean;
+      allow_late_submission: boolean;
+      grading_policy: ApiClassAssignment["grading_policy"];
+    }> = [];
     setBusy(true);
     setNotice("");
     try {
       for (const row of rows) {
-        const [testSlug, title, activeValue] = row.split(",").map((value) => value.trim().replace(/^"|"$/g, ""));
+        const [testSlug, title, activeValue, modeValue, dueValue, attemptValue, showValue, lateValue, gradingValue] = row.split(",").map((value) => value.trim().replace(/^"|"$/g, ""));
         rowsToImport.push({
           test_slug: testSlug,
           title,
           is_active: activeValue ? activeValue.toLowerCase() !== "false" : true,
+          mode: modeValue === "homework" ? "homework" : "session",
+          due_at: dueValue || null,
+          attempt_limit: Number(attemptValue || 1),
+          show_answers_after_deadline: showValue ? showValue.toLowerCase() === "true" : false,
+          allow_late_submission: lateValue ? lateValue.toLowerCase() === "true" : false,
+          grading_policy: gradingValue === "latest" || gradingValue === "first" ? gradingValue : "best",
         });
       }
       const imported = await questApi.bulkCreateClassAssignments(classroom.slug, {
@@ -241,7 +270,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
               </Link>
             </div>
 
-            <div className="mt-5 grid gap-4 rounded-3xl border border-black/8 bg-[#fbfbf6] p-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+            <div className="mt-5 grid gap-4 rounded-3xl border border-black/8 bg-[#fbfbf6] p-4 lg:grid-cols-2 xl:grid-cols-[1fr_1fr_auto] xl:items-end">
               <FieldShell label="Backend test">
                 <select
                   value={selectedTestId}
@@ -260,6 +289,31 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
               <FieldShell label="Session title">
                 <input value={assignmentTitle} onChange={(event) => setAssignmentTitle(event.target.value)} className={premiumInputClass} />
               </FieldShell>
+              <FieldShell label="Mode">
+                <select value={mode} onChange={(event) => setMode(event.target.value as ApiClassAssignment["mode"])} className={premiumInputClass}>
+                  <option value="session">Live session</option>
+                  <option value="homework">Homework</option>
+                </select>
+              </FieldShell>
+              {mode === "homework" ? (
+                <>
+                  <FieldShell label="Due date">
+                    <input type="datetime-local" value={dueAt} onChange={(event) => setDueAt(event.target.value)} className={premiumInputClass} />
+                  </FieldShell>
+                  <FieldShell label="Attempt limit">
+                    <input type="number" min={1} value={attemptLimit} onChange={(event) => setAttemptLimit(Number(event.target.value))} className={premiumInputClass} />
+                  </FieldShell>
+                  <FieldShell label="Grading">
+                    <select value={gradingPolicy} onChange={(event) => setGradingPolicy(event.target.value as ApiClassAssignment["grading_policy"])} className={premiumInputClass}>
+                      <option value="best">Best attempt</option>
+                      <option value="latest">Latest attempt</option>
+                      <option value="first">First attempt</option>
+                    </select>
+                  </FieldShell>
+                  <button type="button" onClick={() => setShowAnswersAfterDeadline((value) => !value)} className={cn("rounded-2xl border px-4 py-3 text-sm font-semibold", showAnswersAfterDeadline ? "border-[#8fd6bd] bg-[#edf7f3] text-[#276a5b]" : "border-black/10 bg-white text-black/55")}>Show answers after due</button>
+                  <button type="button" onClick={() => setAllowLateSubmission((value) => !value)} className={cn("rounded-2xl border px-4 py-3 text-sm font-semibold", allowLateSubmission ? "border-amber-200 bg-amber-50 text-amber-700" : "border-black/10 bg-white text-black/55")}>Late submission</button>
+                </>
+              ) : null}
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -270,7 +324,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                 </button>
                 <button onClick={addAssignment} disabled={busy || !selectedTestId} className="inline-flex items-center gap-2 rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">
                   <Plus className="size-4" />
-                  Open session
+                  {mode === "homework" ? "Create homework" : "Open session"}
                 </button>
               </div>
             </div>
@@ -286,9 +340,16 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-lg font-semibold">{item.title}</h3>
+                      <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-semibold capitalize text-black/50">{item.mode}</span>
                       <span className={cn("rounded-full px-3 py-1 text-xs font-semibold", item.is_active ? "bg-[#edf7f3] text-[#276a5b]" : "bg-black/5 text-black/45")}>{item.is_active ? "Active" : "Paused"}</span>
                     </div>
                     <p className="mt-2 text-sm text-black/52">{item.test_title} / {item.difficulty} / {item.question_count} questions</p>
+                    {item.mode === "homework" ? (
+                      <p className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-black/52">
+                        <CalendarClock className="size-4 text-[#276a5b]" />
+                        Due: {item.due_at ? new Date(item.due_at).toLocaleString() : "No deadline"} / {item.attempt_limit} attempt
+                      </p>
+                    ) : null}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button onClick={() => void copySessionLink(item.id)} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]">
@@ -317,7 +378,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                 <div className="rounded-3xl border border-dashed border-black/12 bg-white p-8 text-center">
                   <FileUp className="mx-auto size-9 text-black/28" />
                   <h3 className="mt-3 text-lg font-semibold">Session yo&apos;q</h3>
-                  <p className="mt-2 text-sm text-black/52">Test tanlab Open session bosing yoki CSV import qiling. Format: test_slug,title,is_active</p>
+                  <p className="mt-2 text-sm text-black/52">Test tanlab session yoki homework yarating. CSV format: test_slug,title,is_active,mode,due_at,attempt_limit,show_answers_after_deadline,allow_late_submission,grading_policy</p>
                 </div>
               ) : null}
             </div>
@@ -344,12 +405,12 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
             <section className="rounded-[28px] border border-black/8 bg-white/82 p-5 shadow-[0_18px_55px_rgba(21,23,19,0.07)]">
               <h2 className="text-2xl font-semibold">Import format</h2>
               <div className="mt-4 rounded-2xl bg-[#fbfbf6] p-4 font-mono text-xs leading-6 text-black/62">
-                test_slug,title,is_active<br />
-                algebra-basics,Algebra warmup,true<br />
-                linear-equations,Linear equations,true
+                test_slug,title,is_active,mode,due_at,attempt_limit,show_answers_after_deadline,allow_late_submission,grading_policy<br />
+                algebra-basics,Algebra homework,true,homework,2026-05-25T18:00:00Z,2,true,true,best<br />
+                linear-equations,Linear live,true,session,,1,false,false,best
               </div>
               <button
-                onClick={() => downloadFile("class-assignment-template.csv", "test_slug,title,is_active\nalgebra-basics,Algebra warmup,true\n", "text/csv;charset=utf-8")}
+                onClick={() => downloadFile("class-assignment-template.csv", "test_slug,title,is_active,mode,due_at,attempt_limit,show_answers_after_deadline,allow_late_submission,grading_policy\nalgebra-basics,Algebra homework,true,homework,2026-05-25T18:00:00Z,2,true,true,best\n", "text/csv;charset=utf-8")}
                 className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]"
               >
                 <Download className="size-4" />
@@ -376,15 +437,17 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                   <div>
                     <p className="font-semibold">{item.assignment_title}</p>
                     <p className="mt-1 text-sm text-black/50">{item.test_title}</p>
+                    <p className="mt-1 text-xs font-semibold capitalize text-black/38">{item.mode}{item.due_at ? ` / due ${new Date(item.due_at).toLocaleDateString()}` : ""}</p>
                   </div>
                   <span className={cn("rounded-full px-3 py-1 text-xs font-semibold", item.is_active ? "bg-[#edf7f3] text-[#276a5b]" : "bg-black/5 text-black/45")}>
                     {item.is_active ? "Open" : "Closed"}
                   </span>
                 </div>
-                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                <div className="mt-4 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
                   <MiniMetric label="Attempts" value={item.attempts} />
                   <MiniMetric label="Students" value={item.unique_students} />
                   <MiniMetric label="Avg" value={`${item.average_score}%`} />
+                  <MiniMetric label="Late" value={item.late_submissions} />
                 </div>
                 <button onClick={() => void copySessionLink(item.assignment_id)} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]">
                   <Link2 className="size-4" />
