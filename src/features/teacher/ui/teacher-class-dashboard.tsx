@@ -12,6 +12,9 @@ import {
   Plus,
   Search,
   Send,
+  ToggleLeft,
+  ToggleRight,
+  Trash2,
   Upload,
   UsersRound,
 } from "lucide-react";
@@ -43,29 +46,9 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
 
   const resultRows = results.results;
   const activeAssignments = assignments.filter((item) => item.is_active).length;
-  const studentCount = new Set(resultRows.map((item) => item.student_name)).size || classroom.student_count;
-  const studentProgress = useMemo(() => {
-    const map = new Map<string, { name: string; completed: number; totalScore: number; lastSubmitted: string | null }>();
-    for (const row of resultRows) {
-      const item = map.get(row.student_name) ?? { name: row.student_name, completed: 0, totalScore: 0, lastSubmitted: null };
-      item.completed += 1;
-      item.totalScore += row.score;
-      if (!item.lastSubmitted || (row.submitted_at && row.submitted_at > item.lastSubmitted)) item.lastSubmitted = row.submitted_at;
-      map.set(row.student_name, item);
-    }
-    return Array.from(map.values()).map((item) => ({
-      ...item,
-      average: item.completed ? Math.round(item.totalScore / item.completed) : 0,
-    }));
-  }, [resultRows]);
-  const sessionStats = useMemo(() => {
-    return assignments.map((assignment) => {
-      const rows = resultRows.filter((row) => row.assignment_id === assignment.id);
-      const uniqueStudents = new Set(rows.map((row) => row.student_name)).size;
-      const average = rows.length ? Math.round(rows.reduce((sum, row) => sum + row.score, 0) / rows.length) : 0;
-      return { assignment, attempts: rows.length, uniqueStudents, average };
-    });
-  }, [assignments, resultRows]);
+  const studentCount = results.students_total || results.students_submitted || classroom.student_count;
+  const studentProgress = results.student_progress ?? [];
+  const sessionStats = results.assignment_stats ?? [];
   const csvExport = useMemo(() => {
     return [
       "student,test,assignment,score,correct,total,submitted_at",
@@ -138,30 +121,66 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
     const text = await file.text();
     const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
     const rows = lines[0]?.toLowerCase().includes("test_slug") ? lines.slice(1) : lines;
-    const testBySlug = new Map(tests.map((test) => [test.slug, test]));
-    const created: ApiClassAssignment[] = [];
+    const rowsToImport = [];
     setBusy(true);
     setNotice("");
     try {
       for (const row of rows) {
         const [testSlug, title, activeValue] = row.split(",").map((value) => value.trim().replace(/^"|"$/g, ""));
-        const test = testBySlug.get(testSlug);
-        if (!test) continue;
-        const assignment = await questApi.createClassAssignment(classroom.slug, {
-          test: test.id,
-          title: title || test.title,
+        rowsToImport.push({
+          test_slug: testSlug,
+          title,
           is_active: activeValue ? activeValue.toLowerCase() !== "false" : true,
-          manage_code: getTeacherManageCode(classroom.slug),
         });
-        created.push(assignment);
       }
+      const imported = await questApi.bulkCreateClassAssignments(classroom.slug, {
+        manage_code: getTeacherManageCode(classroom.slug),
+        assignments: rowsToImport,
+      });
+      const created = imported.created;
       setAssignments((items) => [...created, ...items]);
-      setNotice(created.length ? `${created.length} ta assignment import qilindi.` : "Mos test_slug topilmadi.");
+      setNotice(created.length ? `${created.length} ta session import qilindi. ${imported.skipped.length} ta qator o'tkazib yuborildi.` : "Mos test_slug topilmadi.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Import failed.");
     } finally {
       setBusy(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function toggleAssignment(assignment: ApiClassAssignment) {
+    setBusy(true);
+    setNotice("");
+    try {
+      const updated = await questApi.updateClassAssignment(classroom.slug, assignment.id, {
+        is_active: !assignment.is_active,
+        manage_code: getTeacherManageCode(classroom.slug),
+      });
+      setAssignments((items) => items.map((item) => (item.id === updated.id ? updated : item)));
+      setNotice(updated.is_active ? "Session ochildi." : "Session yopildi.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Session update failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeAssignment(assignment: ApiClassAssignment) {
+    setBusy(true);
+    setNotice("");
+    try {
+      const deleted = await questApi.deleteClassAssignment(classroom.slug, assignment.id, getTeacherManageCode(classroom.slug));
+      if (deleted) {
+        setAssignments((items) => items.map((item) => (item.id === deleted.id ? deleted : item)));
+        setNotice("Sessionda natija borligi uchun yopildi.");
+      } else {
+        setAssignments((items) => items.filter((item) => item.id !== assignment.id));
+        setNotice("Session o'chirildi.");
+      }
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Session delete failed.");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -276,6 +295,14 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                       <Send className="size-4" />
                       Copy link
                     </button>
+                    <button onClick={() => void toggleAssignment(item)} disabled={busy} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6] disabled:opacity-50">
+                      {item.is_active ? <ToggleRight className="size-4 text-[#276a5b]" /> : <ToggleLeft className="size-4 text-black/40" />}
+                      {item.is_active ? "Close" : "Open"}
+                    </button>
+                    <button onClick={() => void removeAssignment(item)} disabled={busy} className="inline-flex items-center gap-2 rounded-2xl border border-red-100 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50">
+                      <Trash2 className="size-4" />
+                      Remove
+                    </button>
                     <Link href={`/class/${classroom.slug}/assignments/${item.id}`} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]">
                       <Eye className="size-4" />
                       Preview
@@ -339,27 +366,27 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
               <h2 className="mt-2 text-2xl font-semibold">Har bir sessiya bo&apos;yicha holat</h2>
             </div>
             <span className="rounded-2xl bg-[#fbfbf6] px-4 py-3 text-sm font-semibold text-black/52">
-              {studentProgress.length}/{classroom.student_count || studentProgress.length} students submitted
+              {results.students_submitted}/{results.students_total || results.students_submitted} students submitted
             </span>
           </div>
           <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {sessionStats.map(({ assignment, attempts, uniqueStudents, average }) => (
-              <article key={assignment.id} className="rounded-3xl border border-black/8 bg-white p-4">
+            {sessionStats.map((item) => (
+              <article key={item.assignment_id} className="rounded-3xl border border-black/8 bg-white p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-semibold">{assignment.title}</p>
-                    <p className="mt-1 text-sm text-black/50">{assignment.test_title}</p>
+                    <p className="font-semibold">{item.assignment_title}</p>
+                    <p className="mt-1 text-sm text-black/50">{item.test_title}</p>
                   </div>
-                  <span className={cn("rounded-full px-3 py-1 text-xs font-semibold", assignment.is_active ? "bg-[#edf7f3] text-[#276a5b]" : "bg-black/5 text-black/45")}>
-                    {assignment.is_active ? "Open" : "Closed"}
+                  <span className={cn("rounded-full px-3 py-1 text-xs font-semibold", item.is_active ? "bg-[#edf7f3] text-[#276a5b]" : "bg-black/5 text-black/45")}>
+                    {item.is_active ? "Open" : "Closed"}
                   </span>
                 </div>
                 <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                  <MiniMetric label="Attempts" value={attempts} />
-                  <MiniMetric label="Students" value={uniqueStudents} />
-                  <MiniMetric label="Avg" value={`${average}%`} />
+                  <MiniMetric label="Attempts" value={item.attempts} />
+                  <MiniMetric label="Students" value={item.unique_students} />
+                  <MiniMetric label="Avg" value={`${item.average_score}%`} />
                 </div>
-                <button onClick={() => void copySessionLink(assignment.id)} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]">
+                <button onClick={() => void copySessionLink(item.assignment_id)} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]">
                   <Link2 className="size-4" />
                   Copy session link
                 </button>
@@ -412,11 +439,11 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
               <span>Last submit</span>
             </div>
             {studentProgress.map((student) => (
-              <div key={student.name} className="grid gap-3 border-b border-black/6 px-4 py-4 md:grid-cols-[1fr_120px_120px_180px] md:items-center">
-                <p className="font-semibold">{student.name}</p>
+              <div key={student.student_code} className="grid gap-3 border-b border-black/6 px-4 py-4 md:grid-cols-[1fr_120px_120px_180px] md:items-center">
+                <p className="font-semibold">{student.student_name}</p>
                 <p className="text-sm text-black/58">{student.completed}/{assignments.length} tests</p>
-                <span className="w-fit rounded-xl bg-[#edf7f3] px-3 py-2 text-sm font-semibold text-[#276a5b]">{student.average}%</span>
-                <p className="text-sm text-black/48">{student.lastSubmitted ? new Date(student.lastSubmitted).toLocaleString() : "No submit"}</p>
+                <span className="w-fit rounded-xl bg-[#edf7f3] px-3 py-2 text-sm font-semibold text-[#276a5b]">{student.average_score}%</span>
+                <p className="text-sm text-black/48">{student.last_submitted_at ? new Date(student.last_submitted_at).toLocaleString() : "No submit"}</p>
               </div>
             ))}
             {!studentProgress.length ? <p className="p-6 text-sm text-black/56">Hali hech kim test topshirmagan.</p> : null}

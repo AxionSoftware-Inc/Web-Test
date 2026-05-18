@@ -174,6 +174,7 @@ export type ApiClassResults = {
   results: Array<{
     session_id: number;
     student_name: string;
+    student_code: string;
     test_title: string;
     test_slug: string;
     assignment_id: number | null;
@@ -184,6 +185,27 @@ export type ApiClassResults = {
     submitted_at: string | null;
   }>;
   weak_skills: Array<{ skill: string; correct: number; total: number; percent: number }>;
+  students_total: number;
+  students_submitted: number;
+  sessions_total: number;
+  sessions_open: number;
+  assignment_stats: Array<{
+    assignment_id: number;
+    assignment_title: string;
+    test_title: string;
+    test_slug: string;
+    is_active: boolean;
+    attempts: number;
+    unique_students: number;
+    average_score: number;
+  }>;
+  student_progress: Array<{
+    student_name: string;
+    student_code: string;
+    completed: number;
+    average_score: number;
+    last_submitted_at: string | null;
+  }>;
 };
 
 export type ApiExamPackItem = {
@@ -350,6 +372,20 @@ export const questApi = {
   classAssignments: (slug: string) => apiGet<ApiClassAssignment[]>(`/classes/${slug}/assignments/`),
   createClassAssignment: (slug: string, payload: { test: number; title: string; is_active: boolean; manage_code?: string }) =>
     apiPost<ApiClassAssignment>(`/classes/${slug}/assignments/`, payload),
+  bulkCreateClassAssignments: (
+    slug: string,
+    payload: {
+      manage_code?: string;
+      assignments: Array<{ test?: number; test_slug?: string; title?: string; is_active?: boolean; opens_at?: string | null; closes_at?: string | null }>;
+    },
+  ) => apiPost<{ created: ApiClassAssignment[]; skipped: Array<{ test_slug: string; reason: string }> }>(`/classes/${slug}/assignments/bulk/`, payload),
+  updateClassAssignment: (
+    slug: string,
+    assignmentId: number,
+    payload: Partial<Pick<ApiClassAssignment, "title" | "is_active" | "opens_at" | "closes_at">> & { manage_code?: string },
+  ) => apiPatch<ApiClassAssignment>(`/classes/${slug}/assignments/${assignmentId}/`, payload),
+  deleteClassAssignment: (slug: string, assignmentId: number, manageCode?: string) =>
+    apiDelete<ApiClassAssignment | undefined>(`/classes/${slug}/assignments/${assignmentId}/${manageCode ? `?manage_code=${encodeURIComponent(manageCode)}` : ""}`),
   joinClass: (slug: string, payload: { student_name: string; join_code?: string; student_code?: string }) =>
     apiPost<{ id: number; name: string; student_code: string }>(`/classes/${slug}/join/`, payload),
   startClassAssignment: (slug: string, assignmentId: number, payload: { student_name: string; join_code?: string; student_code?: string }) =>
