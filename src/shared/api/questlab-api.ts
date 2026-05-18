@@ -254,6 +254,27 @@ export type ApiExamPackResults = {
     total: number;
     submitted_at: string | null;
   }>;
+  students_submitted: number;
+  items_total: number;
+  required_total: number;
+  item_stats: Array<{
+    item_id: number;
+    item_title: string;
+    test_title: string;
+    test_slug: string;
+    is_required: boolean;
+    attempts: number;
+    unique_students: number;
+    average_score: number;
+  }>;
+  student_progress: Array<{
+    student_name: string;
+    student_code: string;
+    completed: number;
+    average_score: number;
+    last_submitted_at: string | null;
+  }>;
+  weak_skills: Array<{ skill: string; correct: number; total: number; percent: number }>;
 };
 
 export type ApiMistakesSummary = {
@@ -407,6 +428,20 @@ export const questApi = {
   examPackItems: (slug: string) => apiGet<ApiExamPackItem[]>(`/exam-packs/${slug}/items/`),
   createExamPackItem: (slug: string, payload: { test: number; title: string; order: number; is_required: boolean; manage_code?: string }) =>
     apiPost<ApiExamPackItem>(`/exam-packs/${slug}/items/`, payload),
+  bulkCreateExamPackItems: (
+    slug: string,
+    payload: {
+      manage_code?: string;
+      items: Array<{ test?: number; test_slug?: string; title?: string; order?: number; is_required?: boolean }>;
+    },
+  ) => apiPost<{ created: ApiExamPackItem[]; skipped: Array<{ test_slug: string; reason: string }> }>(`/exam-packs/${slug}/items/bulk/`, payload),
+  updateExamPackItem: (
+    slug: string,
+    itemId: number,
+    payload: Partial<Pick<ApiExamPackItem, "title" | "order" | "is_required">> & { manage_code?: string },
+  ) => apiPatch<ApiExamPackItem>(`/exam-packs/${slug}/items/${itemId}/`, payload),
+  deleteExamPackItem: (slug: string, itemId: number, manageCode?: string) =>
+    apiDelete<ApiExamPackItem | undefined>(`/exam-packs/${slug}/items/${itemId}/${manageCode ? `?manage_code=${encodeURIComponent(manageCode)}` : ""}`),
   startExamPackItem: (slug: string, itemId: number, payload: { student_name: string; access_code?: string; student_code?: string }) =>
     apiPost<ApiSession>(`/exam-packs/${slug}/items/${itemId}/start/`, payload),
   examPackResults: (slug: string, manageCode?: string) => apiGet<ApiExamPackResults>(`/exam-packs/${slug}/results/${manageCode ? `?manage_code=${encodeURIComponent(manageCode)}` : ""}`),

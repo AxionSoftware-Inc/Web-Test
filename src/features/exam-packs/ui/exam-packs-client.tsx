@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import type { ApiExamPack } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
@@ -22,6 +22,7 @@ export function ExamPacksClient({ initialPacks }: { initialPacks: ApiExamPack[] 
   const [priceLabel, setPriceLabel] = useState("99 000 so'm");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
 
   async function createPack() {
     setSaving(true);
@@ -47,6 +48,40 @@ export function ExamPacksClient({ initialPacks }: { initialPacks: ApiExamPack[] 
     }
   }
 
+  async function importPack(file: File) {
+    setSaving(true);
+    setError("");
+    try {
+      const parsed = JSON.parse(await file.text()) as {
+        pack?: Partial<ApiExamPack>;
+        items?: Array<{ test_slug?: string; title?: string; order?: number; is_required?: boolean }>;
+      };
+      const importedPack = parsed.pack ?? {};
+      const manageCode = getPackManageCode();
+      const pack = await questApi.createExamPack({
+        title: importedPack.title || title,
+        slug: `${slugify(importedPack.slug || importedPack.title || title)}-${Date.now().toString().slice(-4)}`,
+        description: importedPack.description || description,
+        exam_type: importedPack.exam_type || examType,
+        visibility: importedPack.visibility || visibility,
+        access_code: importedPack.visibility === "private" ? importedPack.access_code || accessCode : "",
+        manage_code: manageCode,
+        price_label: importedPack.price_label || priceLabel,
+        is_active: importedPack.is_active ?? true,
+      });
+      savePackManageCode(pack.slug, pack.manage_code);
+      if (parsed.items?.length) {
+        await questApi.bulkCreateExamPackItems(pack.slug, { manage_code: manageCode, items: parsed.items });
+      }
+      setPacks((items) => [pack, ...items]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Pack import failed.");
+    } finally {
+      setSaving(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
   return (
     <div className="grid gap-6 lg:grid-cols-[390px_1fr]">
       <PremiumPanel>
@@ -69,6 +104,10 @@ export function ExamPacksClient({ initialPacks }: { initialPacks: ApiExamPack[] 
           <button onClick={createPack} disabled={saving} className="rounded-2xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
             {saving ? "Creating..." : "Create exam pack"}
           </button>
+          <button onClick={() => fileRef.current?.click()} disabled={saving} className="rounded-2xl border border-black/10 bg-white px-5 py-3 text-sm font-semibold disabled:opacity-50">
+            Import pack JSON
+          </button>
+          <input ref={fileRef} type="file" accept=".json,application/json" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importPack(file); }} />
           {error ? <p className="rounded-2xl bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p> : null}
         </div>
       </PremiumPanel>
