@@ -11,6 +11,7 @@ import {
   Link2,
   Plus,
   Search,
+  Send,
   Upload,
   UsersRound,
 } from "lucide-react";
@@ -43,6 +44,28 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
   const resultRows = results.results;
   const activeAssignments = assignments.filter((item) => item.is_active).length;
   const studentCount = new Set(resultRows.map((item) => item.student_name)).size || classroom.student_count;
+  const studentProgress = useMemo(() => {
+    const map = new Map<string, { name: string; completed: number; totalScore: number; lastSubmitted: string | null }>();
+    for (const row of resultRows) {
+      const item = map.get(row.student_name) ?? { name: row.student_name, completed: 0, totalScore: 0, lastSubmitted: null };
+      item.completed += 1;
+      item.totalScore += row.score;
+      if (!item.lastSubmitted || (row.submitted_at && row.submitted_at > item.lastSubmitted)) item.lastSubmitted = row.submitted_at;
+      map.set(row.student_name, item);
+    }
+    return Array.from(map.values()).map((item) => ({
+      ...item,
+      average: item.completed ? Math.round(item.totalScore / item.completed) : 0,
+    }));
+  }, [resultRows]);
+  const sessionStats = useMemo(() => {
+    return assignments.map((assignment) => {
+      const rows = resultRows.filter((row) => row.assignment_id === assignment.id);
+      const uniqueStudents = new Set(rows.map((row) => row.student_name)).size;
+      const average = rows.length ? Math.round(rows.reduce((sum, row) => sum + row.score, 0) / rows.length) : 0;
+      return { assignment, attempts: rows.length, uniqueStudents, average };
+    });
+  }, [assignments, resultRows]);
   const csvExport = useMemo(() => {
     return [
       "student,test,assignment,score,correct,total,submitted_at",
@@ -71,9 +94,9 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
         manage_code: getTeacherManageCode(classroom.slug),
       });
       setAssignments((items) => [created, ...items]);
-      setNotice("Assignment qo'shildi.");
+      setNotice("Test session ochildi. Endi student linkini o'quvchilarga yuborishingiz mumkin.");
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Assignment qo'shishda xatolik.");
+      setNotice(error instanceof Error ? error.message : "Test session ochishda xatolik.");
     } finally {
       setBusy(false);
     }
@@ -82,6 +105,11 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
   async function copyStudentLink() {
     await navigator.clipboard.writeText(`${window.location.origin}/class/${classroom.slug}`);
     setNotice("Student link clipboardga olindi.");
+  }
+
+  async function copySessionLink(assignmentId: number) {
+    await navigator.clipboard.writeText(`${window.location.origin}/class/${classroom.slug}/assignments/${assignmentId}`);
+    setNotice("Session link clipboardga olindi.");
   }
 
   function downloadFile(name: string, content: string, type: string) {
@@ -172,8 +200,8 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
             <div className="border-t border-black/8 bg-[#151713] p-6 text-white lg:border-l lg:border-t-0">
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/45">Class health</p>
               <div className="mt-5 grid grid-cols-2 gap-3">
-                <Metric icon={Clipboard} label="Assignments" value={assignments.length} dark />
-                <Metric icon={CheckCircle2} label="Active" value={activeAssignments} dark />
+                <Metric icon={Clipboard} label="Sessions" value={assignments.length} dark />
+                <Metric icon={CheckCircle2} label="Open" value={activeAssignments} dark />
                 <Metric icon={UsersRound} label="Students" value={studentCount} dark />
                 <Metric icon={BarChart3} label="Average" value={`${results.average_score}%`} dark />
               </div>
@@ -185,12 +213,12 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
           <div className="rounded-[28px] border border-black/8 bg-white/82 p-5 shadow-[0_18px_55px_rgba(21,23,19,0.07)]">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <Eyebrow>Assignments</Eyebrow>
-                <h2 className="mt-2 text-2xl font-semibold">Testlarni boshqarish</h2>
+                <Eyebrow>Test sessions</Eyebrow>
+                <h2 className="mt-2 text-2xl font-semibold">Class ichida sessiya ochish</h2>
               </div>
               <Link href={`/teacher/classes/${classroom.slug}/assign`} className="inline-flex items-center gap-2 rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white">
                 <Plus className="size-4" />
-                Full assign page
+                Advanced setup
               </Link>
             </div>
 
@@ -210,7 +238,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                   ))}
                 </select>
               </FieldShell>
-              <FieldShell label="Assignment title">
+              <FieldShell label="Session title">
                 <input value={assignmentTitle} onChange={(event) => setAssignmentTitle(event.target.value)} className={premiumInputClass} />
               </FieldShell>
               <div className="flex gap-2">
@@ -223,14 +251,14 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                 </button>
                 <button onClick={addAssignment} disabled={busy || !selectedTestId} className="inline-flex items-center gap-2 rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">
                   <Plus className="size-4" />
-                  Add
+                  Open session
                 </button>
               </div>
             </div>
 
             <div className="mt-5 flex items-center gap-3 rounded-2xl border border-black/8 bg-white px-4 py-3">
               <Search className="size-4 text-black/35" />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Assignment qidirish..." className="w-full bg-transparent text-sm font-medium outline-none" />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Session qidirish..." className="w-full bg-transparent text-sm font-medium outline-none" />
             </div>
 
             <div className="mt-5 grid gap-3">
@@ -244,9 +272,13 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                     <p className="mt-2 text-sm text-black/52">{item.test_title} / {item.difficulty} / {item.question_count} questions</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    <button onClick={() => void copySessionLink(item.id)} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]">
+                      <Send className="size-4" />
+                      Copy link
+                    </button>
                     <Link href={`/class/${classroom.slug}/assignments/${item.id}`} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]">
                       <Eye className="size-4" />
-                      Student view
+                      Preview
                     </Link>
                     <Link href={`/tests/${item.test_slug}`} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]">
                       Open test
@@ -257,8 +289,8 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
               {!filteredAssignments.length ? (
                 <div className="rounded-3xl border border-dashed border-black/12 bg-white p-8 text-center">
                   <FileUp className="mx-auto size-9 text-black/28" />
-                  <h3 className="mt-3 text-lg font-semibold">Assignment yo&apos;q</h3>
-                  <p className="mt-2 text-sm text-black/52">Test tanlab Add bosing yoki CSV import qiling. Format: test_slug,title,is_active</p>
+                  <h3 className="mt-3 text-lg font-semibold">Session yo&apos;q</h3>
+                  <p className="mt-2 text-sm text-black/52">Test tanlab Open session bosing yoki CSV import qiling. Format: test_slug,title,is_active</p>
                 </div>
               ) : null}
             </div>
@@ -303,6 +335,42 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
         <section className="mt-6 rounded-[28px] border border-black/8 bg-white/82 p-5 shadow-[0_18px_55px_rgba(21,23,19,0.07)]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
+              <Eyebrow>Session analytics</Eyebrow>
+              <h2 className="mt-2 text-2xl font-semibold">Har bir sessiya bo&apos;yicha holat</h2>
+            </div>
+            <span className="rounded-2xl bg-[#fbfbf6] px-4 py-3 text-sm font-semibold text-black/52">
+              {studentProgress.length}/{classroom.student_count || studentProgress.length} students submitted
+            </span>
+          </div>
+          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {sessionStats.map(({ assignment, attempts, uniqueStudents, average }) => (
+              <article key={assignment.id} className="rounded-3xl border border-black/8 bg-white p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold">{assignment.title}</p>
+                    <p className="mt-1 text-sm text-black/50">{assignment.test_title}</p>
+                  </div>
+                  <span className={cn("rounded-full px-3 py-1 text-xs font-semibold", assignment.is_active ? "bg-[#edf7f3] text-[#276a5b]" : "bg-black/5 text-black/45")}>
+                    {assignment.is_active ? "Open" : "Closed"}
+                  </span>
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                  <MiniMetric label="Attempts" value={attempts} />
+                  <MiniMetric label="Students" value={uniqueStudents} />
+                  <MiniMetric label="Avg" value={`${average}%`} />
+                </div>
+                <button onClick={() => void copySessionLink(assignment.id)} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]">
+                  <Link2 className="size-4" />
+                  Copy session link
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-[28px] border border-black/8 bg-white/82 p-5 shadow-[0_18px_55px_rgba(21,23,19,0.07)]">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
               <Eyebrow>Results</Eyebrow>
               <h2 className="mt-2 text-2xl font-semibold">Student results</h2>
             </div>
@@ -332,6 +400,28 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
             {!resultRows.length ? <p className="p-6 text-sm text-black/56">Hali submitted natijalar yo&apos;q.</p> : null}
           </div>
         </section>
+
+        <section className="mt-6 rounded-[28px] border border-black/8 bg-white/82 p-5 shadow-[0_18px_55px_rgba(21,23,19,0.07)]">
+          <Eyebrow>Students</Eyebrow>
+          <h2 className="mt-2 text-2xl font-semibold">O&apos;quvchi kesimida progress</h2>
+          <div className="mt-5 overflow-hidden rounded-3xl border border-black/8 bg-white">
+            <div className="grid grid-cols-[1fr_120px_120px_180px] gap-3 border-b border-black/8 bg-[#fbfbf6] px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-black/40 max-md:hidden">
+              <span>Student</span>
+              <span>Completed</span>
+              <span>Average</span>
+              <span>Last submit</span>
+            </div>
+            {studentProgress.map((student) => (
+              <div key={student.name} className="grid gap-3 border-b border-black/6 px-4 py-4 md:grid-cols-[1fr_120px_120px_180px] md:items-center">
+                <p className="font-semibold">{student.name}</p>
+                <p className="text-sm text-black/58">{student.completed}/{assignments.length} tests</p>
+                <span className="w-fit rounded-xl bg-[#edf7f3] px-3 py-2 text-sm font-semibold text-[#276a5b]">{student.average}%</span>
+                <p className="text-sm text-black/48">{student.lastSubmitted ? new Date(student.lastSubmitted).toLocaleString() : "No submit"}</p>
+              </div>
+            ))}
+            {!studentProgress.length ? <p className="p-6 text-sm text-black/56">Hali hech kim test topshirmagan.</p> : null}
+          </div>
+        </section>
       </div>
     </main>
   );
@@ -352,6 +442,15 @@ function Metric({ icon: Icon, label, value, dark = false }: { icon: typeof Clipb
       <Icon className={cn("size-4", dark ? "text-[#8fd6bd]" : "text-[#276a5b]")} />
       <p className={cn("mt-3 text-xs font-semibold uppercase tracking-[0.14em]", dark ? "text-white/45" : "text-black/40")}>{label}</p>
       <p className="mt-2 text-2xl font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function MiniMetric({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-2xl bg-[#fbfbf6] p-3">
+      <p className="text-xs font-semibold text-black/38">{label}</p>
+      <p className="mt-1 text-lg font-semibold">{value}</p>
     </div>
   );
 }
