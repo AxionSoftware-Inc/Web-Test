@@ -36,3 +36,11 @@ export function getPackManageCode(slug?: string) {
 export function savePackManageCode(slug: string, code: string) {
   if (typeof window !== "undefined" && code) window.localStorage.setItem(`questlab-pack-manage:${slug}`, code);
 }
+
+export function getSchoolManageCode(slug?: string) {
+  return getLocalIdentity(slug ? `questlab-school-manage:${slug}` : "questlab-school-manage", "school");
+}
+
+export function saveSchoolManageCode(slug: string, code: string) {
+  if (typeof window !== "undefined" && code) window.localStorage.setItem(`questlab-school-manage:${slug}`, code);
+}

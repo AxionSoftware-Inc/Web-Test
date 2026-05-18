@@ -277,6 +277,63 @@ export type ApiExamPackResults = {
   weak_skills: Array<{ skill: string; correct: number; total: number; percent: number }>;
 };
 
+export type ApiSchoolTeacher = {
+  id: number;
+  school: number;
+  name: string;
+  email: string;
+  teacher_code: string;
+  classes: number[];
+  class_slugs: string[];
+  class_count: number;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type ApiSchool = {
+  id: number;
+  name: string;
+  slug: string;
+  owner_name: string;
+  manage_code: string;
+  visibility: "public" | "private";
+  description: string;
+  teacher_count: number;
+  teachers: ApiSchoolTeacher[];
+  created_at: string;
+};
+
+export type ApiSchoolAnalytics = {
+  school: ApiSchool;
+  teacher_count: number;
+  class_count: number;
+  students_submitted: number;
+  attempts: number;
+  average_score: number;
+  teachers: Array<{
+    teacher_id: number;
+    teacher_name: string;
+    email: string;
+    class_count: number;
+    attempts: number;
+    students_submitted: number;
+    average_score: number;
+    is_active: boolean;
+  }>;
+  classes: Array<{
+    class_id: number;
+    class_slug: string;
+    class_name: string;
+    teacher_id: number;
+    teacher_name: string;
+    attempts: number;
+    students_submitted: number;
+    sessions_total: number;
+    average_score: number;
+  }>;
+  weak_skills: Array<{ skill: string; correct: number; total: number; percent: number }>;
+};
+
 export type ApiMistakesSummary = {
   mistakes: Array<{
     session_id: number;
@@ -445,4 +502,21 @@ export const questApi = {
   startExamPackItem: (slug: string, itemId: number, payload: { student_name: string; access_code?: string; student_code?: string }) =>
     apiPost<ApiSession>(`/exam-packs/${slug}/items/${itemId}/start/`, payload),
   examPackResults: (slug: string, manageCode?: string) => apiGet<ApiExamPackResults>(`/exam-packs/${slug}/results/${manageCode ? `?manage_code=${encodeURIComponent(manageCode)}` : ""}`),
+  schools: () => apiGet<ApiSchool[]>("/schools/"),
+  school: (slug: string) => apiGet<ApiSchool>(`/schools/${slug}/`),
+  createSchool: (payload: {
+    name: string;
+    slug: string;
+    owner_name: string;
+    manage_code?: string;
+    visibility: "public" | "private";
+    description: string;
+  }) => apiPost<ApiSchool>("/schools/", payload),
+  schoolAnalytics: (slug: string) => apiGet<ApiSchoolAnalytics>(`/schools/${slug}/analytics/`),
+  createSchoolTeacher: (slug: string, payload: { name: string; email?: string; teacher_code?: string; classes?: number[]; manage_code?: string }) =>
+    apiPost<ApiSchoolTeacher>(`/schools/${slug}/teachers/`, payload),
+  updateSchoolTeacher: (slug: string, teacherId: number, payload: Partial<Pick<ApiSchoolTeacher, "name" | "email" | "teacher_code" | "is_active">> & { classes?: number[]; manage_code?: string }) =>
+    apiPatch<ApiSchoolTeacher>(`/schools/${slug}/teachers/${teacherId}/`, payload),
+  deleteSchoolTeacher: (slug: string, teacherId: number, manageCode?: string) =>
+    apiDelete<ApiSchoolTeacher>(`/schools/${slug}/teachers/${teacherId}/${manageCode ? `?manage_code=${encodeURIComponent(manageCode)}` : ""}`),
 };
