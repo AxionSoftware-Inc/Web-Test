@@ -30,7 +30,7 @@ export default async function Page({ params }: PageProps) {
       eyebrow={`Question ${index + 1} of ${questions.length}`}
       title={test.title}
       description="Answer state, flags and progress are saved through the DRF backend."
-      actions={<SecondaryLink href={`/test-session/${sessionId}/review`}>Review</SecondaryLink>}
+      actions={<SecondaryLink href={`/test-session/${sessionId}/submit`}>Finish test</SecondaryLink>}
     >
       <BackendSessionQuestionClient
         initialSession={session}

@@ -93,12 +93,13 @@ function AssignmentCard({
   const [starting, setStarting] = useState(false);
 
   async function start() {
+    const resolvedStudentName = studentName.trim() || "Student";
     setStarting(true);
     onError("");
     try {
       const studentCode = getStudentCode();
-      await questApi.joinClass(classroom.slug, { student_name: studentName, join_code: joinCode, student_code: studentCode });
-      const session = await questApi.startClassAssignment(classroom.slug, assignment.id, { student_name: studentName, join_code: joinCode, student_code: studentCode });
+      await questApi.joinClass(classroom.slug, { student_name: resolvedStudentName, join_code: joinCode, student_code: studentCode });
+      const session = await questApi.startClassAssignment(classroom.slug, assignment.id, { student_name: resolvedStudentName, join_code: joinCode, student_code: studentCode });
       router.push(`/test-session/${session.id}/question/1`);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Start failed.");
@@ -120,7 +121,7 @@ function AssignmentCard({
         <Mini label="Questions" value={assignment.question_count} />
         <Mini label="Status" value="Open" />
       </div>
-      <button onClick={start} disabled={starting || !studentName} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
+      <button onClick={start} disabled={starting} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
         {starting ? "Session ochilyapti..." : "Start test session"}
         <ArrowRight className="size-4" />
       </button>

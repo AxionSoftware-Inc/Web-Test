@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, Flag, Timer } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Flag, Timer } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -21,6 +21,8 @@ export function BackendSessionQuestionClient({
   estimatedMinutes: number;
 }) {
   const [session, setSession] = useState(initialSession);
+  const [optimisticAnswers, setOptimisticAnswers] = useState<Record<number, string>>({});
+  const [savingQuestionId, setSavingQuestionId] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const question = questions[questionIndex];
   const answerMap = useMemo(() => new Map(session.answers.map((answer) => [answer.question, answer])), [session.answers]);
@@ -41,12 +43,18 @@ export function BackendSessionQuestionClient({
   }, []);
 
   async function saveAnswer(value: string, isFlagged = current?.is_flagged ?? false) {
-    const next = await questApi.answer(String(session.id), {
-      question: question.id,
-      value,
-      is_flagged: isFlagged,
-    });
-    setSession(next);
+    setOptimisticAnswers((answers) => ({ ...answers, [question.id]: value }));
+    setSavingQuestionId(question.id);
+    try {
+      const next = await questApi.answer(String(session.id), {
+        question: question.id,
+        value,
+        is_flagged: isFlagged,
+      });
+      setSession(next);
+    } finally {
+      setSavingQuestionId(null);
+    }
   }
 
   async function toggleFlag() {
@@ -74,7 +82,7 @@ export function BackendSessionQuestionClient({
               <div className="h-2 rounded bg-[#276a5b]" style={{ width: `${progress}%` }} />
             </div>
           </div>
-          <Link href={`/test-session/${session.id}/submit`} className="rounded-md bg-[#151713] px-4 py-2 text-center text-sm font-semibold text-white">Submit</Link>
+          <Link href={`/test-session/${session.id}/submit`} className="rounded-md bg-[#151713] px-4 py-2 text-center text-sm font-semibold text-white">Finish test</Link>
         </div>
       </div>
 
@@ -118,11 +126,14 @@ export function BackendSessionQuestionClient({
           {question.options.length > 0 ? (
             <div className="mt-7 grid gap-3">
               {question.options.map((option, optionIndex) => {
-                const selected = current?.value === option;
+                const selected = (optimisticAnswers[question.id] ?? current?.value) === option;
                 return (
-                  <button key={option} type="button" onClick={() => saveAnswer(option)} className={cn("flex items-start gap-3 rounded-lg border px-4 py-4 text-left text-sm leading-6", selected ? "border-[#276a5b] bg-[#edf7f3]" : "border-black/10 bg-[#fbfbf8] hover:border-black/25")}>
-                    <span className={cn("grid size-7 shrink-0 place-items-center rounded-md border text-xs font-bold", selected ? "border-[#276a5b] bg-[#276a5b] text-white" : "border-black/10 bg-white text-black/55")}>{String.fromCharCode(65 + optionIndex)}</span>
+                  <button key={option} type="button" onClick={() => saveAnswer(option)} className={cn("flex items-start gap-3 rounded-lg border px-4 py-4 text-left text-sm leading-6 transition", selected ? "border-[#276a5b] bg-[#dff4eb] shadow-[0_0_0_3px_rgba(39,106,91,0.16)]" : "border-black/10 bg-[#fbfbf8] hover:border-black/25")}>
+                    <span className={cn("grid size-7 shrink-0 place-items-center rounded-md border text-xs font-bold", selected ? "border-[#276a5b] bg-[#276a5b] text-white" : "border-black/10 bg-white text-black/55")}>
+                      {selected ? <CheckCircle2 className="size-4" /> : String.fromCharCode(65 + optionIndex)}
+                    </span>
                     <LatexText text={option} />
+                    {selected ? <span className="ml-auto shrink-0 rounded-md bg-white/70 px-2 py-1 text-xs font-semibold text-[#276a5b]">{savingQuestionId === question.id ? "Saving..." : "Selected"}</span> : null}
                   </button>
                 );
               })}
@@ -133,15 +144,15 @@ export function BackendSessionQuestionClient({
 
           <div className="mt-8 flex flex-col justify-between gap-3 sm:flex-row">
             <Link href={`/test-session/${session.id}/question/${previous}`} className="inline-flex items-center justify-center gap-2 rounded-md border border-black/10 px-4 py-3 text-sm font-semibold"><ArrowLeft className="size-4" />Previous</Link>
-            <Link href={questionIndex + 1 === questions.length ? `/test-session/${session.id}/review` : `/test-session/${session.id}/question/${next}`} className="inline-flex items-center justify-center gap-2 rounded-md bg-[#151713] px-4 py-3 text-sm font-semibold text-white">
-              {questionIndex + 1 === questions.length ? "Review answers" : "Next question"}<ArrowRight className="size-4" />
+            <Link href={questionIndex + 1 === questions.length ? `/test-session/${session.id}/submit` : `/test-session/${session.id}/question/${next}`} className="inline-flex items-center justify-center gap-2 rounded-md bg-[#151713] px-4 py-3 text-sm font-semibold text-white">
+              {questionIndex + 1 === questions.length ? "Finish test" : "Next question"}<ArrowRight className="size-4" />
             </Link>
           </div>
         </article>
 
         <aside className="grid gap-4 lg:sticky lg:top-24 lg:self-start">
           <SummaryCard answers={session.answers} questions={questions} />
-          <Link href={`/test-session/${session.id}/review`} className="rounded-md bg-[#276a5b] px-4 py-3 text-center text-sm font-semibold text-white">Review answers</Link>
+          <Link href={`/test-session/${session.id}/submit`} className="rounded-md bg-[#276a5b] px-4 py-3 text-center text-sm font-semibold text-white">Finish test</Link>
         </aside>
       </div>
     </section>
