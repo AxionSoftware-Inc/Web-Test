@@ -22,10 +22,16 @@ export function TeacherClassesClient({ initialClasses }: { initialClasses: ApiTe
   const [description, setDescription] = useState("Algebra tests and progress tracking.");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   async function createClass() {
+    if (!name.trim() || !teacherName.trim()) {
+      setError("Class name va teacher name kerak.");
+      return;
+    }
     setSaving(true);
     setError("");
+    setNotice("");
     try {
       const classroom = await questApi.createClass({
         name,
@@ -38,6 +44,7 @@ export function TeacherClassesClient({ initialClasses }: { initialClasses: ApiTe
       });
       saveTeacherManageCode(classroom.slug, classroom.manage_code);
       setClasses((items) => [classroom, ...items]);
+      setNotice("Class yaratildi. Kartani bosib session yoki homework oching.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Class create failed.");
     } finally {
@@ -67,6 +74,7 @@ export function TeacherClassesClient({ initialClasses }: { initialClasses: ApiTe
             <Plus className="size-4" />
             {saving ? "Creating..." : "Create class"}
           </button>
+          {notice ? <p className="rounded-2xl bg-[#edf7f3] p-3 text-sm font-semibold text-[#276a5b]">{notice}</p> : null}
           {error ? <p className="rounded-2xl bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p> : null}
         </div>
       </PremiumPanel>
@@ -90,6 +98,7 @@ export function TeacherClassesClient({ initialClasses }: { initialClasses: ApiTe
               </div>
             </Link>
           ))}
+          {!classes.length ? <p className="rounded-3xl border border-dashed border-black/12 bg-white p-8 text-sm text-black/56 md:col-span-2">Hali class yo'q. Chap tomondan birinchi classni yarating.</p> : null}
         </div>
       </PremiumPanel>
     </div>

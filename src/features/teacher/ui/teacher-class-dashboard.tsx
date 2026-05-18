@@ -90,6 +90,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
         manage_code: getTeacherManageCode(classroom.slug),
       });
       setAssignments((items) => [created, ...items]);
+      setAssignmentTitle(tests.find((test) => test.id === selectedTestId)?.title ?? "");
       setNotice(mode === "homework" ? "Homework yaratildi. Linkni o'quvchilarga yuborishingiz mumkin." : "Test session ochildi. Endi student linkini o'quvchilarga yuborishingiz mumkin.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Test session ochishda xatolik.");
@@ -99,13 +100,22 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
   }
 
   async function copyStudentLink() {
-    await navigator.clipboard.writeText(`${window.location.origin}/class/${classroom.slug}`);
-    setNotice("Student link clipboardga olindi.");
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/class/${classroom.slug}`);
+      setNotice("Student link clipboardga olindi.");
+    } catch {
+      setNotice(`/class/${classroom.slug}`);
+    }
   }
 
   async function copySessionLink(assignmentId: number) {
-    await navigator.clipboard.writeText(`${window.location.origin}/class/${classroom.slug}/assignments/${assignmentId}`);
-    setNotice("Session link clipboardga olindi.");
+    const href = `${window.location.origin}/class/${classroom.slug}/assignments/${assignmentId}`;
+    try {
+      await navigator.clipboard.writeText(href);
+      setNotice("Session link clipboardga olindi.");
+    } catch {
+      setNotice(href);
+    }
   }
 
   function downloadFile(name: string, content: string, type: string) {
@@ -271,6 +281,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
             </div>
 
             <div className="mt-5 grid gap-4 rounded-3xl border border-black/8 bg-[#fbfbf6] p-4 lg:grid-cols-2 xl:grid-cols-[1fr_1fr_auto] xl:items-end">
+              {!tests.length ? <p className="rounded-2xl bg-white p-4 text-sm font-semibold text-black/55 lg:col-span-2 xl:col-span-3">Published test topilmadi. Avval CRUD orqali test yarating yoki draft testni published qiling.</p> : null}
               <FieldShell label="Backend test">
                 <select
                   value={selectedTestId}
@@ -280,6 +291,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                     setAssignmentTitle(tests.find((test) => test.id === id)?.title ?? assignmentTitle);
                   }}
                   className={premiumInputClass}
+                  disabled={!tests.length}
                 >
                   {tests.map((test) => (
                     <option key={test.id} value={test.id}>{test.title} / {test.difficulty}</option>
@@ -322,7 +334,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                 >
                   {isActive ? "Active" : "Paused"}
                 </button>
-                <button onClick={addAssignment} disabled={busy || !selectedTestId} className="inline-flex items-center gap-2 rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">
+                <button onClick={addAssignment} disabled={busy || !selectedTestId || !tests.length} className="inline-flex items-center gap-2 rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">
                   <Plus className="size-4" />
                   {mode === "homework" ? "Create homework" : "Open session"}
                 </button>

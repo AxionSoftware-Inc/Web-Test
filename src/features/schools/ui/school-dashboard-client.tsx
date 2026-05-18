@@ -2,7 +2,7 @@
 
 import { BarChart3, Building2, GraduationCap, Link2, Palette, Plus, Search, ShieldCheck, Trash2, UsersRound } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { ApiSchool, ApiSchoolAnalytics, ApiTeacherClass } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
@@ -36,13 +36,41 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
   const activeSchool = schools.find((school) => school.slug === activeSlug);
   const visibleTeachers = (analytics?.teachers ?? []).filter((teacher) => `${teacher.teacher_name} ${teacher.email}`.toLowerCase().includes(query.toLowerCase()));
 
+  useEffect(() => {
+    if (!activeSchool) return;
+    setPortalSubdomain(activeSchool.portal_subdomain || "");
+    setPortalDomain(activeSchool.portal_domain || "");
+    setLogoUrl(activeSchool.logo_url || "");
+    setPrimaryColor(activeSchool.primary_color || "#151713");
+    setAccentColor(activeSchool.accent_color || "#8fd6bd");
+    setStudentInviteCode(activeSchool.student_invite_code || "");
+    if (activeSchool.manage_code) saveSchoolManageCode(activeSchool.slug, activeSchool.manage_code);
+  }, [activeSchool]);
+
+  useEffect(() => {
+    if (!activeSlug) {
+      setAnalytics(null);
+      return;
+    }
+    void loadAnalytics(activeSlug);
+  }, [activeSlug]);
+
   async function loadAnalytics(slug = activeSlug) {
     if (!slug) return;
-    const data = await questApi.schoolAnalytics(slug);
-    setAnalytics(data);
+    try {
+      const data = await questApi.schoolAnalytics(slug);
+      setAnalytics(data);
+    } catch (error) {
+      setAnalytics(null);
+      setNotice(error instanceof Error ? error.message : "School analytics yuklanmadi.");
+    }
   }
 
   async function createSchool() {
+    if (!name.trim()) {
+      setNotice("School name kerak.");
+      return;
+    }
     setBusy(true);
     setNotice("");
     try {
@@ -73,7 +101,7 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
   }
 
   async function saveBranding() {
-    if (!activeSlug) return;
+    if (!activeSlug || !activeSchool) return;
     setBusy(true);
     setNotice("");
     try {
@@ -98,6 +126,10 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
 
   async function addTeacher() {
     if (!activeSlug) return;
+    if (!teacherName.trim()) {
+      setNotice("Teacher name kerak.");
+      return;
+    }
     setBusy(true);
     setNotice("");
     try {
@@ -120,10 +152,13 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
   async function deactivateTeacher(teacherId: number) {
     if (!activeSlug) return;
     setBusy(true);
+    setNotice("");
     try {
       await questApi.deleteSchoolTeacher(activeSlug, teacherId, getSchoolManageCode(activeSlug));
       await loadAnalytics(activeSlug);
       setNotice("Teacher inactive qilindi.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Teacher deactivate failed.");
     } finally {
       setBusy(false);
     }
@@ -148,7 +183,7 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
                 <option value="">School tanlang</option>
                 {schools.map((school) => <option key={school.id} value={school.slug}>{school.name}</option>)}
               </select>
-              <button onClick={() => void loadAnalytics()} disabled={!activeSlug} className="rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">Open dashboard</button>
+              <button onClick={() => void loadAnalytics()} disabled={!activeSlug || busy} className="rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">Refresh dashboard</button>
             </div>
           </div>
         </header>
@@ -194,6 +229,7 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
                   <select multiple value={selectedClasses.map(String)} onChange={(event) => setSelectedClasses(Array.from(event.target.selectedOptions).map((option) => Number(option.value)))} className="min-h-32 rounded-2xl border border-black/10 bg-white px-4 py-3 outline-none">
                     {classOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
                   </select>
+                  {!classOptions.length ? <p className="mt-2 text-xs font-semibold text-black/45">Avval teacher class yarating, keyin school teacherga bog'lanadi.</p> : null}
                 </FieldShell>
                 <button onClick={addTeacher} disabled={busy || !activeSlug} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"><Plus className="size-4" />Add teacher</button>
               </div>
@@ -270,6 +306,7 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
                     <span className="rounded-xl bg-[#edf7f3] px-3 py-2 text-center text-sm font-semibold text-[#276a5b]">{item.average_score}%</span>
                   </Link>
                 ))}
+                {analytics && !analytics.classes.length ? <p className="rounded-2xl bg-white p-5 text-sm text-black/56">Bu schoolga hali class bog'lanmagan.</p> : null}
               </div>
             </Panel>
           </div>
