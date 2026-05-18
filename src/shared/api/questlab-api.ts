@@ -249,6 +249,15 @@ export type ApiMistakesSummary = {
   weak_skills: Array<{ skill: string; correct: number; total: number; percent: number }>;
 };
 
+export type ApiRoleProfile = {
+  identity_code: string;
+  display_name: string;
+  active_role: "student" | "teacher" | "school" | "creator" | "admin";
+  available_roles: ApiRoleProfile["active_role"][];
+  created_at: string;
+  updated_at: string;
+};
+
 export async function apiGet<T>(path: string): Promise<T> {
   try {
     const res = await fetch(`${API_BASE_URL}${path}`, { cache: "no-store" });
@@ -322,6 +331,9 @@ export const questApi = {
   answer: (sessionId: string, payload: { question: number; value: string; is_flagged?: boolean }) =>
     apiPost<ApiSession>(`/sessions/${sessionId}/answer/`, payload),
   submit: (sessionId: string) => apiPost<ApiSession>(`/sessions/${sessionId}/submit/`),
+  roleProfile: (identityCode: string) => apiGet<ApiRoleProfile>(`/profile/role/?identity_code=${encodeURIComponent(identityCode)}`),
+  updateRoleProfile: (identityCode: string, payload: { active_role?: ApiRoleProfile["active_role"]; display_name?: string }) =>
+    apiPatch<ApiRoleProfile>("/profile/role/", { ...payload, identity_code: identityCode }),
   profileSummary: (studentCode?: string) => apiGet<ApiProfileSummary>(`/profile/summary/${studentCode ? `?student_code=${encodeURIComponent(studentCode)}` : ""}`),
   mistakesSummary: (studentCode?: string) => apiGet<ApiMistakesSummary>(`/mistakes/summary/${studentCode ? `?student_code=${encodeURIComponent(studentCode)}` : ""}`),
   classes: () => apiGet<ApiTeacherClass[]>("/classes/"),

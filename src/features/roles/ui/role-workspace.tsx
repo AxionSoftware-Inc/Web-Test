@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { questApi } from "@/shared/api/questlab-api";
+import { getStudentCode } from "@/shared/model/local-identity";
 import { getRole, roles, type UserRole } from "@/shared/model/roles";
 
 const linksByRole: Record<UserRole, Array<{ title: string; href: string; copy: string }>> = {
@@ -34,11 +36,27 @@ const linksByRole: Record<UserRole, Array<{ title: string; href: string; copy: s
 };
 
 export function RoleWorkspace() {
-  const [roleId] = useState<UserRole>(() => {
+  const [roleId, setRoleId] = useState<UserRole>(() => {
     if (typeof window === "undefined") return "student";
     const stored = window.localStorage.getItem("questlab-role") as UserRole | null;
     return stored && roles.some((role) => role.id === stored) ? stored : "student";
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    questApi.roleProfile(getStudentCode()).then((profile) => {
+      if (!cancelled) setRoleId(profile.active_role);
+    }).catch(() => undefined);
+    function onRoleChange(event: Event) {
+      const nextRole = (event as CustomEvent<UserRole>).detail;
+      if (roles.some((role) => role.id === nextRole)) setRoleId(nextRole);
+    }
+    window.addEventListener("questlab-role-change", onRoleChange);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("questlab-role-change", onRoleChange);
+    };
+  }, []);
 
   const role = getRole(roleId);
   const Icon = role.icon;
