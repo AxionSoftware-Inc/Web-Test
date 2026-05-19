@@ -98,7 +98,7 @@ export function TeacherClassesClient({ initialClasses }: { initialClasses: ApiTe
               </div>
             </Link>
           ))}
-          {!classes.length ? <p className="rounded-3xl border border-dashed border-black/12 bg-white p-8 text-sm text-black/56 md:col-span-2">Hali class yo'q. Chap tomondan birinchi classni yarating.</p> : null}
+          {!classes.length ? <p className="rounded-3xl border border-dashed border-black/12 bg-white p-8 text-sm text-black/56 md:col-span-2">Hali class yo&apos;q. Chap tomondan birinchi classni yarating.</p> : null}
         </div>
       </PremiumPanel>
     </div>

@@ -2,7 +2,7 @@
 
 import { BarChart3, Building2, GraduationCap, Link2, Palette, Plus, Search, ShieldCheck, Trash2, UsersRound } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import type { ApiSchool, ApiSchoolAnalytics, ApiTeacherClass } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
@@ -17,15 +17,16 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
   const [schools, setSchools] = useState(initialSchools);
   const [activeSlug, setActiveSlug] = useState(initialSchools[0]?.slug ?? "");
   const [analytics, setAnalytics] = useState<ApiSchoolAnalytics | null>(null);
-  const [name, setName] = useState("Dirac Learning Center");
-  const [owner, setOwner] = useState("School owner");
-  const [description, setDescription] = useState("Teacherlar va classlar umumiy nazorati.");
-  const [portalSubdomain, setPortalSubdomain] = useState("dirac-school");
-  const [portalDomain, setPortalDomain] = useState("");
-  const [logoUrl, setLogoUrl] = useState("");
-  const [primaryColor, setPrimaryColor] = useState("#151713");
-  const [accentColor, setAccentColor] = useState("#8fd6bd");
-  const [studentInviteCode, setStudentInviteCode] = useState("STUDENT-DEMO");
+  const firstSchool = initialSchools[0];
+  const [name, setName] = useState(firstSchool?.name ?? "Dirac Learning Center");
+  const [owner, setOwner] = useState(firstSchool?.owner_name ?? "School owner");
+  const [description, setDescription] = useState(firstSchool?.description ?? "Teacherlar va classlar umumiy nazorati.");
+  const [portalSubdomain, setPortalSubdomain] = useState(firstSchool?.portal_subdomain ?? "dirac-school");
+  const [portalDomain, setPortalDomain] = useState(firstSchool?.portal_domain ?? "");
+  const [logoUrl, setLogoUrl] = useState(firstSchool?.logo_url ?? "");
+  const [primaryColor, setPrimaryColor] = useState(firstSchool?.primary_color ?? "#151713");
+  const [accentColor, setAccentColor] = useState(firstSchool?.accent_color ?? "#8fd6bd");
+  const [studentInviteCode, setStudentInviteCode] = useState(firstSchool?.student_invite_code ?? "STUDENT-DEMO");
   const [teacherName, setTeacherName] = useState("Math teacher");
   const [teacherEmail, setTeacherEmail] = useState("");
   const [selectedClasses, setSelectedClasses] = useState<number[]>([]);
@@ -36,24 +37,22 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
   const activeSchool = schools.find((school) => school.slug === activeSlug);
   const visibleTeachers = (analytics?.teachers ?? []).filter((teacher) => `${teacher.teacher_name} ${teacher.email}`.toLowerCase().includes(query.toLowerCase()));
 
-  useEffect(() => {
-    if (!activeSchool) return;
-    setPortalSubdomain(activeSchool.portal_subdomain || "");
-    setPortalDomain(activeSchool.portal_domain || "");
-    setLogoUrl(activeSchool.logo_url || "");
-    setPrimaryColor(activeSchool.primary_color || "#151713");
-    setAccentColor(activeSchool.accent_color || "#8fd6bd");
-    setStudentInviteCode(activeSchool.student_invite_code || "");
-    if (activeSchool.manage_code) saveSchoolManageCode(activeSchool.slug, activeSchool.manage_code);
-  }, [activeSchool]);
-
-  useEffect(() => {
-    if (!activeSlug) {
-      setAnalytics(null);
-      return;
-    }
-    void loadAnalytics(activeSlug);
-  }, [activeSlug]);
+  function selectSchool(slug: string) {
+    const school = schools.find((item) => item.slug === slug);
+    setActiveSlug(slug);
+    setAnalytics(null);
+    if (!school) return;
+    setName(school.name);
+    setOwner(school.owner_name);
+    setDescription(school.description);
+    setPortalSubdomain(school.portal_subdomain || "");
+    setPortalDomain(school.portal_domain || "");
+    setLogoUrl(school.logo_url || "");
+    setPrimaryColor(school.primary_color || "#151713");
+    setAccentColor(school.accent_color || "#8fd6bd");
+    setStudentInviteCode(school.student_invite_code || "");
+    if (school.manage_code) saveSchoolManageCode(school.slug, school.manage_code);
+  }
 
   async function loadAnalytics(slug = activeSlug) {
     if (!slug) return;
@@ -179,7 +178,7 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
               </p>
             </div>
             <div className="grid gap-2">
-              <select value={activeSlug} onChange={(event) => setActiveSlug(event.target.value)} className={premiumInputClass}>
+              <select value={activeSlug} onChange={(event) => selectSchool(event.target.value)} className={premiumInputClass}>
                 <option value="">School tanlang</option>
                 {schools.map((school) => <option key={school.id} value={school.slug}>{school.name}</option>)}
               </select>
@@ -229,7 +228,7 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
                   <select multiple value={selectedClasses.map(String)} onChange={(event) => setSelectedClasses(Array.from(event.target.selectedOptions).map((option) => Number(option.value)))} className="min-h-32 rounded-2xl border border-black/10 bg-white px-4 py-3 outline-none">
                     {classOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
                   </select>
-                  {!classOptions.length ? <p className="mt-2 text-xs font-semibold text-black/45">Avval teacher class yarating, keyin school teacherga bog'lanadi.</p> : null}
+                  {!classOptions.length ? <p className="mt-2 text-xs font-semibold text-black/45">Avval teacher class yarating, keyin school teacherga bog&apos;lanadi.</p> : null}
                 </FieldShell>
                 <button onClick={addTeacher} disabled={busy || !activeSlug} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"><Plus className="size-4" />Add teacher</button>
               </div>
@@ -306,7 +305,7 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
                     <span className="rounded-xl bg-[#edf7f3] px-3 py-2 text-center text-sm font-semibold text-[#276a5b]">{item.average_score}%</span>
                   </Link>
                 ))}
-                {analytics && !analytics.classes.length ? <p className="rounded-2xl bg-white p-5 text-sm text-black/56">Bu schoolga hali class bog'lanmagan.</p> : null}
+                {analytics && !analytics.classes.length ? <p className="rounded-2xl bg-white p-5 text-sm text-black/56">Bu schoolga hali class bog&apos;lanmagan.</p> : null}
               </div>
             </Panel>
           </div>
