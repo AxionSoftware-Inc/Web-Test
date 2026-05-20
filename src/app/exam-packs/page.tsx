@@ -11,11 +11,14 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  const packs = await questApi.examPacks();
+  const [packs, tests] = await Promise.all([
+    questApi.examPacks(),
+    questApi.tests(),
+  ]);
 
   return (
     <PremiumPage>
-      <ExamPacksClient initialPacks={packs} />
+      <ExamPacksClient initialPacks={packs} tests={tests} />
     </PremiumPage>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, GraduationCap, Home, LayoutDashboard, PackageCheck, Plus, ShieldCheck, TriangleAlert, UserRound } from "lucide-react";
+import { Building2, GraduationCap, Home, LayoutDashboard, PackageCheck, Plus, TriangleAlert, UserRound, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -13,31 +13,31 @@ import { RoleSwitcher } from "@/shared/ui/role-switcher";
 
 const roleNavItems: Record<UserRole, Array<{ label: string; href: string; icon: typeof Home }>> = {
   student: [
-    { label: "Home", href: "/", icon: Home },
+    { label: "Home", href: "/dashboard", icon: Home },
     { label: "Tests", href: "/tests", icon: LayoutDashboard },
     { label: "Mistakes", href: "/mistakes", icon: TriangleAlert },
     { label: "Profile", href: "/profile", icon: UserRound },
   ],
   teacher: [
+    { label: "Home", href: "/teacher/dashboard", icon: Home },
     { label: "Classes", href: "/teacher/classes", icon: GraduationCap },
-    { label: "Public", href: "/classes", icon: GraduationCap },
+    { label: "Students", href: "/teacher/students", icon: UsersRound },
     { label: "Add Test", href: "/crud", icon: Plus },
     { label: "Packs", href: "/exam-packs", icon: PackageCheck },
   ],
   school: [
-    { label: "Pricing", href: "/schools", icon: Building2 },
-    { label: "Dashboard", href: "/schools/dashboard", icon: LayoutDashboard },
-    { label: "Classes", href: "/classes", icon: GraduationCap },
-    { label: "Reports", href: "/schools/dashboard", icon: ShieldCheck },
+    { label: "Home", href: "/schools/dashboard", icon: Home },
+    { label: "Classes", href: "/schools/classes", icon: GraduationCap },
+    { label: "Teachers", href: "/schools/teachers", icon: UsersRound },
   ],
   creator: [
-    { label: "Add Test", href: "/crud", icon: Plus },
+    { label: "Home", href: "/crud", icon: Home },
     { label: "Questions", href: "/questions", icon: LayoutDashboard },
     { label: "Packs", href: "/exam-packs", icon: PackageCheck },
     { label: "Tests", href: "/tests", icon: LayoutDashboard },
   ],
   admin: [
-    { label: "Admin", href: "/admin", icon: ShieldCheck },
+    { label: "Home", href: "/admin", icon: Home },
     { label: "Schools", href: "/schools/dashboard", icon: Building2 },
     { label: "Classes", href: "/teacher/classes", icon: GraduationCap },
     { label: "Tests", href: "/tests", icon: LayoutDashboard },
@@ -51,6 +51,11 @@ export function AppHeader() {
     const stored = window.localStorage.getItem("questlab-role") as UserRole | null;
     return stored && roles.some((role) => role.id === stored) ? stored : "student";
   });
+  const [canSwitchRoles, setCanSwitchRoles] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("questlab-is-admin") === "1";
+  });
+  const isAuthed = typeof window !== "undefined" && Boolean(window.localStorage.getItem("questlab-auth-identity"));
 
   useEffect(() => {
     let cancelled = false;
@@ -59,6 +64,9 @@ export function AppHeader() {
         if (cancelled) return;
         setRoleId(profile.active_role);
         window.localStorage.setItem("questlab-role", profile.active_role);
+        const isAdmin = profile.available_roles.includes("admin");
+        setCanSwitchRoles(isAdmin);
+        window.localStorage.setItem("questlab-is-admin", isAdmin ? "1" : "0");
       })
       .catch(() => undefined);
     function onRoleChange(event: Event) {
@@ -73,6 +81,13 @@ export function AppHeader() {
   }, []);
 
   const navItems = roleNavItems[roleId] ?? roleNavItems.student;
+  const normalizedPathname = pathname.replace(/\/$/, "") || "/";
+
+  function isActive(href: string) {
+    const normalizedHref = href.replace(/\/$/, "") || "/";
+    if (normalizedHref === "/") return normalizedPathname === "/";
+    return normalizedPathname === normalizedHref || normalizedPathname.startsWith(`${normalizedHref}/`);
+  }
 
   return (
     <header className="sticky top-0 z-40 border-b border-black/8 bg-[#fbfbf6]/96 supports-[backdrop-filter]:bg-[#fbfbf6]/88 supports-[backdrop-filter]:backdrop-blur-md">
@@ -90,7 +105,7 @@ export function AppHeader() {
         <nav className="flex max-w-[66vw] items-center gap-1 overflow-x-auto rounded-2xl border border-black/8 bg-white p-1 shadow-[0_10px_30px_rgba(0,0,0,0.04)] md:max-w-none">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+            const active = isActive(item.href);
 
             return (
               <Link
@@ -109,17 +124,21 @@ export function AppHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <RoleSwitcher />
-          <Link
-            href="/profile"
-            aria-label="Open profile"
-            className={cn(
-              "grid size-10 place-items-center rounded-xl border border-black/8 bg-white text-black/65 shadow-[0_10px_30px_rgba(0,0,0,0.04)]",
-              pathname.startsWith("/profile") && "bg-[#151713] text-white",
-            )}
-          >
-            <UserRound className="size-5" />
-          </Link>
+          {canSwitchRoles ? <RoleSwitcher /> : null}
+          {isAuthed ? (
+            <Link
+              href="/profile"
+              aria-label="Open profile"
+              className={cn(
+                "grid size-10 place-items-center rounded-xl border border-black/8 bg-white text-black/65 shadow-[0_10px_30px_rgba(0,0,0,0.04)]",
+                pathname.startsWith("/profile") && "bg-[#151713] text-white",
+              )}
+            >
+              <UserRound className="size-5" />
+            </Link>
+          ) : (
+            <Link href="/auth/login" className="rounded-xl bg-[#151713] px-4 py-2 text-sm font-semibold text-white">Login</Link>
+          )}
         </div>
       </div>
     </header>

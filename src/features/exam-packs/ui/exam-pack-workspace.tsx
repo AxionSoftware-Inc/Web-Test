@@ -17,7 +17,9 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
   const [title, setTitle] = useState(tests[0]?.title ?? "");
   const [order, setOrder] = useState(initialItems.length + 1);
   const [required, setRequired] = useState(true);
+  const [selectedTestIds, setSelectedTestIds] = useState<number[]>([]);
   const [query, setQuery] = useState("");
+  const [testQuery, setTestQuery] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -29,6 +31,8 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
     ...rows.map((item) => [item.student_name, item.test_title, item.item_title, item.score, item.correct, item.total, item.submitted_at ?? ""].map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")),
   ].join("\n"), [rows]);
   const filtered = items.filter((item) => `${item.title} ${item.test_title} ${item.difficulty}`.toLowerCase().includes(query.toLowerCase()));
+  const alreadyAdded = new Set(items.map((item) => item.test));
+  const filteredTests = tests.filter((test) => `${test.title} ${test.slug} ${test.difficulty} ${test.topic_slug}`.toLowerCase().includes(testQuery.toLowerCase()));
 
   function download(name: string, content: string, type: string) {
     const blob = new Blob([content], { type });
@@ -56,6 +60,27 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
       setNotice("Pack item qo'shildi.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Item create failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function addSelectedTests() {
+    if (!selectedTestIds.length) return;
+    setBusy(true);
+    setNotice("");
+    try {
+      const body = selectedTestIds.map((id, index) => {
+        const test = tests.find((item) => item.id === id);
+        return { test: id, title: test?.title, order: items.length + index + 1, is_required: required };
+      });
+      const imported = await questApi.bulkCreateExamPackItems(pack.slug, { manage_code: getPackManageCode(pack.slug), items: body });
+      setItems((current) => [...current, ...imported.created].sort((a, b) => a.order - b.order));
+      setSelectedTestIds([]);
+      setOrder((value) => value + imported.created.length);
+      setNotice(`${imported.created.length} ta test packga qo'shildi. ${imported.skipped.length} ta test o'tkazib yuborildi.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Bulk add failed.");
     } finally {
       setBusy(false);
     }
@@ -98,9 +123,9 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
     const text = await file.text();
     const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
     const body = (lines[0]?.toLowerCase().includes("test_slug") ? lines.slice(1) : lines).map((line, index) => {
-      const [testSlug, itemTitle, orderValue, requiredValue] = line.split(",").map((value) => value.trim().replace(/^"|"$/g, ""));
+      const [testSlug, itemTitle, orderValue, requiredValue] = line.split(/[,;\t]/).map((value) => value.trim().replace(/^"|"$/g, ""));
       return { test_slug: testSlug, title: itemTitle, order: Number(orderValue || index + 1), is_required: requiredValue ? requiredValue.toLowerCase() !== "false" : true };
-    });
+    }).filter((item) => item.test_slug);
     setBusy(true);
     setNotice("");
     try {
@@ -176,6 +201,37 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
               <FieldShell label="Order"><input type="number" value={order} onChange={(event) => setOrder(Number(event.target.value))} className={premiumInputClass} /></FieldShell>
               <button type="button" onClick={() => setRequired((value) => !value)} className={cn("rounded-2xl border px-4 py-3 text-sm font-semibold", required ? "border-[#8fd6bd] bg-[#edf7f3] text-[#276a5b]" : "border-black/10 bg-white text-black/55")}>{required ? "Required" : "Optional"}</button>
               <button onClick={addItem} disabled={busy || !testId} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"><Plus className="size-4" />Add</button>
+            </div>
+            <div className="mt-5 rounded-3xl border border-black/8 bg-white p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="font-semibold">Bulk select from tests</p>
+                  <p className="mt-1 text-sm text-black/50">Bir nechta backend testni tanlab, bitta bosishda packga qo&apos;shing.</p>
+                </div>
+                <button onClick={addSelectedTests} disabled={busy || !selectedTestIds.length} className="rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">Add {selectedTestIds.length || ""}</button>
+              </div>
+              <div className="mt-4 flex items-center gap-3 rounded-2xl border border-black/8 bg-[#fbfbf6] px-4 py-3">
+                <Search className="size-4 text-black/35" />
+                <input value={testQuery} onChange={(event) => setTestQuery(event.target.value)} placeholder="Test title, slug, topic..." className="w-full bg-transparent text-sm outline-none" />
+              </div>
+              <div className="mt-4 grid max-h-72 gap-2 overflow-y-auto pr-1 md:grid-cols-2">
+                {filteredTests.map((test) => {
+                  const selected = selectedTestIds.includes(test.id);
+                  const disabled = alreadyAdded.has(test.id);
+                  return (
+                    <button
+                      key={test.id}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => setSelectedTestIds((current) => selected ? current.filter((id) => id !== test.id) : [...current, test.id])}
+                      className={cn("rounded-2xl border p-4 text-left text-sm disabled:cursor-not-allowed disabled:opacity-45", selected ? "border-[#276a5b] bg-[#edf7f3]" : "border-black/8 bg-[#fbfbf6] hover:bg-white")}
+                    >
+                      <p className="font-semibold">{test.title}</p>
+                      <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-black/35">{disabled ? "Already in pack" : test.slug}</p>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="mt-5 flex items-center gap-3 rounded-2xl border border-black/8 bg-white px-4 py-3"><Search className="size-4 text-black/35" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Pack item qidirish..." className="w-full bg-transparent text-sm font-medium outline-none" /></div>
             <div className="mt-5 grid gap-3">

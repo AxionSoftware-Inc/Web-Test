@@ -92,6 +92,38 @@ export type CreateTestPayload = {
   questions: CreateTestQuestionPayload[];
 };
 
+export type StrictPackImportSource = {
+  version: "1.0";
+  pack: {
+    title: string;
+    subject: string;
+    branch: string;
+    level: string;
+    language: string;
+  };
+  tests: Array<{
+    title: string;
+    topic: string;
+    difficulty: "easy" | "medium" | "hard" | "beginner" | "intermediate" | "advanced";
+    time_limit_minutes: number;
+    questions: Array<{
+      type: ApiQuestion["type"];
+      body: string;
+      options?: Array<{ id: string; text: string }>;
+      answer: { correct: string } | string;
+      explanation?: string;
+      skills: string[];
+      difficulty?: "easy" | "medium" | "hard" | "beginner" | "intermediate" | "advanced";
+    }>;
+  }>;
+};
+
+export type ApiPackImportResult = {
+  pack: ApiExamPack;
+  tests: ApiTest[];
+  skipped: Array<{ title: string; reason: string }>;
+};
+
 export type ApiAnswer = {
   id: number;
   session: number;
@@ -170,6 +202,14 @@ export type ApiClassAssignment = {
   allow_late_submission: boolean;
   grading_policy: "best" | "latest" | "first";
   is_active: boolean;
+  created_at: string;
+};
+
+export type ApiClassStudent = {
+  id: number;
+  classroom: number;
+  name: string;
+  student_code: string;
   created_at: string;
 };
 
@@ -374,10 +414,19 @@ export type ApiMistakesSummary = {
 export type ApiRoleProfile = {
   identity_code: string;
   display_name: string;
+  phone: string;
   active_role: "student" | "teacher" | "school" | "creator" | "admin";
   available_roles: ApiRoleProfile["active_role"][];
   created_at: string;
   updated_at: string;
+};
+
+export type ApiGoogleAuth = {
+  profile: ApiRoleProfile;
+  is_new: boolean;
+  email: string;
+  name: string;
+  picture: string;
 };
 
 export async function apiGet<T>(path: string): Promise<T> {
@@ -437,6 +486,8 @@ export const questApi = {
   question: (id: string) => apiGet<ApiQuestion>(`/questions/${id}/`),
   test: (testSlug: string) => apiGet<ApiTest>(`/tests/${testSlug}/`),
   createTest: (payload: CreateTestPayload) => apiPost<ApiTest>("/tests/", payload),
+  importTestPack: (payload: { source: StrictPackImportSource; creator_name?: string; creator_code?: string; manage_key?: string; pack_manage_code?: string }) =>
+    apiPost<ApiPackImportResult>("/tests/import-pack/", payload),
   updateTest: (
     testSlug: string,
     payload: Partial<Pick<ApiTest, "title" | "slug" | "subject" | "topic" | "difficulty" | "estimated_minutes" | "passing_score" | "status">> & {
@@ -454,8 +505,10 @@ export const questApi = {
     apiPost<ApiSession>(`/sessions/${sessionId}/answer/`, payload),
   submit: (sessionId: string) => apiPost<ApiSession>(`/sessions/${sessionId}/submit/`),
   roleProfile: (identityCode: string) => apiGet<ApiRoleProfile>(`/profile/role/?identity_code=${encodeURIComponent(identityCode)}`),
-  updateRoleProfile: (identityCode: string, payload: { active_role?: ApiRoleProfile["active_role"]; display_name?: string }) =>
+  updateRoleProfile: (identityCode: string, payload: { active_role?: ApiRoleProfile["active_role"]; display_name?: string; phone?: string }) =>
     apiPatch<ApiRoleProfile>("/profile/role/", { ...payload, identity_code: identityCode }),
+  googleAuth: (payload: { credential: string; active_role?: ApiRoleProfile["active_role"] }) =>
+    apiPost<ApiGoogleAuth>("/auth/google/", payload),
   profileSummary: (studentCode?: string) => apiGet<ApiProfileSummary>(`/profile/summary/${studentCode ? `?student_code=${encodeURIComponent(studentCode)}` : ""}`),
   mistakesSummary: (studentCode?: string) => apiGet<ApiMistakesSummary>(`/mistakes/summary/${studentCode ? `?student_code=${encodeURIComponent(studentCode)}` : ""}`),
   classes: () => apiGet<ApiTeacherClass[]>("/classes/"),
@@ -515,6 +568,9 @@ export const questApi = {
   ) => apiPatch<ApiClassAssignment>(`/classes/${slug}/assignments/${assignmentId}/`, payload),
   deleteClassAssignment: (slug: string, assignmentId: number, manageCode?: string) =>
     apiDelete<ApiClassAssignment | undefined>(`/classes/${slug}/assignments/${assignmentId}/${manageCode ? `?manage_code=${encodeURIComponent(manageCode)}` : ""}`),
+  classStudents: (slug: string) => apiGet<ApiClassStudent[]>(`/classes/${slug}/students/`),
+  createClassStudent: (slug: string, payload: { name: string; student_code: string; manage_code?: string }) =>
+    apiPost<ApiClassStudent>(`/classes/${slug}/students/`, payload),
   joinClass: (slug: string, payload: { student_name: string; join_code?: string; student_code?: string }) =>
     apiPost<{ id: number; name: string; student_code: string }>(`/classes/${slug}/join/`, payload),
   startClassAssignment: (slug: string, assignmentId: number, payload: { student_name: string; join_code?: string; student_code?: string }) =>
@@ -574,6 +630,20 @@ export const questApi = {
     payload: Partial<Pick<ApiSchool, "name" | "owner_name" | "visibility" | "description" | "portal_subdomain" | "portal_domain" | "logo_url" | "primary_color" | "accent_color" | "student_invite_code">> & { manage_code?: string },
   ) => apiPatch<ApiSchool>(`/schools/${slug}/`, payload),
   schoolAnalytics: (slug: string) => apiGet<ApiSchoolAnalytics>(`/schools/${slug}/analytics/`),
+  schoolClasses: (slug: string) => apiGet<ApiTeacherClass[]>(`/schools/${slug}/classes/`),
+  createSchoolClass: (slug: string, payload: {
+    name: string;
+    slug: string;
+    teacher_name: string;
+    visibility: "public" | "private";
+    join_code: string;
+    manage_code?: string;
+    description: string;
+    teacher_id?: number;
+  }) => apiPost<ApiTeacherClass>(`/schools/${slug}/classes/`, payload),
+  schoolStudents: (slug: string) => apiGet<ApiClassStudent[]>(`/schools/${slug}/students/`),
+  schoolTeachers: (slug: string) => apiGet<ApiSchoolTeacher[]>(`/schools/${slug}/teachers/`),
+  schoolTeacher: (slug: string, teacherId: number) => apiGet<ApiSchoolTeacher>(`/schools/${slug}/teachers/${teacherId}/`),
   createSchoolTeacher: (slug: string, payload: { name: string; email?: string; teacher_code?: string; classes?: number[]; manage_code?: string }) =>
     apiPost<ApiSchoolTeacher>(`/schools/${slug}/teachers/`, payload),
   updateSchoolTeacher: (slug: string, teacherId: number, payload: Partial<Pick<ApiSchoolTeacher, "name" | "email" | "teacher_code" | "is_active">> & { classes?: number[]; manage_code?: string }) =>

@@ -11,7 +11,7 @@ export const roles = [
   {
     id: "teacher",
     label: "Teacher",
-    home: "/teacher/classes",
+    home: "/teacher/dashboard",
     description: "Class ochish, test biriktirish, natijalarni ko‘rish.",
     icon: GraduationCap,
   },

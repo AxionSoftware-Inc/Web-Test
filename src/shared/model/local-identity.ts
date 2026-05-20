@@ -14,7 +14,20 @@ export function getLocalIdentity(key: string, prefix: string) {
 }
 
 export function getStudentCode() {
+  if (typeof window !== "undefined") {
+    const authIdentity = window.localStorage.getItem("questlab-auth-identity");
+    if (authIdentity) return authIdentity;
+  }
   return getLocalIdentity("questlab-student-code", "student");
+}
+
+export function saveAuthenticatedIdentity(identityCode: string) {
+  if (typeof window !== "undefined" && identityCode) window.localStorage.setItem("questlab-auth-identity", identityCode);
+}
+
+export function getAuthenticatedIdentity() {
+  if (typeof window === "undefined") return "";
+  return window.localStorage.getItem("questlab-auth-identity") ?? "";
 }
 
 export function getCreatorCode() {

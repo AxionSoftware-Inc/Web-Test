@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppHeader } from "@/shared/ui/app-header";
+import { AuthGate } from "@/shared/ui/auth-gate";
 import "./globals.css";
 import "katex/dist/katex.min.css";
 
@@ -29,7 +30,7 @@ export default function RootLayout({
     <html lang="uz" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <AppHeader />
-        {children}
+        <AuthGate>{children}</AuthGate>
       </body>
     </html>
   );
