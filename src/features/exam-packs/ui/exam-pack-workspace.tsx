@@ -12,7 +12,14 @@ import { Eyebrow, FieldShell, premiumInputClass } from "@/shared/ui/premium-shel
 import { StudentPackClient } from "./student-pack-client";
 
 export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack: ApiExamPack; initialItems: ApiExamPackItem[]; results: ApiExamPackResults; tests: ApiTest[] }) {
+  const [currentPack, setCurrentPack] = useState(pack);
   const [items, setItems] = useState(initialItems);
+  const [packTitle, setPackTitle] = useState(pack.title);
+  const [packDescription, setPackDescription] = useState(pack.description);
+  const [packExamType, setPackExamType] = useState(pack.exam_type);
+  const [packVisibility, setPackVisibility] = useState<ApiExamPack["visibility"]>(pack.visibility);
+  const [packAccessCode, setPackAccessCode] = useState(pack.access_code);
+  const [packPriceLabel, setPackPriceLabel] = useState(pack.price_label);
   const [testId, setTestId] = useState(tests[0]?.id ?? 0);
   const [title, setTitle] = useState(tests[0]?.title ?? "");
   const [order, setOrder] = useState(initialItems.length + 1);
@@ -45,8 +52,30 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
   }
 
   async function copyPackLink() {
-    await navigator.clipboard.writeText(`${window.location.origin}/exam-packs/${pack.slug}`);
+    await navigator.clipboard.writeText(`${window.location.origin}/exam-packs/${currentPack.slug}`);
     setNotice("Pack link clipboardga olindi.");
+  }
+
+  async function savePack() {
+    setBusy(true);
+    setNotice("");
+    try {
+      const updated = await questApi.updateExamPack(currentPack.slug, {
+        title: packTitle,
+        description: packDescription,
+        exam_type: packExamType,
+        visibility: packVisibility,
+        access_code: packVisibility === "private" ? packAccessCode : "",
+        price_label: packPriceLabel,
+        manage_code: getPackManageCode(currentPack.slug),
+      });
+      setCurrentPack(updated);
+      setNotice("Pack ma'lumotlari saqlandi.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Pack update failed.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function addItem() {
@@ -164,12 +193,12 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
           <div className="grid lg:grid-cols-[1fr_360px]">
             <div className="p-6 sm:p-8">
               <Eyebrow>Exam pack workspace</Eyebrow>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">{pack.title}</h1>
-              <p className="mt-4 max-w-2xl text-sm leading-6 text-black/58">{pack.description}</p>
+              <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">{currentPack.title}</h1>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-black/58">{currentPack.description}</p>
               <div className="mt-6 flex flex-wrap gap-2">
                 <button onClick={copyPackLink} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]"><Link2 className="size-4" />Copy link</button>
-                <button onClick={() => download(`${pack.slug}-results.csv`, csv, "text/csv;charset=utf-8")} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]"><Download className="size-4" />Export CSV</button>
-                <button onClick={() => download(`${pack.slug}.json`, JSON.stringify({ pack, items, results }, null, 2), "application/json;charset=utf-8")} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]"><FileJson className="size-4" />Export JSON</button>
+                <button onClick={() => download(`${currentPack.slug}-results.csv`, csv, "text/csv;charset=utf-8")} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]"><Download className="size-4" />Export CSV</button>
+                <button onClick={() => download(`${currentPack.slug}.json`, JSON.stringify({ pack: currentPack, items, results }, null, 2), "application/json;charset=utf-8")} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]"><FileJson className="size-4" />Export JSON</button>
                 <button onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]"><Upload className="size-4" />Import CSV</button>
                 <button onClick={() => jsonRef.current?.click()} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]"><FileJson className="size-4" />Import JSON</button>
                 <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importCsv(file); }} />
@@ -249,13 +278,30 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
             </div>
           </div>
           <aside className="grid gap-6">
+            <section className="rounded-[28px] border border-black/8 bg-white/82 p-5">
+              <h2 className="text-2xl font-semibold">Edit pack</h2>
+              <div className="mt-4 grid gap-4">
+                <FieldShell label="Title"><input value={packTitle} onChange={(event) => setPackTitle(event.target.value)} className={premiumInputClass} /></FieldShell>
+                <FieldShell label="Exam type"><input value={packExamType} onChange={(event) => setPackExamType(event.target.value)} className={premiumInputClass} /></FieldShell>
+                <FieldShell label="Price label"><input value={packPriceLabel} onChange={(event) => setPackPriceLabel(event.target.value)} className={premiumInputClass} /></FieldShell>
+                <FieldShell label="Visibility">
+                  <select value={packVisibility} onChange={(event) => setPackVisibility(event.target.value as ApiExamPack["visibility"])} className={premiumInputClass}>
+                    <option value="public">Public</option>
+                    <option value="private">Private</option>
+                  </select>
+                </FieldShell>
+                {packVisibility === "private" ? <FieldShell label="Access code"><input value={packAccessCode} onChange={(event) => setPackAccessCode(event.target.value)} className={premiumInputClass} /></FieldShell> : null}
+                <FieldShell label="Description"><textarea value={packDescription} onChange={(event) => setPackDescription(event.target.value)} rows={4} className={premiumInputClass} /></FieldShell>
+                <button onClick={savePack} disabled={busy} className="rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">Save changes</button>
+              </div>
+            </section>
             <section className="rounded-[28px] border border-black/8 bg-[#151713] p-5 text-white"><h2 className="text-2xl font-semibold">Weak skills</h2><div className="mt-4 grid gap-3">{results.weak_skills?.length ? results.weak_skills.map((skill) => <div key={skill.skill} className="rounded-2xl bg-white/8 p-4"><div className="flex justify-between text-sm font-semibold"><span>{skill.skill}</span><span>{skill.percent}%</span></div><div className="mt-3 h-2 rounded-full bg-white/12"><div className="h-2 rounded-full bg-[#8fd6bd]" style={{ width: `${skill.percent}%` }} /></div></div>) : <p className="text-sm text-white/65">Natijalar bo&apos;lsa weak skilllar chiqadi.</p>}</div></section>
             <section className="rounded-[28px] border border-black/8 bg-white/82 p-5"><h2 className="text-2xl font-semibold">Pack qo&apos;shish usullari</h2><div className="mt-4 grid gap-3 text-sm text-black/58"><p><strong>Manual:</strong> bitta-bitta backend test tanlab qo&apos;shish.</p><p><strong>CSV:</strong> katta packni jadvaldan import qilish.</p><p><strong>JSON:</strong> boshqa akkaunt yoki backupdan pack itemlarni qayta yuklash.</p></div></section>
             <section className="rounded-[28px] border border-black/8 bg-white/82 p-5"><h2 className="text-2xl font-semibold">Import format</h2><div className="mt-4 rounded-2xl bg-[#fbfbf6] p-4 font-mono text-xs leading-6 text-black/62">test_slug,title,order,is_required<br />algebra-basics,Algebra warmup,1,true</div><button onClick={() => download("pack-template.csv", "test_slug,title,order,is_required\nalgebra-basics,Algebra warmup,1,true\n", "text/csv;charset=utf-8")} className="mt-4 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold">Download template</button></section>
           </aside>
         </section>
 
-        <StudentPackClient pack={pack} items={items} />
+        <StudentPackClient pack={currentPack} items={items} />
 
         <section className="mt-6 rounded-[28px] border border-black/8 bg-white/82 p-5">
           <Eyebrow>Pack results</Eyebrow><h2 className="mt-2 text-2xl font-semibold">Student progress</h2>

@@ -18,14 +18,14 @@ export const roles = [
   {
     id: "school",
     label: "School",
-    home: "/schools/dashboard",
+    home: "/schools/classes",
     description: "Learning center analytics va school flow.",
     icon: Building2,
   },
   {
     id: "creator",
     label: "Creator",
-    home: "/crud",
+    home: "/creator",
     description: "Test, savol va exam pack yaratish.",
     icon: BookOpenCheck,
   },

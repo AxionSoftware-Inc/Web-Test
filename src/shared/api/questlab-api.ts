@@ -414,6 +414,7 @@ export type ApiMistakesSummary = {
 export type ApiRoleProfile = {
   identity_code: string;
   display_name: string;
+  email: string;
   phone: string;
   active_role: "student" | "teacher" | "school" | "creator" | "admin";
   available_roles: ApiRoleProfile["active_role"][];
@@ -505,6 +506,7 @@ export const questApi = {
     apiPost<ApiSession>(`/sessions/${sessionId}/answer/`, payload),
   submit: (sessionId: string) => apiPost<ApiSession>(`/sessions/${sessionId}/submit/`),
   roleProfile: (identityCode: string) => apiGet<ApiRoleProfile>(`/profile/role/?identity_code=${encodeURIComponent(identityCode)}`),
+  searchRoleProfiles: (query: string, role?: ApiRoleProfile["active_role"]) => apiGet<ApiRoleProfile[]>(`/profile/role-search/?q=${encodeURIComponent(query)}${role ? `&role=${role}` : ""}`),
   updateRoleProfile: (identityCode: string, payload: { active_role?: ApiRoleProfile["active_role"]; display_name?: string; phone?: string }) =>
     apiPatch<ApiRoleProfile>("/profile/role/", { ...payload, identity_code: identityCode }),
   googleAuth: (payload: { credential: string; active_role?: ApiRoleProfile["active_role"] }) =>
@@ -589,6 +591,10 @@ export const questApi = {
     price_label: string;
     is_active: boolean;
   }) => apiPost<ApiExamPack>("/exam-packs/", payload),
+  updateExamPack: (
+    slug: string,
+    payload: Partial<Pick<ApiExamPack, "title" | "description" | "exam_type" | "visibility" | "access_code" | "price_label" | "is_active">> & { manage_code?: string },
+  ) => apiPatch<ApiExamPack>(`/exam-packs/${slug}/`, payload),
   examPackItems: (slug: string) => apiGet<ApiExamPackItem[]>(`/exam-packs/${slug}/items/`),
   createExamPackItem: (slug: string, payload: { test: number; title: string; order: number; is_required: boolean; manage_code?: string }) =>
     apiPost<ApiExamPackItem>(`/exam-packs/${slug}/items/`, payload),

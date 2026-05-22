@@ -26,15 +26,14 @@ const roleNavItems: Record<UserRole, Array<{ label: string; href: string; icon: 
     { label: "Packs", href: "/exam-packs", icon: PackageCheck },
   ],
   school: [
-    { label: "Home", href: "/schools/dashboard", icon: Home },
     { label: "Classes", href: "/schools/classes", icon: GraduationCap },
-    { label: "Teachers", href: "/schools/teachers", icon: UsersRound },
   ],
   creator: [
-    { label: "Home", href: "/crud", icon: Home },
-    { label: "Questions", href: "/questions", icon: LayoutDashboard },
+    { label: "Home", href: "/creator", icon: Home },
+    { label: "Add", href: "/crud", icon: Plus },
     { label: "Packs", href: "/exam-packs", icon: PackageCheck },
     { label: "Tests", href: "/tests", icon: LayoutDashboard },
+    { label: "Questions", href: "/questions", icon: LayoutDashboard },
   ],
   admin: [
     { label: "Home", href: "/admin", icon: Home },
@@ -123,7 +122,7 @@ export function AppHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          {canSwitchRoles && roleId === "admin" ? <RoleSwitcher /> : null}
+          {canSwitchRoles ? <RoleSwitcher /> : null}
           {isAuthed ? (
             <Link
               href="/profile"

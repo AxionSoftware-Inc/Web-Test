@@ -15,10 +15,25 @@ export default async function Page() {
     questApi.examPacks(),
     questApi.tests(),
   ]);
+  const packResults = await Promise.all(
+    packs.map((pack) => questApi.examPackResults(pack.slug).catch(() => null)),
+  );
+  const usageBySlug = Object.fromEntries(
+    packResults
+      .filter((result): result is NonNullable<typeof result> => Boolean(result))
+      .map((result) => [
+        result.pack.slug,
+        {
+          attempts: result.attempts,
+          students_submitted: result.students_submitted,
+          average_score: result.average_score,
+        },
+      ]),
+  );
 
   return (
     <PremiumPage>
-      <ExamPacksClient initialPacks={packs} tests={tests} />
+      <ExamPacksClient initialPacks={packs} tests={tests} usageBySlug={usageBySlug} />
     </PremiumPage>
   );
 }

@@ -55,7 +55,9 @@ function download(name: string, content: string, type: string) {
   URL.revokeObjectURL(href);
 }
 
-export function ExamPacksClient({ initialPacks, tests }: { initialPacks: ApiExamPack[]; tests: ApiTest[] }) {
+type PackUsage = { attempts: number; students_submitted: number; average_score: number };
+
+export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { initialPacks: ApiExamPack[]; tests: ApiTest[]; usageBySlug?: Record<string, PackUsage> }) {
   const [packs, setPacks] = useState(initialPacks);
   const [title, setTitle] = useState("DTM Algebra Pack");
   const [examType, setExamType] = useState("DTM Math");
@@ -187,6 +189,20 @@ export function ExamPacksClient({ initialPacks, tests }: { initialPacks: ApiExam
       <PremiumPanel>
         <Eyebrow>Exam pack</Eyebrow>
         <h1 className="mt-2 text-3xl font-semibold">Create pack</h1>
+        <div className="mt-5 grid gap-3">
+          <button onClick={() => fileRef.current?.click()} disabled={saving} className="flex items-start gap-3 rounded-3xl border border-black/8 bg-white p-4 text-left hover:bg-[#fbfbf8] disabled:opacity-50">
+            <Upload className="mt-1 size-5 text-[#276a5b]" />
+            <span><span className="block font-semibold">Import JSON file</span><span className="mt-1 block text-sm text-black/52">Pack metadata va items JSONdan olinadi.</span></span>
+          </button>
+          <button onClick={() => csvRef.current?.click()} disabled={saving} className="flex items-start gap-3 rounded-3xl border border-black/8 bg-white p-4 text-left hover:bg-[#fbfbf8] disabled:opacity-50">
+            <FileSpreadsheet className="mt-1 size-5 text-[#276a5b]" />
+            <span><span className="block font-semibold">Import CSV items</span><span className="mt-1 block text-sm text-black/52">test_slug,title,order,is_required formatida.</span></span>
+          </button>
+          <Link href="/crud" className="flex items-start gap-3 rounded-3xl border border-black/8 bg-white p-4 text-left hover:bg-[#fbfbf8]">
+            <Plus className="mt-1 size-5 text-[#276a5b]" />
+            <span><span className="block font-semibold">Manual add test</span><span className="mt-1 block text-sm text-black/52">Bitta testni qo‘lda savollar bilan kiritish.</span></span>
+          </Link>
+        </div>
         <div className="mt-6 grid gap-4">
           <Input label="Pack title" value={title} onChange={setTitle} />
           <Input label="Exam type" value={examType} onChange={setExamType} />
@@ -204,16 +220,6 @@ export function ExamPacksClient({ initialPacks, tests }: { initialPacks: ApiExam
           <button onClick={createPack} disabled={saving} className="rounded-2xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
             {saving ? "Creating..." : itemsToCreate.length ? `Create with ${itemsToCreate.length} tests` : "Create empty pack"}
           </button>
-          <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => fileRef.current?.click()} disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold disabled:opacity-50">
-              <FileJson className="size-4" />
-              Pack JSON
-            </button>
-            <button onClick={() => csvRef.current?.click()} disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold disabled:opacity-50">
-              <Upload className="size-4" />
-              CSV items
-            </button>
-          </div>
           <input ref={fileRef} type="file" accept=".json,application/json" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importPack(file); }} />
           <input ref={csvRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importCsv(file); }} />
           {error ? <p className="rounded-2xl bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p> : null}
@@ -297,25 +303,48 @@ export function ExamPacksClient({ initialPacks, tests }: { initialPacks: ApiExam
         ) : null}
 
         <div className="mt-8 flex items-center justify-between gap-3">
-          <h2 className="text-2xl font-semibold">Exam packs</h2>
+          <div>
+            <h2 className="text-2xl font-semibold">My packs</h2>
+            <p className="mt-1 text-sm text-black/50">O&apos;zingiz yaratgan packlar, ishlatilishi va ichiga kirib edit qilish.</p>
+          </div>
           <span className="rounded-full bg-[#edf7f3] px-3 py-1 text-xs font-semibold text-[#276a5b]">{packs.length} packs</span>
         </div>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
-          {packs.map((pack) => (
-            <Link key={pack.id} href={`/exam-packs/${pack.slug}`} className="rounded-3xl border border-black/8 bg-white p-5 hover:bg-[#fbfbf8]">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-lg font-semibold">{pack.title}</p>
-                  <p className="mt-1 text-sm text-black/52">{pack.exam_type}</p>
+          {packs.map((pack) => {
+            const usage = usageBySlug[pack.slug];
+            return (
+              <Link key={pack.id} href={`/exam-packs/${pack.slug}`} className="rounded-3xl border border-black/8 bg-white p-5 hover:bg-[#fbfbf8]">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-lg font-semibold">{pack.title}</p>
+                    <p className="mt-1 text-sm text-black/52">{pack.exam_type}</p>
+                  </div>
+                  <span className="rounded-xl bg-[#edf7f3] px-3 py-2 text-xs font-semibold text-[#276a5b]">{pack.price_label || "Free"}</span>
                 </div>
-                <span className="rounded-xl bg-[#edf7f3] px-3 py-2 text-xs font-semibold text-[#276a5b]">{pack.price_label || "Free"}</span>
-              </div>
-              <p className="mt-4 text-sm leading-6 text-black/58">{pack.description}</p>
-              <p className="mt-5 text-xs font-semibold text-black/45">{pack.item_count} tests / {pack.visibility}</p>
-            </Link>
-          ))}
+                <p className="mt-4 text-sm leading-6 text-black/58">{pack.description}</p>
+                <div className="mt-5 grid grid-cols-3 gap-2 text-center">
+                  <MiniStat label="Tests" value={pack.item_count} />
+                  <MiniStat label="Students" value={usage?.students_submitted ?? 0} />
+                  <MiniStat label="Attempts" value={usage?.attempts ?? 0} />
+                </div>
+                <div className="mt-4 flex items-center justify-between text-xs font-semibold text-black/45">
+                  <span>{pack.visibility}</span>
+                  <span>Avg {usage?.average_score ?? 0}%</span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </PremiumPanel>
+    </div>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-2xl bg-[#fbfbf6] px-3 py-3">
+      <p className="text-base font-semibold">{value}</p>
+      <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-black/35">{label}</p>
     </div>
   );
 }
