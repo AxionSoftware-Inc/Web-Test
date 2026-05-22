@@ -31,18 +31,12 @@ export function RoleSwitcher() {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    questApi.roleProfile(getStudentCode())
-      .then((profile) => {
-        if (cancelled) return;
-        setRoleId(profile.active_role);
-        window.localStorage.setItem(storageKey, profile.active_role);
-        window.dispatchEvent(new CustomEvent("questlab-role-change", { detail: profile.active_role }));
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
+    function onRoleChange(event: Event) {
+      const nextRole = (event as CustomEvent<UserRole>).detail;
+      if (roles.some((role) => role.id === nextRole)) setRoleId(nextRole);
+    }
+    window.addEventListener("questlab-role-change", onRoleChange);
+    return () => window.removeEventListener("questlab-role-change", onRoleChange);
   }, []);
 
   async function selectRole(nextRole: UserRole) {

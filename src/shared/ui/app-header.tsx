@@ -52,8 +52,7 @@ export function AppHeader() {
     return stored && roles.some((role) => role.id === stored) ? stored : "student";
   });
   const [canSwitchRoles, setCanSwitchRoles] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem("questlab-is-admin") === "1";
+    return false;
   });
   const isAuthed = typeof window !== "undefined" && Boolean(window.localStorage.getItem("questlab-auth-identity"));
 
@@ -124,7 +123,7 @@ export function AppHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          {canSwitchRoles ? <RoleSwitcher /> : null}
+          {canSwitchRoles && roleId === "admin" ? <RoleSwitcher /> : null}
           {isAuthed ? (
             <Link
               href="/profile"
