@@ -1,5 +1,6 @@
 import { Award, BookOpen, CheckCircle2, Target, TrendingUp } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import type { ApiProfileSummary, ApiRoleProfile } from "@/shared/api/questlab-api";
@@ -174,12 +175,13 @@ function ProfileMetric({ icon, label, value }: { icon: React.ReactNode; label: s
 }
 
 function AccountSettings({ profile, onProfileChange }: { profile: ApiRoleProfile | null; onProfileChange: (profile: ApiRoleProfile) => void }) {
+  const router = useRouter();
   const [displayName, setDisplayName] = useState(profile?.display_name ?? "");
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [role, setRole] = useState<UserRole>((profile?.active_role as UserRole | undefined) ?? "student");
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
-  const canChangeRole = profile?.available_roles.includes("admin") ?? false;
+  const canUseAdmin = profile?.available_roles.includes("admin") ?? false;
 
   async function saveProfile() {
     if (!profile) return;
@@ -189,10 +191,11 @@ function AccountSettings({ profile, onProfileChange }: { profile: ApiRoleProfile
       const updated = await questApi.updateRoleProfile(profile.identity_code, {
         display_name: displayName,
         phone,
-        active_role: canChangeRole ? role : profile.active_role,
+        active_role: role,
       });
       onProfileChange(updated);
       window.localStorage.setItem("questlab-role", updated.active_role);
+      window.localStorage.setItem("questlab-is-admin", updated.available_roles.includes("admin") ? "1" : "0");
       window.dispatchEvent(new CustomEvent("questlab-role-change", { detail: updated.active_role }));
       setNotice("Profile saqlandi.");
     } catch (error) {
@@ -202,15 +205,27 @@ function AccountSettings({ profile, onProfileChange }: { profile: ApiRoleProfile
     }
   }
 
+  function logout() {
+    window.localStorage.removeItem("questlab-auth-identity");
+    window.localStorage.removeItem("questlab-auth-email");
+    window.localStorage.removeItem("questlab-is-admin");
+    window.localStorage.removeItem("questlab-role");
+    window.dispatchEvent(new CustomEvent("questlab-role-change", { detail: "student" }));
+    router.push("/");
+  }
+
   return (
     <section className="pt-6">
       <GlassCard className="p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold">Account settings</h2>
-            <p className="mt-1 text-sm text-black/50">Username, phone va aktiv rolni o&apos;zgartiring.</p>
+            <p className="mt-1 text-sm text-black/50">Username, phone va aktiv rolni boshqaring.</p>
           </div>
-          {profile ? <span className="rounded-2xl bg-white/62 px-4 py-3 text-xs font-semibold text-black/45">{profile.identity_code}</span> : null}
+          <div className="flex flex-wrap gap-2">
+            {profile ? <span className="rounded-2xl bg-white/62 px-4 py-3 text-xs font-semibold text-black/45">{profile.identity_code}</span> : null}
+            <button onClick={logout} className="rounded-2xl border border-red-100 bg-white px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50">Log out</button>
+          </div>
         </div>
         <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_1fr_260px_auto] lg:items-end">
           <label className="grid gap-2 text-sm font-semibold text-black/60">
@@ -221,24 +236,22 @@ function AccountSettings({ profile, onProfileChange }: { profile: ApiRoleProfile
             Phone
             <input value={phone} onChange={(event) => setPhone(event.target.value)} className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-[#151713] outline-none" placeholder="+998..." />
           </label>
-          {canChangeRole ? (
-            <label className="grid gap-2 text-sm font-semibold text-black/60">
-              Role
-              <select value={role} onChange={(event) => setRole(event.target.value as UserRole)} className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-[#151713] outline-none">
-                {roles.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-              </select>
-            </label>
-          ) : (
-            <div className="grid gap-2 text-sm font-semibold text-black/60">
-              Role
-              <div className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-[#151713] capitalize">{profile?.active_role ?? "student"}</div>
-            </div>
-          )}
+          <label className="grid gap-2 text-sm font-semibold text-black/60">
+            Role
+            <select value={role} onChange={(event) => setRole(event.target.value as UserRole)} className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-[#151713] outline-none">
+              {roles.filter((item) => canUseAdmin || item.id !== "admin").map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+            </select>
+          </label>
           <button onClick={saveProfile} disabled={saving || !profile} className="rounded-2xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
             {saving ? "Saving..." : "Save"}
           </button>
         </div>
         {notice ? <p className="mt-4 rounded-2xl bg-white/62 px-4 py-3 text-sm font-semibold text-black/62">{notice}</p> : null}
+        <div className="mt-4 grid gap-3 rounded-2xl bg-white/52 p-4 text-sm leading-6 text-black/56 md:grid-cols-3">
+          <p><span className="font-semibold text-black/75">Student:</span> testlar, mistakes va shaxsiy progress.</p>
+          <p><span className="font-semibold text-black/75">Teacher:</span> classlar, students va assignments.</p>
+          <p><span className="font-semibold text-black/75">School:</span> teachers, classes va analytics.</p>
+        </div>
       </GlassCard>
     </section>
   );
