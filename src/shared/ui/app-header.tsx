@@ -17,7 +17,6 @@ const roleNavItems: Record<UserRole, Array<{ label: string; href: string; icon: 
     { label: "Tests", href: "/student/tests", icon: LayoutDashboard },
     { label: "Mistakes", href: "/student/mistakes", icon: TriangleAlert },
     { label: "Progress", href: "/student/progress", icon: BarChart3 },
-    { label: "Profile", href: "/profile", icon: UserRound },
   ],
   teacher: [
     { label: "Home", href: "/teacher/home", icon: Home },

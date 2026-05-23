@@ -32,11 +32,23 @@ function testSkills(test: ApiTest) {
   return Array.from(new Set(test.test_questions.flatMap((item) => item.question.skill_titles))).slice(0, 5);
 }
 
+function topCounts(values: string[], limit: number) {
+  const counts = values.reduce((map, value) => {
+    const label = value || "Unknown";
+    map.set(label, (map.get(label) ?? 0) + 1);
+    return map;
+  }, new Map<string, number>());
+  return Array.from(counts.entries())
+    .map(([label, value]) => ({ label, value, meta: `${value} mistakes` }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit);
+}
+
 export function StudentDashboard({ summary, tests, packs, sessions }: { summary: ApiProfileSummary; tests: ApiTest[]; packs: ApiExamPack[]; sessions: ApiSession[] }) {
   const inProgress = sessions.find((item) => item.status === "in_progress");
   const weakTopics = summary.topic_progress.filter((item) => item.value < 70);
   return (
-    <StudentShell eyebrow="Student" title="Home" copy="Test ishlash, xatolar va progress uchun ixcham ish paneli.">
+    <StudentShell eyebrow="Student" title="Home" copy="Test ishlash, xatolar va progress uchun ixcham ish paneli." hideHeader>
       <SummaryGrid stats={[
         ["Pending tests", packs.filter((pack) => pack.is_active).length],
         ["Completed tests", summary.tests_taken],
@@ -67,30 +79,51 @@ export function StudentDashboard({ summary, tests, packs, sessions }: { summary:
 }
 
 export function StudentTestsWorkspace({ tests, packs, sessions }: { tests: ApiTest[]; packs: ApiExamPack[]; sessions: ApiSession[] }) {
-  const [tab, setTab] = useState<TestStatus>("available");
+  const [query, setQuery] = useState("");
+  const [subject, setSubject] = useState("all");
+  const [topic, setTopic] = useState("all");
+  const [difficulty, setDifficulty] = useState("all");
   const completed = new Set(sessions.filter((item) => item.status === "submitted").map((item) => item.test_slug));
   const inProgress = new Set(sessions.filter((item) => item.status === "in_progress").map((item) => item.test_slug));
+  const subjects = Array.from(new Set(tests.map((test) => test.subject_slug))).filter(Boolean);
+  const topics = Array.from(new Set(tests.map((test) => test.topic_slug))).filter(Boolean);
   const filtered = tests.filter((test) => {
-    if (tab === "completed") return completed.has(test.slug);
-    if (tab === "in_progress") return inProgress.has(test.slug);
-    if (tab === "assigned") return false;
-    return test.status === "published";
+    const haystack = `${test.title} ${test.subject_slug} ${test.topic_slug} ${test.difficulty} ${testSkills(test).join(" ")}`.toLowerCase();
+    return haystack.includes(query.toLowerCase())
+      && (subject === "all" || test.subject_slug === subject)
+      && (topic === "all" || test.topic_slug === topic)
+      && (difficulty === "all" || test.difficulty === difficulty);
   });
   return (
-    <StudentShell eyebrow="Student" title="Tests" copy="Assigned, in progress, completed va available testlar.">
-      <Tabs value={tab} onChange={setTab} items={["assigned", "in_progress", "completed", "available"]} />
-      {tab === "assigned" ? (
-        <Section title="Assigned packs">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{packs.filter((pack) => pack.is_active).map((pack) => <PackCard key={pack.id} pack={pack} />)}</div>
-        </Section>
-      ) : (
-        <Section title={`${tab.replace("_", " ")} tests`}>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {filtered.map((test) => <TestCard key={test.id} test={test} status={completed.has(test.slug) ? "completed" : inProgress.has(test.slug) ? "in_progress" : "available"} session={sessions.find((item) => item.test_slug === test.slug)} />)}
-            {!filtered.length ? <Empty text="Bu bo'limda test yo'q." /> : null}
+    <StudentShell eyebrow="Student" title="Tests" copy="Fan, topic, difficulty va packlar bo'yicha test katalogi.">
+      <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
+        <aside className="h-fit rounded-xl border border-black/8 bg-white p-4 lg:sticky lg:top-24">
+          <div className="flex items-center gap-2 rounded-xl border border-black/8 bg-[#fbfbf6] px-3 py-2">
+            <Search className="size-4 text-black/35" />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Test yoki skill qidirish..." className="w-full bg-transparent text-sm outline-none" />
           </div>
-        </Section>
-      )}
+          <div className="mt-4 grid gap-3">
+            <FilterSelect label="Subject" value={subject} onChange={setSubject} options={subjects} />
+            <FilterSelect label="Topic" value={topic} onChange={setTopic} options={topics} />
+            <FilterSelect label="Difficulty" value={difficulty} onChange={setDifficulty} options={["beginner", "intermediate", "advanced"]} />
+            <button onClick={() => { setQuery(""); setSubject("all"); setTopic("all"); setDifficulty("all"); }} className="rounded-xl border border-black/10 px-3 py-2 text-sm font-semibold">Clear filters</button>
+          </div>
+        </aside>
+        <div className="grid gap-4">
+          <Section title="Test paketlar">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {packs.filter((pack) => pack.is_active && `${pack.title} ${pack.exam_type} ${pack.description}`.toLowerCase().includes(query.toLowerCase())).map((pack) => <PackCard key={pack.id} pack={pack} />)}
+              {!packs.filter((pack) => pack.is_active).length ? <Empty text="Pack yo'q." /> : null}
+            </div>
+          </Section>
+          <Section title="Test bo'limlari">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {filtered.map((test) => <TestCatalogCard key={test.id} test={test} status={completed.has(test.slug) ? "completed" : inProgress.has(test.slug) ? "in_progress" : "available"} session={sessions.find((item) => item.test_slug === test.slug)} relatedCount={tests.filter((item) => item.subject_slug === test.subject_slug && item.topic_slug === test.topic_slug).length} />)}
+              {!filtered.length ? <Empty text="Bu filtr bo'yicha test yo'q." /> : null}
+            </div>
+          </Section>
+        </div>
+      </div>
     </StudentShell>
   );
 }
@@ -134,29 +167,40 @@ export function StudentPackDetail({ pack, items, results }: { pack: ApiExamPack;
 }
 
 export function StudentTestInstructions({ test, session }: { test: ApiTest; session?: ApiSession }) {
+  const [questionCount, setQuestionCount] = useState(Math.min(30, Math.max(1, test.test_questions.length)));
+  const [minutes, setMinutes] = useState(test.estimated_minutes);
   const status = session?.status ?? "available";
   const skills = testSkills(test);
   return (
-    <StudentShell eyebrow="Test" title={test.title} copy={`${test.subject_slug} / ${test.topic_slug}`}>
+    <StudentShell eyebrow="Test bo'limi" title={test.title} copy={`${test.subject_slug} / ${test.topic_slug}`}>
       <SummaryGrid stats={[
         ["Subject", test.subject_slug],
         ["Topic", test.topic_slug],
         ["Level", test.difficulty],
-        ["Questions", test.test_questions.length],
-        ["Time limit", `${test.estimated_minutes} min`],
+        ["Available tests", test.test_questions.length],
+        ["Default time", `${test.estimated_minutes} min`],
         ["Attempt limit", "1+"],
         ["Due date", "No due date"],
         ["Status", status],
       ]} />
-      <Section title="Skill focus">
-        <div className="rounded-xl border border-black/8 bg-white p-4">
-          <p className="line-clamp-2 text-sm leading-6 text-black/60">Bu test quyidagi skilllarni tekshiradi: {skills.length ? skills.join(", ") : "asosiy mavzu tushunchalari"}.</p>
-          <p className="mt-3 text-sm text-black/52">Savollar va to&apos;g&apos;ri javoblar submit qilinmaguncha ko&apos;rsatilmaydi.</p>
-          <div className="mt-4">
-            {status === "submitted" && session ? <Link href={`/student/results/${session.id}`} className="rounded-xl bg-[#151713] px-4 py-2 text-sm font-semibold text-white">View result</Link> : status === "in_progress" && session ? <Link href={`/student/test-session/${session.id}`} className="rounded-xl bg-[#151713] px-4 py-2 text-sm font-semibold text-white">Continue</Link> : <Link href={`/student/tests/${test.slug}/start`} className="rounded-xl bg-[#151713] px-4 py-2 text-sm font-semibold text-white">Start</Link>}
+      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+        <Section title="Bo'lim haqida">
+          <div className="rounded-xl border border-black/8 bg-white p-4">
+            <p className="line-clamp-2 text-sm leading-6 text-black/60">Bu bo&apos;lim quyidagi skilllarni tekshiradi: {skills.length ? skills.join(", ") : "asosiy mavzu tushunchalari"}.</p>
+            <p className="mt-3 text-sm text-black/52">Savollar va to&apos;g&apos;ri javoblar submit qilinmaguncha ko&apos;rsatilmaydi.</p>
+            <div className="mt-4 grid gap-2">
+              {skills.map((skill) => <span key={skill} className="rounded-xl bg-[#fbfbf6] px-3 py-2 text-sm font-semibold text-black/62">{skill}</span>)}
+            </div>
           </div>
-        </div>
-      </Section>
+        </Section>
+        <Section title="Boshlash sozlamalari">
+          <div className="grid gap-4">
+            <NumberField label="Nechta test ishlamoqchisiz?" value={questionCount} min={1} max={Math.max(1, test.test_questions.length)} onChange={setQuestionCount} />
+            <NumberField label="Timer, daqiqa" value={minutes} min={1} max={240} onChange={setMinutes} />
+            {status === "submitted" && session ? <Link href={`/student/results/${session.id}`} className="rounded-xl bg-[#151713] px-4 py-3 text-center text-sm font-semibold text-white">View result</Link> : status === "in_progress" && session ? <Link href={`/student/test-session/${session.id}`} className="rounded-xl bg-[#151713] px-4 py-3 text-center text-sm font-semibold text-white">Continue</Link> : <Link href={`/student/tests/${test.slug}/start?count=${questionCount}&minutes=${minutes}`} className="rounded-xl bg-[#151713] px-4 py-3 text-center text-sm font-semibold text-white">Start</Link>}
+          </div>
+        </Section>
+      </div>
     </StudentShell>
   );
 }
@@ -167,10 +211,14 @@ export function StudentActiveSession({ initialSession, test }: { initialSession:
   const [session, setSession] = useState(initialSession);
   const [index, setIndex] = useState(0);
   const [now, setNow] = useState(() => Date.now());
+  const [draftAnswers, setDraftAnswers] = useState<Record<number, string>>({});
+  const [savingQuestionId, setSavingQuestionId] = useState<number | null>(null);
   const question = questions[index];
   const answerMap = useMemo(() => new Map(session.answers.map((answer) => [answer.question, answer])), [session.answers]);
   const current = answerMap.get(question.id);
-  const answered = questions.filter((item) => answerMap.get(item.id)?.value).length;
+  const currentValue = draftAnswers[question.id] ?? current?.value ?? "";
+  const answered = questions.filter((item) => (draftAnswers[item.id] ?? answerMap.get(item.id)?.value)).length;
+  const progress = questions.length ? Math.round((answered / questions.length) * 100) : 0;
   const elapsed = Math.max(0, Math.floor((now - new Date(session.created_at).getTime()) / 1000));
   const remaining = Math.max(0, test.estimated_minutes * 60 - elapsed);
   const timer = `${String(Math.floor(remaining / 60)).padStart(2, "0")}:${String(remaining % 60).padStart(2, "0")}`;
@@ -181,8 +229,14 @@ export function StudentActiveSession({ initialSession, test }: { initialSession:
   }, []);
 
   async function save(value: string, flagged = current?.is_flagged ?? false) {
-    const next = await questApi.answer(String(session.id), { question: question.id, value, is_flagged: flagged });
-    setSession(next);
+    setDraftAnswers((answers) => ({ ...answers, [question.id]: value }));
+    setSavingQuestionId(question.id);
+    try {
+      const next = await questApi.answer(String(session.id), { question: question.id, value, is_flagged: flagged });
+      setSession(next);
+    } finally {
+      setSavingQuestionId(null);
+    }
   }
 
   async function submit() {
@@ -191,39 +245,97 @@ export function StudentActiveSession({ initialSession, test }: { initialSession:
   }
 
   return (
-    <StudentShell eyebrow="Active test" title={test.title} copy="Timer, navigator va javoblar backendda saqlanadi.">
-      <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
-        <div className="rounded-xl border border-black/8 bg-white p-4">
-          <div className="flex items-center gap-2 rounded-xl bg-[#151713] px-3 py-2 text-sm font-semibold text-white"><Timer className="size-4" />{timer}</div>
-          <p className="mt-3 text-sm font-semibold">{answered}/{questions.length} answered</p>
+    <StudentShell eyebrow="Active test" title={test.title} copy="Javobni tanlang, flag qiling va submit qiling. To'g'ri javoblar submitdan oldin ko'rsatilmaydi.">
+      <div className="rounded-xl border border-black/8 bg-white p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-2 rounded-xl bg-[#151713] px-3 py-2 text-sm font-semibold text-white"><Timer className="size-4" />{timer}</span>
+            <span className="rounded-xl bg-[#edf7f3] px-3 py-2 text-sm font-semibold text-[#276a5b]">{answered}/{questions.length} answered</span>
+            <span className="rounded-xl bg-[#fbfbf6] px-3 py-2 text-sm font-semibold text-black/55">Question {index + 1}</span>
+          </div>
+          <button onClick={submit} className="rounded-xl bg-[#276a5b] px-4 py-2 text-sm font-semibold text-white">Submit test</button>
+        </div>
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-black/8">
+          <div className="h-full rounded-full bg-[#276a5b]" style={{ width: `${progress}%` }} />
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
+        <aside className="rounded-xl border border-black/8 bg-white p-4 lg:sticky lg:top-24 lg:self-start">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-semibold">Questions</h2>
+            <span className="text-sm font-semibold text-black/40">{progress}%</span>
+          </div>
           <div className="mt-4 grid grid-cols-5 gap-2">
             {questions.map((item, itemIndex) => (
-              <button key={item.id} onClick={() => setIndex(itemIndex)} className={cn("rounded-lg border px-2 py-2 text-sm font-semibold", itemIndex === index ? "border-[#151713] bg-[#151713] text-white" : answerMap.get(item.id)?.value ? "border-[#276a5b]/30 bg-[#edf7f3] text-[#276a5b]" : "border-black/10 bg-[#fbfbf6]")}>{itemIndex + 1}</button>
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setIndex(itemIndex)}
+                className={cn(
+                  "relative rounded-lg border px-2 py-2 text-sm font-semibold transition",
+                  itemIndex === index ? "border-[#151713] bg-[#151713] text-white shadow-sm" : (draftAnswers[item.id] ?? answerMap.get(item.id)?.value) ? "border-[#276a5b]/30 bg-[#edf7f3] text-[#276a5b]" : "border-black/10 bg-[#fbfbf6] text-black/55 hover:border-black/20",
+                )}
+              >
+                {itemIndex + 1}
+                {answerMap.get(item.id)?.is_flagged ? <span className="absolute right-1 top-1 size-1.5 rounded-full bg-amber-500" /> : null}
+              </button>
             ))}
           </div>
-          <button onClick={submit} className="mt-4 w-full rounded-xl bg-[#276a5b] px-4 py-2 text-center text-sm font-semibold text-white">Submit</button>
-        </div>
-        <div className="rounded-xl border border-black/8 bg-white p-4">
-          <div className="flex items-center justify-between gap-3 border-b border-black/8 pb-3">
-            <p className="text-sm font-semibold text-[#276a5b]">Question {index + 1} / {questions.length}</p>
-            <button onClick={() => save(current?.value ?? "", !(current?.is_flagged ?? false))} className="inline-flex items-center gap-2 rounded-xl border border-black/10 px-3 py-2 text-sm font-semibold"><Flag className="size-4" />Flag</button>
+        </aside>
+
+        <article className="rounded-xl border border-black/8 bg-white p-4 shadow-[0_14px_44px_rgba(21,23,19,0.05)]">
+          <div className="flex items-center justify-between gap-3 border-b border-black/8 pb-4">
+            <div>
+              <p className="text-sm font-semibold text-[#276a5b]">Question {index + 1} of {questions.length}</p>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-black/35">{question.type.replace("_", " ")}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => save(currentValue, !(current?.is_flagged ?? false))}
+              className={cn("inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition", current?.is_flagged ? "border-amber-200 bg-amber-50 text-amber-700" : "border-black/10 bg-white hover:bg-[#fbfbf6]")}
+            >
+              <Flag className="size-4" />
+              {current?.is_flagged ? "Flagged" : "Flag"}
+            </button>
           </div>
-          <div className="mt-5 text-lg leading-8"><LatexText text={question.prompt} /></div>
+          <div className="mt-5 rounded-xl bg-[#fbfbf6] p-4 text-lg leading-8"><LatexText text={question.prompt} /></div>
           {question.options.length ? (
             <div className="mt-5 grid gap-3">
-              {question.options.map((option, optionIndex) => (
-                <button key={option} onClick={() => save(option)} className={cn("flex items-start gap-3 rounded-xl border p-4 text-left text-sm", current?.value === option ? "border-[#276a5b] bg-[#edf7f3]" : "border-black/10 bg-[#fbfbf6]")}>
-                  <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-white text-xs font-bold">{String.fromCharCode(65 + optionIndex)}</span>
-                  <LatexText text={option} />
-                </button>
-              ))}
+              {question.options.map((option, optionIndex) => {
+                const selected = currentValue === option;
+                return (
+                  <button
+                    key={`${question.id}-${optionIndex}`}
+                    type="button"
+                    onClick={() => save(option)}
+                    className={cn(
+                      "flex min-h-14 items-start gap-3 rounded-xl border p-4 text-left text-sm leading-6 transition",
+                      selected ? "border-[#276a5b] bg-[#edf7f3] shadow-[0_0_0_3px_rgba(39,106,91,0.12)]" : "border-black/10 bg-white hover:border-black/20 hover:bg-[#fbfbf6]",
+                    )}
+                  >
+                    <span className={cn("grid size-8 shrink-0 place-items-center rounded-lg border text-xs font-bold", selected ? "border-[#276a5b] bg-[#276a5b] text-white" : "border-black/10 bg-[#fbfbf6] text-black/55")}>{String.fromCharCode(65 + optionIndex)}</span>
+                    <span className="min-w-0 flex-1"><LatexText text={option} /></span>
+                    {selected ? <span className="shrink-0 rounded-lg bg-white/75 px-2 py-1 text-xs font-semibold text-[#276a5b]">{savingQuestionId === question.id ? "Saving" : "Selected"}</span> : null}
+                  </button>
+                );
+              })}
             </div>
-          ) : <input value={current?.value ?? ""} onChange={(event) => save(event.target.value)} className="mt-5 w-full rounded-xl border border-black/10 bg-[#fbfbf6] px-4 py-3 text-sm outline-none" placeholder="Answer" />}
+          ) : (
+            <textarea
+              value={currentValue}
+              onChange={(event) => setDraftAnswers((answers) => ({ ...answers, [question.id]: event.target.value }))}
+              onBlur={(event) => save(event.target.value)}
+              rows={4}
+              className="mt-5 w-full resize-none rounded-xl border border-black/10 bg-[#fbfbf6] px-4 py-3 text-sm outline-none focus:border-[#276a5b] focus:bg-white"
+              placeholder="Answer"
+            />
+          )}
           <div className="mt-5 flex justify-between gap-3">
-            <button onClick={() => setIndex((value) => Math.max(0, value - 1))} className="inline-flex items-center gap-2 rounded-xl border border-black/10 px-4 py-2 text-sm font-semibold"><ArrowLeft className="size-4" />Previous</button>
-            <button onClick={() => setIndex((value) => Math.min(questions.length - 1, value + 1))} className="inline-flex items-center gap-2 rounded-xl bg-[#151713] px-4 py-2 text-sm font-semibold text-white">Next<ArrowRight className="size-4" /></button>
+            <button type="button" onClick={() => setIndex((value) => Math.max(0, value - 1))} className="inline-flex items-center gap-2 rounded-xl border border-black/10 px-4 py-2 text-sm font-semibold hover:bg-[#fbfbf6]"><ArrowLeft className="size-4" />Previous</button>
+            <button type="button" onClick={() => setIndex((value) => Math.min(questions.length - 1, value + 1))} className="inline-flex items-center gap-2 rounded-xl bg-[#151713] px-4 py-2 text-sm font-semibold text-white">Next<ArrowRight className="size-4" /></button>
           </div>
-        </div>
+        </article>
       </div>
     </StudentShell>
   );
@@ -258,16 +370,56 @@ export function StudentMistakes({ initialSummary }: { initialSummary: ApiMistake
     questApi.mistakesSummary(getStudentCode()).then(setSummary).catch(() => undefined);
   }, []);
   const mistakes = summary.mistakes.filter((item) => `${item.test_title} ${item.topic} ${item.skills.join(" ")}`.toLowerCase().includes(query.toLowerCase()));
+  const totalMistakes = summary.mistakes.length;
+  const topicRows = topCounts(summary.mistakes.map((item) => item.topic), 6);
+  const testRows = topCounts(summary.mistakes.map((item) => item.test_title), 5);
+  const skillRows = summary.weak_skills.slice(0, 8).map((item) => ({
+    label: item.skill,
+    value: Math.max(0, 100 - item.percent),
+    meta: `${item.percent}% mastery / ${item.total} questions`,
+  }));
+  const focus = summary.weak_skills[0];
   return (
-    <StudentShell eyebrow="Student" title="Mistakes" copy="Testlardan chiqqan xatolar va review holati.">
-      <div className="flex items-center gap-2 rounded-xl border border-black/8 bg-white px-3 py-2">
-        <Search className="size-4 text-black/35" />
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Subject, topic, test, status..." className="w-full bg-transparent text-sm outline-none" />
+    <StudentShell eyebrow="Mistake analytics" title="Xatolar analizi" copy="Ishlangan testlardan xatolar ajratiladi, zaif skilllar va keyingi o'rganish yo'nalishi ko'rsatiladi.">
+      <SummaryGrid stats={[
+        ["Total mistakes", totalMistakes],
+        ["Weak skills", summary.weak_skills.length],
+        ["Main weak skill", focus?.skill ?? "No data"],
+        ["Lowest mastery", focus ? `${focus.percent}%` : "No data"],
+      ]} />
+      <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+        <Section title="Skill weakness index">
+          <AnalyticsBars rows={skillRows} tone="critical" empty="Skill data hali yo'q." />
+        </Section>
+        <Section title="Recommended next action">
+          <div className="rounded-xl border border-black/8 bg-white p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-black/38">Priority</p>
+            <h3 className="mt-2 text-xl font-semibold">{focus?.skill ?? "Avval test ishlang"}</h3>
+            <p className="mt-2 text-sm leading-6 text-black/58">
+              {focus ? `${focus.skill} bo'yicha mastery ${focus.percent}%. Avval xato savollarni ko'rib chiqing, keyin shu skillga yaqin testni qayta ishlang.` : "Mistake analytics uchun kamida bitta test submit qiling."}
+            </p>
+            <Link href="/student/tests" className="mt-4 inline-flex rounded-xl bg-[#151713] px-4 py-2 text-sm font-semibold text-white">Practice topic</Link>
+          </div>
+        </Section>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {mistakes.map((mistake) => <CompactCard key={`${mistake.session_id}-${mistake.question_id}`} title={mistake.prompt} meta={`${mistake.test_title} / ${mistake.topic}`} href={`/student/mistakes/${mistake.session_id}-${mistake.question_id}`} action="Review" stats={[mistake.skills[0] ?? "Skill", "review needed"]} />)}
-        {!mistakes.length ? <Empty text="Xato topilmadi." /> : null}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Section title="Mistakes by topic">
+          <AnalyticsBars rows={topicRows} empty="Topic bo'yicha xato yo'q." />
+        </Section>
+        <Section title="Mistakes by test">
+          <AnalyticsBars rows={testRows} empty="Test bo'yicha xato yo'q." />
+        </Section>
       </div>
+      <Section title="Mistake review queue">
+        <div className="mb-4 flex items-center gap-2 rounded-xl border border-black/8 bg-white px-3 py-2">
+          <Search className="size-4 text-black/35" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Subject, topic, test, status..." className="w-full bg-transparent text-sm outline-none" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {mistakes.map((mistake) => <MistakeCard key={`${mistake.session_id}-${mistake.question_id}`} mistake={mistake} />)}
+          {!mistakes.length ? <Empty text="Xato topilmadi." /> : null}
+        </div>
+      </Section>
     </StudentShell>
   );
 }
@@ -305,14 +457,41 @@ export function StudentMistakeDetail({ initialSummary, mistakeId }: { initialSum
 export function StudentProgress({ summary }: { summary: ApiProfileSummary }) {
   const strong = summary.topic_progress.filter((item) => item.value >= 75);
   const weak = summary.topic_progress.filter((item) => item.value < 70);
+  const orderedTopics = [...summary.topic_progress].sort((a, b) => a.value - b.value);
+  const scoreRows = summary.recent_tests.slice(0, 8).reverse().map((item) => ({
+    label: item.title,
+    value: item.score,
+    meta: `${item.correct}/${item.total} correct`,
+  }));
+  const masteryRows = orderedTopics.map((item) => ({
+    label: item.topic,
+    value: item.value,
+    meta: `${item.attempts} attempts`,
+  }));
   return (
-    <StudentShell eyebrow="Student" title="Progress" copy="Overall progress, subject progress, topic mastery va score trend.">
+    <StudentShell eyebrow="Student analytics" title="Progress" copy="Overall progress, topic mastery, score trend va kuchli/zaif mavzular.">
       <SummaryGrid stats={[["Average score", `${summary.average_score}%`], ["Completed tests", summary.tests_taken], ["Answered", summary.answered_questions], ["Correct", summary.correct_answers]]} />
-      <Section title="Topic mastery">
-        <div className="grid gap-3 md:grid-cols-2">{summary.topic_progress.map((topic) => <CompactCard key={topic.slug} title={topic.topic} meta={`${topic.attempts} attempts`} href="/student/tests" action="Open" stats={[`${topic.value}% mastery`]} />)}</div>
-      </Section>
-      <Section title="Weak / strong topics">
-        <div className="grid gap-4 md:grid-cols-2"><TopicList title="Weak topics" items={weak} /><TopicList title="Strong topics" items={strong} /></div>
+      <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <Section title="Score trend">
+          <TrendChart rows={scoreRows} />
+        </Section>
+        <Section title="Mastery overview">
+          <div className="grid gap-3">
+            <ProgressRing label="Average score" value={summary.average_score} />
+            <ProgressRing label="Math mastery" value={summary.math_mastery} />
+          </div>
+        </Section>
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Section title="Topic mastery">
+          <AnalyticsBars rows={masteryRows} tone="mastery" empty="Topic mastery hali yo'q." />
+        </Section>
+        <Section title="Weak topics to study next">
+          <TopicActionList items={weak} />
+        </Section>
+      </div>
+      <Section title="Strong topics">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{strong.map((topic) => <CompactCard key={topic.slug} title={topic.topic} meta={`${topic.attempts} attempts`} href="/student/tests" action="Practice" stats={[`${topic.value}% mastery`]} />)}{!strong.length ? <Empty text="Kuchli mavzular hali yetarli emas." /> : null}</div>
       </Section>
     </StudentShell>
   );
@@ -329,26 +508,50 @@ export function StudentProfile({ summary }: { summary: ApiProfileSummary }) {
   );
 }
 
-function TestCard({ test, status, session }: { test: ApiTest; status: TestStatus; session?: ApiSession }) {
-  const action = status === "completed" ? "View result" : status === "in_progress" ? "Continue" : "Open";
-  const href = status === "completed" && session ? `/student/results/${session.id}` : status === "in_progress" && session ? `/student/test-session/${session.id}` : `/student/tests/${test.slug}`;
-  return <CompactCard title={test.title} meta={`${test.subject_slug} / ${test.topic_slug}`} href={href} action={action} status={status} stats={[`${test.test_questions.length} questions`, `${test.estimated_minutes} min`]} />;
+function TestCatalogCard({ test, status, session, relatedCount }: { test: ApiTest; status: TestStatus; session?: ApiSession; relatedCount: number }) {
+  const router = useRouter();
+  const startHref = status === "in_progress" && session ? `/student/test-session/${session.id}` : `/student/tests/${test.slug}/start`;
+  return (
+    <article onClick={() => router.push(`/student/tests/${test.slug}`)} className="flex min-h-[158px] cursor-pointer flex-col rounded-xl border border-black/8 bg-white p-4 hover:bg-[#fbfbf6]">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h3 className="line-clamp-2 font-semibold leading-5">{test.title}</h3>
+          <p className="mt-1 line-clamp-1 text-sm text-black/50">{test.subject_slug} / {test.topic_slug}</p>
+        </div>
+        <Badge>{status === "completed" ? "done" : status === "in_progress" ? "active" : test.difficulty}</Badge>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-black/45">
+        <span className="rounded-lg bg-[#fbfbf6] px-2 py-1">{relatedCount} tests</span>
+        <span className="rounded-lg bg-[#fbfbf6] px-2 py-1">{test.test_questions.length} questions</span>
+        <span className="rounded-lg bg-[#fbfbf6] px-2 py-1">{test.estimated_minutes} min</span>
+      </div>
+      <button
+        onClick={(event) => {
+          event.stopPropagation();
+          router.push(startHref);
+        }}
+        className="mt-auto w-fit rounded-xl bg-[#151713] px-4 py-2 text-sm font-semibold text-white"
+      >
+        {status === "in_progress" ? "Continue" : "Start"}
+      </button>
+    </article>
+  );
 }
 
 function PackCard({ pack }: { pack: ApiExamPack }) {
   return <CompactCard title={pack.title} meta={pack.exam_type || "Pack"} href={`/student/packs/${pack.slug}`} action="Open" status={pack.visibility} stats={[`${pack.item_count} tests`, pack.price_label || "Free"]} />;
 }
 
-function StudentShell({ eyebrow, title, copy, children }: { eyebrow: string; title: string; copy?: string; children: React.ReactNode }) {
+function StudentShell({ eyebrow, title, copy, children, hideHeader = false }: { eyebrow: string; title: string; copy?: string; children: React.ReactNode; hideHeader?: boolean }) {
   return (
     <main className="min-h-screen bg-[#f7f7ef] px-4 py-4 text-[#151713] sm:px-6">
       <div className="mx-auto max-w-7xl">
-        <header className="rounded-xl border border-black/8 bg-white p-4">
+        {!hideHeader ? <header className="rounded-xl border border-black/8 bg-white p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#276a5b]">{eyebrow}</p>
           <h1 className="mt-2 text-2xl font-semibold">{title}</h1>
           {copy ? <p className="mt-2 line-clamp-2 max-w-3xl text-sm leading-6 text-black/58">{copy}</p> : null}
-        </header>
-        <div className="mt-4 grid gap-4">{children}</div>
+        </header> : null}
+        <div className={cn("grid gap-4", !hideHeader && "mt-4")}>{children}</div>
       </div>
     </main>
   );
@@ -378,16 +581,136 @@ function CompactCard({ title, meta, href, action, status, stats = [] }: { title:
   );
 }
 
+function MistakeCard({ mistake }: { mistake: ApiMistakesSummary["mistakes"][number] }) {
+  return (
+    <Link href={`/student/mistakes/${mistake.session_id}-${mistake.question_id}`} className="flex min-h-[170px] flex-col rounded-xl border border-black/8 bg-white p-4 hover:bg-[#fbfbf6]">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#276a5b]">{mistake.topic}</p>
+          <h3 className="mt-2 line-clamp-2 font-semibold leading-5"><LatexText text={mistake.prompt} /></h3>
+        </div>
+        <Badge>review</Badge>
+      </div>
+      <div className="mt-3 grid gap-1 text-sm text-black/55">
+        <p className="line-clamp-1">{mistake.test_title}</p>
+        <p className="line-clamp-1">{mistake.skills.join(", ") || "No skill tag"}</p>
+      </div>
+      <span className="mt-auto w-fit rounded-xl bg-[#151713] px-4 py-2 text-sm font-semibold text-white">Review</span>
+    </Link>
+  );
+}
+
+function AnalyticsBars({ rows, tone = "default", empty }: { rows: Array<{ label: string; value: number; meta?: string }>; tone?: "default" | "critical" | "mastery"; empty: string }) {
+  if (!rows.length) return <Empty text={empty} />;
+  const max = Math.max(1, ...rows.map((row) => row.value));
+  return (
+    <div className="grid gap-3">
+      {rows.map((row) => {
+        const width = tone === "mastery" ? row.value : Math.round((row.value / max) * 100);
+        const bar = tone === "critical" ? "bg-[#a85050]" : tone === "mastery" ? "bg-[#276a5b]" : "bg-[#415f79]";
+        return (
+          <div key={row.label} className="rounded-xl border border-black/8 bg-white p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">{row.label}</p>
+                {row.meta ? <p className="mt-1 truncate text-xs text-black/45">{row.meta}</p> : null}
+              </div>
+              <p className="shrink-0 text-sm font-semibold text-black/58">{row.value}{tone === "mastery" ? "%" : ""}</p>
+            </div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#ecece3]">
+              <div className={cn("h-full rounded-full", bar)} style={{ width: `${Math.max(3, Math.min(100, width))}%` }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function TrendChart({ rows }: { rows: Array<{ label: string; value: number; meta?: string }> }) {
+  if (!rows.length) return <Empty text="Score trend uchun hali natija yo'q." />;
+  return (
+    <div className="rounded-xl border border-black/8 bg-white p-4">
+      <div className="flex h-56 items-end gap-2 border-b border-l border-black/10 px-2 pb-2">
+        {rows.map((row, index) => (
+          <div key={`${row.label}-${index}`} className="flex min-w-0 flex-1 flex-col items-center gap-2">
+            <div className="flex h-44 w-full items-end">
+              <div className="w-full rounded-t-lg bg-[#276a5b]" style={{ height: `${Math.max(5, row.value)}%` }} />
+            </div>
+            <span className="max-w-full truncate text-[10px] font-semibold text-black/38">{index + 1}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 grid gap-2">
+        {rows.slice(-3).map((row) => (
+          <div key={row.label} className="flex justify-between gap-3 text-sm">
+            <span className="truncate text-black/58">{row.label}</span>
+            <strong>{row.value}%</strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProgressRing({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-center gap-4 rounded-xl border border-black/8 bg-white p-4">
+      <div className="grid size-20 place-items-center rounded-full" style={{ background: `conic-gradient(#276a5b ${value * 3.6}deg, #ecece3 0deg)` }}>
+        <div className="grid size-14 place-items-center rounded-full bg-white text-sm font-semibold">{value}%</div>
+      </div>
+      <div>
+        <p className="font-semibold">{label}</p>
+        <p className="mt-1 text-sm text-black/50">{value >= 75 ? "Stable" : value >= 60 ? "Needs review" : "Priority focus"}</p>
+      </div>
+    </div>
+  );
+}
+
+function TopicActionList({ items }: { items: ApiProfileSummary["topic_progress"] }) {
+  if (!items.length) return <Empty text="Zaif mavzular hozircha yo'q." />;
+  return (
+    <div className="grid gap-3">
+      {items.map((item, index) => (
+        <Link key={item.slug} href="/student/tests" className="grid gap-3 rounded-xl border border-black/8 bg-white p-4 hover:bg-[#fbfbf6] md:grid-cols-[32px_1fr_auto] md:items-center">
+          <span className="grid size-8 place-items-center rounded-lg bg-[#f8eeee] text-sm font-semibold text-[#a85050]">{index + 1}</span>
+          <div>
+            <p className="font-semibold">{item.topic}</p>
+            <p className="mt-1 text-sm text-black/50">{item.value}% mastery / {item.attempts} attempts</p>
+          </div>
+          <span className="rounded-xl bg-[#151713] px-4 py-2 text-sm font-semibold text-white">Practice</span>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 function Badge({ children }: { children: React.ReactNode }) {
   return <span className="shrink-0 rounded-lg bg-[#edf7f3] px-2 py-1 text-xs font-semibold text-[#276a5b]">{children}</span>;
 }
 
-function Tabs({ value, onChange, items }: { value: TestStatus; onChange: (value: TestStatus) => void; items: TestStatus[] }) {
-  return <div className="flex gap-2 overflow-x-auto">{items.map((item) => <button key={item} onClick={() => onChange(item)} className={cn("rounded-xl border px-4 py-2 text-sm font-semibold", value === item ? "border-[#151713] bg-[#151713] text-white" : "border-black/10 bg-white")}>{item.replace("_", " ")}</button>)}</div>;
+function FilterSelect({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) {
+  return (
+    <label className="grid gap-1">
+      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-black/38">{label}</span>
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-semibold outline-none">
+        <option value="all">All</option>
+        {options.map((option) => <option key={option} value={option}>{option}</option>)}
+      </select>
+    </label>
+  );
 }
 
-function TopicList({ title, items }: { title: string; items: ApiProfileSummary["topic_progress"] }) {
-  return <div className="rounded-xl border border-black/8 bg-white p-4"><h3 className="font-semibold">{title}</h3><div className="mt-3 grid gap-2">{items.map((item) => <div key={item.slug} className="flex justify-between text-sm"><span>{item.topic}</span><strong>{item.value}%</strong></div>)}{!items.length ? <p className="text-sm text-black/50">No data</p> : null}</div></div>;
+function NumberField({ label, value, min, max, onChange }: { label: string; value: number; min: number; max: number; onChange: (value: number) => void }) {
+  return (
+    <label className="grid gap-2">
+      <span className="text-sm font-semibold">{label}</span>
+      <div className="flex items-center gap-2">
+        <input type="range" min={min} max={max} value={value} onChange={(event) => onChange(Number(event.target.value))} className="w-full" />
+        <input type="number" min={min} max={max} value={value} onChange={(event) => onChange(Math.max(min, Math.min(max, Number(event.target.value))))} className="w-20 rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-semibold outline-none" />
+      </div>
+    </label>
+  );
 }
 
 function Empty({ text }: { text: string }) {
