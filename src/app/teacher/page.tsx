@@ -1,12 +1,5 @@
-import type { Metadata } from "next";
-
-import { teacherPage } from "@/features/business/model/business-pages";
-import { SalesPage } from "@/features/business/ui/sales-page";
-
-export const metadata: Metadata = {
-  title: "Teacher Plan | QuestLab",
-};
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <SalesPage content={teacherPage} />;
+  redirect("/teacher/home");
 }

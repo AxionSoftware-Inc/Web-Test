@@ -501,6 +501,7 @@ export const questApi = {
     apiPatch<ApiTest>(`/tests/${testSlug}/`, payload),
   deleteTest: (testSlug: string, manageKey?: string) => apiDelete<ApiTest | undefined>(`/tests/${testSlug}/${manageKey ? `?manage_key=${encodeURIComponent(manageKey)}` : ""}`),
   startTest: (testSlug: string, payload?: { student_name?: string; student_code?: string }) => apiPost<ApiSession>(`/tests/${testSlug}/start/`, payload),
+  sessions: () => apiGet<ApiSession[]>("/sessions/"),
   session: (sessionId: string) => apiGet<ApiSession>(`/sessions/${sessionId}/`),
   answer: (sessionId: string, payload: { question: number; value: string; is_flagged?: boolean }) =>
     apiPost<ApiSession>(`/sessions/${sessionId}/answer/`, payload),

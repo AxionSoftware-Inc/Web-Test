@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, GraduationCap, Home, LayoutDashboard, PackageCheck, Plus, TriangleAlert, UserRound, UsersRound } from "lucide-react";
+import { BarChart3, Building2, GraduationCap, Home, LayoutDashboard, PackageCheck, Plus, Settings, TriangleAlert, UserRound, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -13,33 +13,43 @@ import { RoleSwitcher } from "@/shared/ui/role-switcher";
 
 const roleNavItems: Record<UserRole, Array<{ label: string; href: string; icon: typeof Home }>> = {
   student: [
-    { label: "Home", href: "/dashboard", icon: Home },
-    { label: "Tests", href: "/tests", icon: LayoutDashboard },
-    { label: "Mistakes", href: "/mistakes", icon: TriangleAlert },
+    { label: "Home", href: "/student/home", icon: Home },
+    { label: "Tests", href: "/student/tests", icon: LayoutDashboard },
+    { label: "Mistakes", href: "/student/mistakes", icon: TriangleAlert },
+    { label: "Progress", href: "/student/progress", icon: BarChart3 },
     { label: "Profile", href: "/profile", icon: UserRound },
   ],
   teacher: [
-    { label: "Home", href: "/teacher/dashboard", icon: Home },
+    { label: "Home", href: "/teacher/home", icon: Home },
     { label: "Classes", href: "/teacher/classes", icon: GraduationCap },
     { label: "Students", href: "/teacher/students", icon: UsersRound },
-    { label: "Add Test", href: "/crud", icon: Plus },
-    { label: "Packs", href: "/exam-packs", icon: PackageCheck },
+    { label: "Add Test", href: "/teacher/add-test", icon: Plus },
+    { label: "Packs", href: "/teacher/packs", icon: PackageCheck },
+    { label: "Results", href: "/teacher/results", icon: BarChart3 },
   ],
   school: [
-    { label: "Classes", href: "/schools/classes", icon: GraduationCap },
+    { label: "Home", href: "/school/home", icon: Home },
+    { label: "Classes", href: "/school/classes", icon: GraduationCap },
+    { label: "Teachers", href: "/school/teachers", icon: UsersRound },
+    { label: "Students", href: "/school/students", icon: UserRound },
+    { label: "Reports", href: "/school/reports", icon: BarChart3 },
+    { label: "Settings", href: "/school/settings", icon: Settings },
   ],
   creator: [
-    { label: "Home", href: "/creator", icon: Home },
-    { label: "Add", href: "/crud", icon: Plus },
-    { label: "Packs", href: "/exam-packs", icon: PackageCheck },
-    { label: "Tests", href: "/tests", icon: LayoutDashboard },
-    { label: "Questions", href: "/questions", icon: LayoutDashboard },
+    { label: "Home", href: "/creator/home", icon: Home },
+    { label: "Add Pack", href: "/creator/add-pack", icon: Plus },
+    { label: "Packs", href: "/creator/packs", icon: PackageCheck },
+    { label: "Tests", href: "/creator/tests", icon: LayoutDashboard },
+    { label: "Questions", href: "/creator/questions", icon: LayoutDashboard },
   ],
   admin: [
-    { label: "Home", href: "/admin", icon: Home },
-    { label: "Schools", href: "/schools/dashboard", icon: Building2 },
-    { label: "Classes", href: "/teacher/classes", icon: GraduationCap },
-    { label: "Tests", href: "/tests", icon: LayoutDashboard },
+    { label: "Home", href: "/admin/home", icon: Home },
+    { label: "Schools", href: "/admin/schools", icon: Building2 },
+    { label: "Classes", href: "/admin/classes", icon: GraduationCap },
+    { label: "Tests", href: "/admin/tests", icon: LayoutDashboard },
+    { label: "Packs", href: "/admin/packs", icon: PackageCheck },
+    { label: "Reports", href: "/admin/reports", icon: BarChart3 },
+    { label: "Settings", href: "/admin/settings", icon: Settings },
   ],
 };
 
