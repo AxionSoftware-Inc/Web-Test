@@ -96,17 +96,24 @@ export function StudentTestsWorkspace({ tests, packs, sessions }: { tests: ApiTe
   });
   return (
     <StudentShell eyebrow="Student" title="Tests" copy="Fan, topic, difficulty va packlar bo'yicha test katalogi.">
+      <div className="rounded-xl border border-black/8 bg-white p-3 shadow-[0_10px_30px_rgba(21,23,19,0.04)]">
+        <div className="flex items-center gap-3 rounded-xl border border-black/8 bg-[#fbfbf6] px-4 py-3">
+          <Search className="size-5 shrink-0 text-black/35" />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Test, pack, fan, topic yoki skill qidirish..."
+            className="min-h-10 w-full bg-transparent text-base font-medium outline-none placeholder:text-black/35"
+          />
+        </div>
+      </div>
       <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
         <aside className="h-fit rounded-xl border border-black/8 bg-white p-4 lg:sticky lg:top-24">
-          <div className="flex items-center gap-2 rounded-xl border border-black/8 bg-[#fbfbf6] px-3 py-2">
-            <Search className="size-4 text-black/35" />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Test yoki skill qidirish..." className="w-full bg-transparent text-sm outline-none" />
-          </div>
-          <div className="mt-4 grid gap-3">
+          <div className="grid gap-4">
             <FilterSelect label="Subject" value={subject} onChange={setSubject} options={subjects} />
             <FilterSelect label="Topic" value={topic} onChange={setTopic} options={topics} />
             <FilterSelect label="Difficulty" value={difficulty} onChange={setDifficulty} options={["beginner", "intermediate", "advanced"]} />
-            <button onClick={() => { setQuery(""); setSubject("all"); setTopic("all"); setDifficulty("all"); }} className="rounded-xl border border-black/10 px-3 py-2 text-sm font-semibold">Clear filters</button>
+            <button onClick={() => { setQuery(""); setSubject("all"); setTopic("all"); setDifficulty("all"); }} className="rounded-xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]">Clear filters</button>
           </div>
         </aside>
         <div className="grid gap-4">
@@ -197,7 +204,9 @@ export function StudentTestInstructions({ test, session }: { test: ApiTest; sess
           <div className="grid gap-4">
             <NumberField label="Nechta test ishlamoqchisiz?" value={questionCount} min={1} max={Math.max(1, test.test_questions.length)} onChange={setQuestionCount} />
             <NumberField label="Timer, daqiqa" value={minutes} min={1} max={240} onChange={setMinutes} />
-            {status === "submitted" && session ? <Link href={`/student/results/${session.id}`} className="rounded-xl bg-[#151713] px-4 py-3 text-center text-sm font-semibold text-white">View result</Link> : status === "in_progress" && session ? <Link href={`/student/test-session/${session.id}`} className="rounded-xl bg-[#151713] px-4 py-3 text-center text-sm font-semibold text-white">Continue</Link> : <Link href={`/student/tests/${test.slug}/start?count=${questionCount}&minutes=${minutes}`} className="rounded-xl bg-[#151713] px-4 py-3 text-center text-sm font-semibold text-white">Start</Link>}
+            {status === "in_progress" && session ? <Link href={`/student/test-session/${session.id}`} className="rounded-xl bg-[#151713] px-4 py-3 text-center text-sm font-semibold text-white">Continue</Link> : null}
+            <Link href={`/student/tests/${test.slug}/start?count=${questionCount}&minutes=${minutes}`} className="rounded-xl bg-[#151713] px-4 py-3 text-center text-sm font-semibold text-white">{status === "submitted" ? "Start again" : "Start test"}</Link>
+            {status === "submitted" && session ? <Link href={`/student/results/${session.id}`} className="rounded-xl border border-black/10 bg-white px-4 py-3 text-center text-sm font-semibold">View result</Link> : null}
           </div>
         </Section>
       </div>
@@ -213,11 +222,15 @@ export function StudentActiveSession({ initialSession, test }: { initialSession:
   const [now, setNow] = useState(() => Date.now());
   const [draftAnswers, setDraftAnswers] = useState<Record<number, string>>({});
   const [savingQuestionId, setSavingQuestionId] = useState<number | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const question = questions[index];
   const answerMap = useMemo(() => new Map(session.answers.map((answer) => [answer.question, answer])), [session.answers]);
   const current = answerMap.get(question.id);
   const currentValue = draftAnswers[question.id] ?? current?.value ?? "";
   const answered = questions.filter((item) => (draftAnswers[item.id] ?? answerMap.get(item.id)?.value)).length;
+  const allAnswered = answered === questions.length;
+  const shouldFinish = index === questions.length - 1 || allAnswered;
   const progress = questions.length ? Math.round((answered / questions.length) * 100) : 0;
   const elapsed = Math.max(0, Math.floor((now - new Date(session.created_at).getTime()) / 1000));
   const remaining = Math.max(0, test.estimated_minutes * 60 - elapsed);
@@ -240,8 +253,15 @@ export function StudentActiveSession({ initialSession, test }: { initialSession:
   }
 
   async function submit() {
-    await questApi.submit(String(session.id));
-    router.push(`/student/results/${session.id}`);
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      await questApi.submit(String(session.id));
+      router.replace(`/student/results/${session.id}`);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Submit failed.");
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -253,11 +273,12 @@ export function StudentActiveSession({ initialSession, test }: { initialSession:
             <span className="rounded-xl bg-[#edf7f3] px-3 py-2 text-sm font-semibold text-[#276a5b]">{answered}/{questions.length} answered</span>
             <span className="rounded-xl bg-[#fbfbf6] px-3 py-2 text-sm font-semibold text-black/55">Question {index + 1}</span>
           </div>
-          <button onClick={submit} className="rounded-xl bg-[#276a5b] px-4 py-2 text-sm font-semibold text-white">Submit test</button>
+          <button onClick={submit} disabled={submitting} className="rounded-xl bg-[#276a5b] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{submitting ? "Finishing..." : "Submit test"}</button>
         </div>
-        <div className="mt-4 h-2 overflow-hidden rounded-full bg-black/8">
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-black/8">
           <div className="h-full rounded-full bg-[#276a5b]" style={{ width: `${progress}%` }} />
         </div>
+        {submitError ? <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{submitError}</p> : null}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
@@ -333,7 +354,17 @@ export function StudentActiveSession({ initialSession, test }: { initialSession:
           )}
           <div className="mt-5 flex justify-between gap-3">
             <button type="button" onClick={() => setIndex((value) => Math.max(0, value - 1))} className="inline-flex items-center gap-2 rounded-xl border border-black/10 px-4 py-2 text-sm font-semibold hover:bg-[#fbfbf6]"><ArrowLeft className="size-4" />Previous</button>
-            <button type="button" onClick={() => setIndex((value) => Math.min(questions.length - 1, value + 1))} className="inline-flex items-center gap-2 rounded-xl bg-[#151713] px-4 py-2 text-sm font-semibold text-white">Next<ArrowRight className="size-4" /></button>
+            <button
+              type="button"
+              onClick={() => {
+                if (shouldFinish) void submit();
+                else setIndex((value) => Math.min(questions.length - 1, value + 1));
+              }}
+              disabled={submitting}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#151713] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              {shouldFinish ? (submitting ? "Finishing..." : "Finish") : "Next"}{!shouldFinish ? <ArrowRight className="size-4" /> : null}
+            </button>
           </div>
         </article>
       </div>
@@ -343,22 +374,88 @@ export function StudentActiveSession({ initialSession, test }: { initialSession:
 
 export function StudentResult({ session, test }: { session: ApiSession; test: ApiTest }) {
   const stats = scoreSession(session, test);
-  const mistakes = test.test_questions.map((item) => item.question).filter((question) => normalize(question.answer) !== normalize(session.answers.find((answer) => answer.question === question.id)?.value ?? ""));
+  const answerMap = new Map(session.answers.map((answer) => [answer.question, answer.value]));
+  const questions = test.test_questions.map((item) => item.question);
+  const mistakes = questions.filter((question) => normalize(question.answer) !== normalize(answerMap.get(question.id) ?? ""));
+  const correctQuestions = questions.filter((question) => normalize(question.answer) === normalize(answerMap.get(question.id) ?? ""));
   const skills = Array.from(new Set(mistakes.flatMap((question) => question.skill_titles))).slice(0, 6);
+  const skillRows = topCounts(mistakes.flatMap((question) => question.skill_titles.length ? question.skill_titles : ["Untagged skill"]), 6);
+  const answerRows = [
+    { label: "Correct", value: stats.correct, meta: `${stats.correct}/${stats.total}` },
+    { label: "Wrong", value: stats.wrong, meta: `${stats.wrong}/${stats.total}` },
+    { label: "Skipped", value: stats.skipped, meta: `${stats.skipped}/${stats.total}` },
+  ];
+  const resultTone = stats.score >= test.passing_score ? "Passed" : "Needs review";
   return (
     <StudentShell eyebrow="Result" title={test.title} copy="Score, breakdown, weak skills va keyingi qadamlar.">
-      <SummaryGrid stats={[["Score", `${stats.score}%`], ["Correct", stats.correct], ["Wrong", stats.wrong], ["Skipped", stats.skipped], ["Time spent", "Session time"], ["Weak skills", skills.length]]} />
-      <Section title="Weak skills">
-        <div className="grid gap-3 md:grid-cols-3">{skills.map((skill) => <CompactCard key={skill} title={skill} meta="Review needed" href="/student/mistakes" action="Review" />)}{!skills.length ? <Empty text="Weak skill topilmadi." /> : null}</div>
-      </Section>
-      <Section title="Mistake list">
-        <div className="grid gap-4 md:grid-cols-2">{mistakes.slice(0, 8).map((question) => <CompactCard key={question.id} title={question.prompt} meta={question.skill_titles.join(", ") || test.topic_slug} href={`/student/mistakes/${session.id}-${question.id}`} action="Review" />)}</div>
-      </Section>
-      <div className="flex flex-wrap gap-3">
-        <Link href="/student/mistakes" className="rounded-xl bg-[#151713] px-4 py-2 text-sm font-semibold text-white">Review mistakes</Link>
-        <Link href="/student/tests" className="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm font-semibold">Back to tests</Link>
-        <Link href={`/student/tests/${test.slug}/start`} className="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm font-semibold">Retake test</Link>
+      <section className="grid gap-4 lg:grid-cols-[1fr_340px]">
+        <div className="rounded-xl border border-black/8 bg-white p-4 shadow-[0_14px_44px_rgba(21,23,19,0.05)]">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#276a5b]">Final score</p>
+              <h1 className="mt-2 text-6xl font-semibold tracking-tight">{stats.score}%</h1>
+              <p className="mt-2 text-sm text-black/55">{resultTone} / passing score {test.passing_score}%</p>
+            </div>
+            <ProgressRing label="Result quality" value={stats.score} />
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <MetricTile label="Correct" value={stats.correct} sub={`${stats.total} total`} tone="green" />
+            <MetricTile label="Wrong" value={stats.wrong} sub="Needs review" tone="red" />
+            <MetricTile label="Skipped" value={stats.skipped} sub="No answer" tone="neutral" />
+          </div>
+        </div>
+        <aside className="rounded-xl border border-black/8 bg-[#151713] p-4 text-white">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">Next actions</p>
+          <h2 className="mt-2 text-xl font-semibold">{skills[0] ?? (stats.score >= test.passing_score ? "Keep momentum" : "Review mistakes")}</h2>
+          <p className="mt-2 text-sm leading-6 text-white/65">
+            {skills[0] ? `${skills[0]} bo'yicha xatolar bor. Avval mistake review, keyin shu topicdagi testni qayta ishlang.` : "Natija yaxshi. Keyingi topic yoki packga o'ting."}
+          </p>
+          <div className="mt-4 grid gap-2">
+            <Link href="/student/mistakes" className="rounded-xl bg-white px-4 py-2 text-center text-sm font-semibold text-[#151713]">Review mistakes</Link>
+            <Link href={`/student/tests/${test.slug}/start`} className="rounded-xl bg-[#8fd6bd] px-4 py-2 text-center text-sm font-semibold text-[#151713]">Retake test</Link>
+            <Link href="/student/tests" className="rounded-xl border border-white/15 px-4 py-2 text-center text-sm font-semibold text-white">Back to tests</Link>
+          </div>
+        </aside>
+      </section>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Section title="Answer breakdown">
+          <AnalyticsBars rows={answerRows} empty="Breakdown yo'q." />
+        </Section>
+        <Section title="Weak skill distribution">
+          <AnalyticsBars rows={skillRows} tone="critical" empty="Weak skill topilmadi." />
+        </Section>
       </div>
+
+      <Section title="Question review">
+        <div className="grid gap-3">
+          {questions.map((question, index) => {
+            const userAnswer = answerMap.get(question.id) ?? "";
+            const isCorrect = normalize(question.answer) === normalize(userAnswer);
+            const isSkipped = !userAnswer;
+            return (
+              <Link key={question.id} href={`/student/mistakes/${session.id}-${question.id}`} className="grid gap-3 rounded-xl border border-black/8 bg-white p-4 hover:bg-[#fbfbf6] md:grid-cols-[40px_1fr_auto] md:items-center">
+                <span className={cn("grid size-9 place-items-center rounded-lg text-sm font-semibold", isCorrect ? "bg-[#edf7f3] text-[#276a5b]" : isSkipped ? "bg-[#fbfbf6] text-black/45" : "bg-[#f8eeee] text-[#a85050]")}>{index + 1}</span>
+                <div className="min-w-0">
+                  <p className="line-clamp-1 font-semibold"><LatexText text={question.prompt} /></p>
+                  <p className="mt-1 line-clamp-1 text-sm text-black/50">{question.skill_titles.join(", ") || test.topic_slug}</p>
+                </div>
+                <Badge>{isCorrect ? "correct" : isSkipped ? "skipped" : "wrong"}</Badge>
+              </Link>
+            );
+          })}
+        </div>
+      </Section>
+
+      {correctQuestions.length ? (
+        <Section title="Strong signals">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {Array.from(new Set(correctQuestions.flatMap((question) => question.skill_titles))).slice(0, 6).map((skill) => (
+              <CompactCard key={skill} title={skill} meta="Answered correctly" href="/student/tests" action="Practice" stats={["strong"]} />
+            ))}
+          </div>
+        </Section>
+      ) : null}
     </StudentShell>
   );
 }
@@ -542,16 +639,11 @@ function PackCard({ pack }: { pack: ApiExamPack }) {
   return <CompactCard title={pack.title} meta={pack.exam_type || "Pack"} href={`/student/packs/${pack.slug}`} action="Open" status={pack.visibility} stats={[`${pack.item_count} tests`, pack.price_label || "Free"]} />;
 }
 
-function StudentShell({ eyebrow, title, copy, children, hideHeader = false }: { eyebrow: string; title: string; copy?: string; children: React.ReactNode; hideHeader?: boolean }) {
+function StudentShell({ children }: { eyebrow: string; title: string; copy?: string; children: React.ReactNode; hideHeader?: boolean }) {
   return (
-    <main className="min-h-screen bg-[#f7f7ef] px-4 py-4 text-[#151713] sm:px-6">
+    <main className="min-h-screen bg-[#f7f7ef] px-3 py-3 text-[#151713] sm:px-4">
       <div className="mx-auto max-w-7xl">
-        {!hideHeader ? <header className="rounded-xl border border-black/8 bg-white p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#276a5b]">{eyebrow}</p>
-          <h1 className="mt-2 text-2xl font-semibold">{title}</h1>
-          {copy ? <p className="mt-2 line-clamp-2 max-w-3xl text-sm leading-6 text-black/58">{copy}</p> : null}
-        </header> : null}
-        <div className={cn("grid gap-4", !hideHeader && "mt-4")}>{children}</div>
+        <div className="grid gap-4">{children}</div>
       </div>
     </main>
   );
@@ -559,6 +651,17 @@ function StudentShell({ eyebrow, title, copy, children, hideHeader = false }: { 
 
 function SummaryGrid({ stats }: { stats: Array<[string, string | number]> }) {
   return <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{stats.map(([label, value]) => <div key={label} className="min-h-[94px] rounded-xl border border-black/8 bg-white p-4"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-black/38">{label}</p><p className="mt-2 line-clamp-2 text-2xl font-semibold">{value}</p></div>)}</section>;
+}
+
+function MetricTile({ label, value, sub, tone }: { label: string; value: string | number; sub: string; tone: "green" | "red" | "neutral" }) {
+  const toneClass = tone === "green" ? "bg-[#edf7f3] text-[#276a5b]" : tone === "red" ? "bg-[#f8eeee] text-[#a85050]" : "bg-[#fbfbf6] text-black/62";
+  return (
+    <div className={cn("rounded-xl p-4", toneClass)}>
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] opacity-70">{label}</p>
+      <p className="mt-2 text-2xl font-semibold">{value}</p>
+      <p className="mt-1 text-sm opacity-70">{sub}</p>
+    </div>
+  );
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -693,7 +796,7 @@ function FilterSelect({ label, value, options, onChange }: { label: string; valu
   return (
     <label className="grid gap-1">
       <span className="text-xs font-semibold uppercase tracking-[0.12em] text-black/38">{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-semibold outline-none">
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="min-h-11 rounded-xl border border-black/10 bg-[#fbfbf6] px-3 py-3 text-sm font-semibold outline-none focus:border-[#276a5b]">
         <option value="all">All</option>
         {options.map((option) => <option key={option} value={option}>{option}</option>)}
       </select>
