@@ -1,7 +1,8 @@
-import { StudentProgressPage } from "@/features/platform/ui/panel-pages";
+import { StudentProgress } from "@/features/student/ui/student-testing";
+import { questApi } from "@/shared/api/questlab-api";
 
 export const dynamic = "force-dynamic";
 
-export default function Page() {
-  return <StudentProgressPage />;
+export default async function Page() {
+  return <StudentProgress summary={await questApi.profileSummary()} />;
 }

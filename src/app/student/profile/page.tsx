@@ -1,5 +1,8 @@
-import { redirect } from "next/navigation";
+import { StudentProfile } from "@/features/student/ui/student-testing";
+import { questApi } from "@/shared/api/questlab-api";
 
-export default function Page() {
-  redirect("/profile");
+export const dynamic = "force-dynamic";
+
+export default async function Page() {
+  return <StudentProfile summary={await questApi.profileSummary()} />;
 }

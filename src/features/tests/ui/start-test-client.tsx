@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { questApi } from "@/shared/api/questlab-api";
 import { getStudentCode } from "@/shared/model/local-identity";
 
-export function StartTestClient({ testSlug }: { testSlug: string }) {
+export function StartTestClient({ testSlug, sessionBase = "/test-session" }: { testSlug: string; sessionBase?: string }) {
   const router = useRouter();
   const [error, setError] = useState("");
 
@@ -14,7 +14,7 @@ export function StartTestClient({ testSlug }: { testSlug: string }) {
     let cancelled = false;
     questApi.startTest(testSlug, { student_code: getStudentCode(), student_name: "Student" })
       .then((session) => {
-        if (!cancelled) router.replace(`/test-session/${session.id}/question/1`);
+        if (!cancelled) router.replace(`${sessionBase}/${session.id}`);
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : "Start failed.");
@@ -22,7 +22,7 @@ export function StartTestClient({ testSlug }: { testSlug: string }) {
     return () => {
       cancelled = true;
     };
-  }, [router, testSlug]);
+  }, [router, sessionBase, testSlug]);
 
   return (
     <main className="grid min-h-screen place-items-center bg-[#f7f7ef] px-6">
