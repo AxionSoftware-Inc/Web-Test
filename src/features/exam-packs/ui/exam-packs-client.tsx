@@ -201,6 +201,18 @@ function parsePastedValue(text: string) {
   return parseLines(text);
 }
 
+function firstArray(...values: unknown[]) {
+  return values.find(Array.isArray) as unknown[] | undefined;
+}
+
+function importShapeSummary(raw: unknown) {
+  if (Array.isArray(raw)) return `top=array(${raw.length}), first_keys=${isRecord(raw[0]) ? Object.keys(raw[0]).join(",") : "none"}`;
+  if (!isRecord(raw)) return `top=${typeof raw}`;
+  const packItems = isRecord(raw.pack) && Array.isArray(raw.pack.items) ? raw.pack.items : undefined;
+  const rows = firstArray(raw.items, packItems, raw.tests);
+  return `top_keys=${Object.keys(raw).join(",") || "none"}, rows=${rows?.length ?? 0}, first_row_keys=${rows?.[0] && isRecord(rows[0]) ? Object.keys(rows[0]).join(",") : "none"}`;
+}
+
 export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { initialPacks: ApiExamPack[]; tests: ApiTest[]; usageBySlug?: Record<string, PackUsage> }) {
   const [packs, setPacks] = useState(initialPacks);
   const [title, setTitle] = useState("DTM Algebra Pack");
@@ -331,19 +343,23 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
   }
 
   function normalizeDraftItems(raw: unknown): DraftItem[] {
+    const rawRecord = isRecord(raw) ? raw : {};
+    const packRecord = isRecord(rawRecord.pack) ? rawRecord.pack : {};
+    const examPackRecord = isRecord(rawRecord.examPack) ? rawRecord.examPack : {};
     const rows = Array.isArray(raw)
       ? raw
-      : isRecord(raw) && Array.isArray(raw.items)
-        ? raw.items
-        : [];
+      : firstArray(rawRecord.items, packRecord.items, examPackRecord.items, rawRecord.pack_items, rawRecord.packItems, rawRecord.tests) ?? [];
     const items: DraftItem[] = [];
     rows.forEach((item, index) => {
       if (!isRecord(item)) return;
-      const testValue = item.test;
+      const nestedTest = isRecord(item.test) ? item.test : {};
+      const testValue = item.test ?? item.test_id ?? item.testId ?? nestedTest.id;
+      const numericTest = typeof testValue === "number" ? testValue : typeof testValue === "string" && /^\d+$/.test(testValue) ? Number(testValue) : undefined;
+      const testSlug = readString(item, ["test_slug", "slug", "testSlug"]) || readString(nestedTest, ["slug", "test_slug", "testSlug"]);
       const draftItem: DraftItem = {
-        test: typeof testValue === "number" ? testValue : undefined,
-        test_slug: readString(item, ["test_slug", "slug", "testSlug"]),
-        title: readString(item, ["title", "name"]),
+        test: numericTest,
+        test_slug: testSlug,
+        title: readString(item, ["title", "name", "test_title", "testTitle"]) || readString(nestedTest, ["title", "name"]),
         order: readNumber(item, ["order"], index + 1),
         is_required: typeof item.is_required === "boolean" ? item.is_required : item.required !== false,
       };
@@ -443,6 +459,14 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
     }
   }
 
+  async function createPackFromDraftItems(items: DraftItem[], raw: unknown) {
+    if (!items.length) {
+      setImportError("client_schema", "items_empty", `JSON ichida import qilinadigan test topilmadi. Kutilgan format: tests[].questions yoki items[].test_slug. Fayl shakli: ${importShapeSummary(raw)}`);
+      return;
+    }
+    await createPackWithItems(items);
+  }
+
   async function createPack() {
     if (jsonSource) {
       await importStrictSource(jsonSource);
@@ -458,7 +482,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
           return;
         }
         const items = normalizeDraftItems(parsed);
-        await createPackWithItems(items);
+        await createPackFromDraftItems(items, parsed);
         return;
       } catch (err) {
         setImportError("client_parse", "json_parse_failed", err instanceof Error ? `JSON parse xatosi: ${err.message}` : "JSON parse xatosi.");
@@ -480,12 +504,12 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
         return;
       }
       const items = normalizeDraftItems(parsed);
-      if (items.length) {
+      if (items.length || (isRecord(parsed) && (Array.isArray(parsed.items) || (isRecord(parsed.pack) && Array.isArray(parsed.pack.items)) || Array.isArray(parsed.tests)))) {
         setLoadedFileName(file.name);
-        await createPackWithItems(items);
+        await createPackFromDraftItems(items, parsed);
         return;
       }
-      setImportError("client_schema", "import_shape_unknown", "JSON ichida tests yoki items topilmadi. Bo'sh pack yaratilmaydi.");
+      setImportError("client_schema", "import_shape_unknown", `JSON ichida tests yoki items topilmadi. Bo'sh pack yaratilmaydi. Fayl shakli: ${importShapeSummary(parsed)}`);
     } catch (err) {
       setImportError("client_parse", "file_parse_failed", err instanceof Error ? err.message : "JSON load failed.");
     } finally {

@@ -6,6 +6,7 @@ import type { ApiExamPack, ApiSchool, ApiTeacherClass, ApiTest } from "@/shared/
 import { questApi } from "@/shared/api/questlab-api";
 import { LatexText } from "@/shared/ui/latex-text";
 import { PremiumPage, PremiumPanel } from "@/shared/ui/premium-shell";
+import { CreatorPacksManager } from "@/features/exam-packs/ui/creator-packs-manager";
 
 type Stat = { label: string; value: string | number };
 type Card = { title: string; href: string; meta?: string; copy?: string; stats?: Stat[]; status?: string };
@@ -308,9 +309,21 @@ export async function CreatorDashboardPage() {
 export async function CreatorPacksPage() {
   const packs = await questApi.examPacks();
   const results = await packResults(packs);
+  const usageBySlug = Object.fromEntries(
+    results
+      .filter((result): result is NonNullable<typeof result> => Boolean(result))
+      .map((result) => [
+        result.pack.slug,
+        {
+          attempts: result.attempts,
+          students_submitted: result.students_submitted,
+          average_score: result.average_score,
+        },
+      ]),
+  );
   return (
     <PanelShell eyebrow="Creator" title="Packs" copy="Yaratilgan packlar, edit, preview, export va publish oqimi.">
-      <CardGrid cards={packs.map((pack) => packCard(pack, `/creator/packs/${pack.slug}`, results.find((item) => item?.pack.slug === pack.slug)?.attempts ?? 0))} />
+      <CreatorPacksManager initialPacks={packs} usageBySlug={usageBySlug} />
     </PanelShell>
   );
 }

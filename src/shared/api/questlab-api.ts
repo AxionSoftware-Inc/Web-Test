@@ -621,6 +621,8 @@ export const questApi = {
     slug: string,
     payload: Partial<Pick<ApiExamPack, "title" | "description" | "exam_type" | "visibility" | "access_code" | "price_label" | "is_active">> & { manage_code?: string },
   ) => apiPatch<ApiExamPack>(`/exam-packs/${slug}/`, payload),
+  deleteExamPack: (slug: string, manageCode?: string) =>
+    apiDelete<ApiExamPack | undefined>(`/exam-packs/${slug}/${manageCode ? `?manage_code=${encodeURIComponent(manageCode)}` : ""}`),
   examPackItems: (slug: string) => apiGet<ApiExamPackItem[]>(`/exam-packs/${slug}/items/`),
   createExamPackItem: (slug: string, payload: { test: number; title: string; order: number; is_required: boolean; manage_code?: string }) =>
     apiPost<ApiExamPackItem>(`/exam-packs/${slug}/items/`, payload),
