@@ -4,6 +4,7 @@ import { BarChart3, Building2, GraduationCap, Plus, UsersRound } from "lucide-re
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { WeakTopicBars } from "@/components/questlab/charts/weak-topic-bars";
 import type { ApiRoleProfile, ApiSchool, ApiSchoolAnalytics, ApiTeacherClass } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { getSchoolManageCode, saveSchoolManageCode } from "@/shared/model/local-identity";
@@ -29,6 +30,11 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
 
   const activeSchool = schools.find((school) => school.slug === activeSlug);
   const weakSkills = analytics?.weak_skills.slice(0, 5) ?? [];
+  const weakSkillRows = weakSkills.map((skill) => ({
+    label: skill.skill,
+    value: Math.max(4, skill.percent),
+    meta: `${skill.total} questions`,
+  }));
   const schoolClasses = analytics?.classes ?? [];
   const classOptions = useMemo(() => classes.map((item) => ({ id: item.id, label: `${item.name} / ${item.teacher_name}` })), [classes]);
 
@@ -194,14 +200,8 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
 
               <Panel>
                 <Eyebrow>Weak skills</Eyebrow>
-                <div className="mt-4 grid gap-3">
-                  {weakSkills.map((skill) => (
-                    <div key={skill.skill} className="rounded-2xl border border-black/8 bg-white p-4">
-                      <div className="flex justify-between text-sm font-semibold"><span>{skill.skill}</span><span>{skill.percent}%</span></div>
-                      <div className="mt-3 h-2 rounded-full bg-black/8"><div className="h-2 rounded-full bg-[#d99b3d]" style={{ width: `${Math.max(4, skill.percent)}%` }} /></div>
-                    </div>
-                  ))}
-                  {!weakSkills.length ? <p className="rounded-2xl bg-white p-5 text-sm text-black/56">Hali weak skill analytics yo&apos;q.</p> : null}
+                <div className="mt-4">
+                  {weakSkillRows.length ? <WeakTopicBars rows={weakSkillRows} /> : <p className="rounded-2xl bg-white p-5 text-sm text-black/56">Hali weak skill analytics yo&apos;q.</p>}
                 </div>
               </Panel>
             </div>

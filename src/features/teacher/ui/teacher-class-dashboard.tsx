@@ -22,6 +22,7 @@ import {
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 
+import { WeakTopicBars } from "@/components/questlab/charts/weak-topic-bars";
 import type { ApiClassAssignment, ApiClassResults, ApiTeacherClass, ApiTest } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { cn } from "@/shared/lib/cn";
@@ -56,6 +57,11 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
   const studentCount = results.students_total || results.students_submitted || classroom.student_count;
   const studentProgress = results.student_progress ?? [];
   const sessionStats = results.assignment_stats ?? [];
+  const weakSkillRows = results.weak_skills.map((item) => ({
+    label: item.skill,
+    value: item.percent,
+    meta: `${item.total} questions`,
+  }));
   const csvExport = useMemo(() => {
     return [
       "student,test,assignment,score,correct,total,submitted_at",
@@ -397,20 +403,10 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
           </div>
 
           <aside className="grid gap-6">
-            <section className="rounded-[28px] border border-black/8 bg-ink p-5 text-white shadow-[0_18px_55px_rgba(21,23,19,0.11)]">
+            <section className="rounded-[28px] border border-black/8 bg-white p-5 shadow-[0_18px_55px_rgba(21,23,19,0.07)]">
               <h2 className="text-2xl font-semibold">Weak skills</h2>
-              <div className="mt-4 grid gap-3">
-                {results.weak_skills.length ? results.weak_skills.map((item) => (
-                  <div key={item.skill} className="rounded-2xl bg-white/8 p-4">
-                    <div className="flex justify-between gap-3 text-sm font-semibold">
-                      <span>{item.skill}</span>
-                      <span>{item.percent}%</span>
-                    </div>
-                    <div className="mt-3 h-2 rounded-full bg-white/12">
-                      <div className="h-2 rounded-full bg-accent" style={{ width: `${item.percent}%` }} />
-                    </div>
-                  </div>
-                )) : <p className="text-sm leading-6 text-white/65">Studentlar test topshirgandan keyin weak skilllar shu yerda chiqadi.</p>}
+              <div className="mt-4">
+                {weakSkillRows.length ? <WeakTopicBars rows={weakSkillRows} /> : <p className="rounded-2xl bg-surface-soft p-5 text-sm text-muted">Studentlar test topshirgandan keyin weak skilllar shu yerda chiqadi.</p>}
               </div>
             </section>
 

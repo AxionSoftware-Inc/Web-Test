@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, Flag, RotateCcw, Timer } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { Progress } from "@/components/ui/progress";
 import {
   getFakeSession,
   getFakeSessionStats,
@@ -83,9 +84,7 @@ export function SessionQuestionClient({
               <span>Progress</span>
               <span>{progress}%</span>
             </div>
-            <div className="mt-2 h-2 rounded bg-black/10">
-              <div className="h-2 rounded bg-brand" style={{ width: `${progress}%` }} />
-            </div>
+            <Progress value={progress} className="mt-2" />
           </div>
           <Link href={`/test-session/${sessionId}/submit`} className="rounded-md bg-ink px-4 py-2 text-center text-sm font-semibold text-white">
             Submit

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Flag } from "lucide-react";
 
+import { Progress } from "@/components/ui/progress";
 import {
   getFakeSession,
   getFakeSessionStats,
@@ -39,9 +40,7 @@ export function SessionReviewClient({
               {progress}% complete
             </div>
           </div>
-          <div className="mt-5 h-2 rounded bg-black/10">
-            <div className="h-2 rounded bg-brand" style={{ width: `${progress}%` }} />
-          </div>
+          <Progress value={progress} className="mt-5" />
         </div>
 
         <div className="grid gap-3">

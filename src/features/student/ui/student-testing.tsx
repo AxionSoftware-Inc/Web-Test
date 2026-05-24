@@ -5,14 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { PackCard, TestCatalogCard } from "@/components/student/student-cards";
 import { AnalyticsBars, Badge, CompactCard, Empty, FilterSelect, MetricTile, MistakeCard, NumberField, PageHeader, ProgressRing, Section, StudentShell, SummaryGrid, TopicActionList, TrendChart } from "@/components/student/student-ui";
 import type { ApiExamPack, ApiExamPackItem, ApiMistakesSummary, ApiProfileSummary, ApiSession, ApiTest } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { cn } from "@/shared/lib/cn";
 import { getStudentCode } from "@/shared/model/local-identity";
 import { LatexText } from "@/shared/ui/latex-text";
-
-type TestStatus = "assigned" | "in_progress" | "completed" | "available";
 
 function normalize(value: string) {
   return value.toLowerCase().replace(/\s+/g, "").replace(/[()]/g, "").replace(/\\/g, "");
@@ -611,38 +610,4 @@ export function StudentProfile({ summary }: { summary: ApiProfileSummary }) {
       </Section>
     </StudentShell>
   );
-}
-
-function TestCatalogCard({ test, status, session, relatedCount }: { test: ApiTest; status: TestStatus; session?: ApiSession; relatedCount: number }) {
-  const router = useRouter();
-  const startHref = status === "in_progress" && session ? `/student/test-session/${session.id}` : `/student/tests/${test.slug}/start`;
-  return (
-    <article onClick={() => router.push(`/student/tests/${test.slug}`)} className="flex min-h-[158px] cursor-pointer flex-col quest-card p-4 hover:bg-surface-soft">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h3 className="line-clamp-2 font-semibold leading-5">{test.title}</h3>
-          <p className="mt-1 line-clamp-1 text-sm text-muted">{test.subject_slug} / {test.topic_slug}</p>
-        </div>
-        <Badge>{status === "completed" ? "done" : status === "in_progress" ? "active" : test.difficulty}</Badge>
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-subtle">
-        <span className="rounded-lg bg-surface-soft px-2 py-1">{relatedCount} tests</span>
-        <span className="rounded-lg bg-surface-soft px-2 py-1">{test.test_questions.length} questions</span>
-        <span className="rounded-lg bg-surface-soft px-2 py-1">{test.estimated_minutes} min</span>
-      </div>
-      <button
-        onClick={(event) => {
-          event.stopPropagation();
-          router.push(startHref);
-        }}
-        className="mt-auto w-fit rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover"
-      >
-        {status === "in_progress" ? "Continue" : "Start"}
-      </button>
-    </article>
-  );
-}
-
-function PackCard({ pack }: { pack: ApiExamPack }) {
-  return <CompactCard title={pack.title} meta={pack.exam_type || "Pack"} href={`/student/packs/${pack.slug}`} action="Start" status={pack.visibility} stats={[`${pack.item_count} tests`, pack.price_label || "Free"]} />;
 }

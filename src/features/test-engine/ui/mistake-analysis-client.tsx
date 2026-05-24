@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { TopicBreakdownChart } from "@/components/questlab/charts/topic-breakdown-chart";
 import { getFakeSession, type FakeSessionState } from "@/features/test-engine/model/fake-test-backend";
 import { getSkillDiagnosis, getWeakSkills } from "@/features/test-engine/model/skill-diagnosis";
 import type { GeneratedQuestion } from "@/features/test-generator/model/test-generator-types";
@@ -20,10 +21,16 @@ export function MistakeAnalysisClient({
   const [session] = useState<FakeSessionState>(() => getFakeSession(sessionId, testSlug));
   const diagnosis = useMemo(() => getSkillDiagnosis(session, questions), [session, questions]);
   const weakSkills = useMemo(() => getWeakSkills(session, questions), [session, questions]);
+  const diagnosisRows = diagnosis.map((item) => ({
+    label: item.skill,
+    value: Math.round((item.correct / item.total) * 100),
+    meta: `${item.correct}/${item.total} correct`,
+  }));
 
   return (
     <section className="grid gap-5 py-8 lg:grid-cols-[1fr_340px]">
       <div className="grid gap-4">
+        <TopicBreakdownChart rows={diagnosisRows} color="var(--chart-1)" />
         {diagnosis.map((item) => (
           <GlassCard key={item.skill} className="p-5">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -34,9 +41,6 @@ export function MistakeAnalysisClient({
                 </p>
               </div>
               <span className={statusClass(item.status)}>{item.status}</span>
-            </div>
-            <div className="mt-4 h-2 rounded bg-black/10">
-              <div className="h-2 rounded bg-brand" style={{ width: `${Math.round((item.correct / item.total) * 100)}%` }} />
             </div>
           </GlassCard>
         ))}

@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, Flag, Timer } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { Progress } from "@/components/ui/progress";
 import type { ApiAnswer, ApiQuestion, ApiSession } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { cn } from "@/shared/lib/cn";
@@ -79,9 +80,7 @@ export function BackendSessionQuestionClient({
               <span>Progress</span>
               <span>{progress}%</span>
             </div>
-            <div className="mt-2 h-2 rounded bg-black/10">
-              <div className="h-2 rounded bg-brand" style={{ width: `${progress}%` }} />
-            </div>
+            <Progress value={progress} className="mt-2" />
           </div>
           <Link href={`/test-session/${session.id}/submit`} className="rounded-md bg-ink px-4 py-2 text-center text-sm font-semibold text-white">Finish test</Link>
         </div>

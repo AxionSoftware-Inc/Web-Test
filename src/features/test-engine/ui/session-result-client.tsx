@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Award, RotateCcw, SearchCheck } from "lucide-react";
 
+import { MasteryRadialChart } from "@/components/questlab/charts/mastery-radial-chart";
+import { Progress } from "@/components/ui/progress";
 import {
   getFakeSession,
   getFakeSessionStats,
@@ -47,13 +49,9 @@ export function SessionResultClient({
                 {stats.percent >= 70 ? "Passing score reached. Review mistakes and move to the next level." : "Below passing score. Review weak questions before retaking."}
               </p>
             </div>
-            <div className="grid size-36 place-items-center rounded-full border-[10px] border-brand-soft bg-surface-soft">
-              <span className="text-3xl font-semibold text-brand">{stats.correct}/{stats.total}</span>
-            </div>
+            <MasteryRadialChart label="Score" value={stats.percent} />
           </div>
-          <div className="mt-6 h-3 rounded bg-black/10">
-            <div className="h-3 rounded bg-brand" style={{ width: `${stats.percent}%` }} />
-          </div>
+          <Progress value={stats.percent} className="mt-6 h-3" />
         </div>
 
         <div className="grid gap-3 md:grid-cols-4">

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { SearchCheck } from "lucide-react";
 
+import { Progress } from "@/components/ui/progress";
 import {
   getFakeSession,
   getFakeSessionStats,
@@ -45,9 +46,7 @@ export function ResultDetailClient({
                 Mistake analysis
               </Link>
             </div>
-            <div className="mt-6 h-3 overflow-hidden rounded bg-black/10">
-            <div className="h-3 rounded bg-brand" style={{ width: `${stats.percent}%` }} />
-            </div>
+            <Progress value={stats.percent} className="mt-6 h-3" />
           </div>
 
           <div className="grid gap-4 md:grid-cols-4">

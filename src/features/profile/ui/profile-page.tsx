@@ -3,6 +3,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { MasteryRadialChart } from "@/components/questlab/charts/mastery-radial-chart";
+import { TopicBreakdownChart } from "@/components/questlab/charts/topic-breakdown-chart";
 import type { ApiProfileSummary, ApiRoleProfile } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { roles, type UserRole } from "@/shared/model/roles";
@@ -16,10 +18,19 @@ type Props = {
 };
 
 export function ProfilePage({ summary, profile, onProfileChange }: Props) {
-  const maxWeekly = Math.max(1, ...summary.weekly_activity.map((item) => item.value));
   const topicProgress = summary.topic_progress.length
     ? summary.topic_progress
     : [{ topic: "Algebra", slug: "algebra", value: 0, attempts: 0 }];
+  const weeklyRows = summary.weekly_activity.map((item) => ({
+    label: item.day,
+    value: item.value,
+    meta: `${item.value} submitted`,
+  }));
+  const topicRows = topicProgress.map((topic) => ({
+    label: topic.topic,
+    value: topic.value,
+    meta: `${topic.attempts} attempts`,
+  }));
 
   return (
     <main className="min-h-screen bg-background text-ink">
@@ -39,7 +50,7 @@ export function ProfilePage({ summary, profile, onProfileChange }: Props) {
                 <p className="text-sm text-black/50">Current level</p>
                 <h2 className="mt-2 text-2xl font-semibold">{summary.level}</h2>
               </div>
-              <RadialScore value={summary.math_mastery} />
+              <MasteryRadialChart label="Math mastery" value={summary.math_mastery} />
             </div>
           </GlassCard>
         </header>
@@ -62,40 +73,16 @@ export function ProfilePage({ summary, profile, onProfileChange }: Props) {
               </div>
               <TrendingUp className="size-5 text-brand" />
             </div>
-            <div className="mt-6 flex h-64 items-end gap-3">
-              {summary.weekly_activity.map((item) => (
-                <div key={item.day} className="flex flex-1 flex-col items-center gap-2">
-                  <div className="flex h-52 w-full items-end rounded-2xl border border-black/8 bg-white/62 p-2">
-                    <div
-                      className="w-full rounded-xl bg-gradient-to-t from-ink via-brand to-accent shadow-[0_12px_30px_rgba(39,106,91,0.25)] transition-all"
-                      style={{ height: `${Math.max(6, (item.value / maxWeekly) * 100)}%` }}
-                    />
-                  </div>
-                  <span className="text-xs font-semibold text-black/50">{item.day}</span>
-                </div>
-              ))}
+            <div className="mt-6">
+              <TopicBreakdownChart rows={weeklyRows} color="var(--chart-1)" />
             </div>
           </GlassCard>
 
           <GlassCard className="p-5">
             <h2 className="text-xl font-semibold">Topic mastery</h2>
             <p className="mt-1 text-sm text-black/50">Backend resultlardan mavzu kesimida hisoblandi.</p>
-            <div className="mt-6 grid gap-4">
-              {topicProgress.map((topic) => (
-                <div key={topic.slug} className="rounded-2xl border border-black/8 bg-white/62 p-4">
-                  <div className="flex justify-between gap-3 text-sm font-semibold">
-                    <span>{topic.topic}</span>
-                    <span>{topic.value}%</span>
-                  </div>
-                  <div className="mt-3 h-3 overflow-hidden rounded-full bg-black/8">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-ink to-accent"
-                      style={{ width: `${topic.value}%` }}
-                    />
-                  </div>
-                  <p className="mt-2 text-xs text-black/45">{topic.attempts} attempt</p>
-                </div>
-              ))}
+            <div className="mt-6">
+              <TopicBreakdownChart rows={topicRows} color="var(--chart-2)" />
             </div>
           </GlassCard>
         </section>
@@ -146,21 +133,6 @@ export function ProfilePage({ summary, profile, onProfileChange }: Props) {
         </section>
       </Container>
     </main>
-  );
-}
-
-function RadialScore({ value }: { value: number }) {
-  return (
-    <div
-      className="grid size-28 place-items-center rounded-full"
-      style={{
-        background: `conic-gradient(var(--brand) ${value * 3.6}deg, rgba(0,0,0,0.08) 0deg)`,
-      }}
-    >
-      <div className="grid size-20 place-items-center rounded-full bg-surface-soft shadow-inner">
-        <span className="text-2xl font-semibold">{value}%</span>
-      </div>
-    </div>
   );
 }
 

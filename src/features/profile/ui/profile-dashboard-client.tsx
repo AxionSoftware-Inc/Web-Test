@@ -4,6 +4,8 @@ import { Award, BookOpen, Flame, Target } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { MasteryRadialChart } from "@/components/questlab/charts/mastery-radial-chart";
+import { TopicBreakdownChart } from "@/components/questlab/charts/topic-breakdown-chart";
 import { getAllFakeSessions } from "@/features/test-engine/model/fake-test-backend";
 import { getTestOrThrow, getTestQuestions } from "@/features/test-engine/model/test-engine-content";
 import { getFakeSessionStats } from "@/features/test-engine/model/fake-test-backend";
@@ -42,7 +44,12 @@ export function ProfileDashboardClient() {
   const completed = attempts.filter((attempt) => attempt.submittedAt);
   const average = completed.length === 0 ? 0 : Math.round(completed.reduce((sum, item) => sum + item.score, 0) / completed.length);
   const mastery = Math.max(18, average || 0);
-  const maxWeekly = Math.max(...fallbackWeekly.map((item) => item.value));
+  const weeklyRows = fallbackWeekly.map((item) => ({ label: item.day, value: item.value, meta: `${item.value} activity` }));
+  const masteryRows = ["Algebra", "Arithmetic", "Geometry", "Calculus"].map((topic, index) => ({
+    label: topic,
+    value: Math.max(12, mastery - index * 14),
+    meta: "Local demo mastery",
+  }));
 
   if (attempts.length === 0) {
     return (
@@ -72,41 +79,21 @@ export function ProfileDashboardClient() {
       <section className="grid gap-5 lg:grid-cols-[1fr_0.75fr]">
         <GlassCard className="p-5">
           <h2 className="text-xl font-semibold">Weekly activity</h2>
-          <div className="mt-6 flex h-56 items-end gap-3">
-            {fallbackWeekly.map((item) => (
-              <div key={item.day} className="flex flex-1 flex-col items-center gap-2">
-                <div className="flex h-44 w-full items-end rounded-xl bg-white/50 px-2">
-                  <div className="w-full rounded-t-lg bg-brand" style={{ height: `${Math.max(12, (item.value / maxWeekly) * 100)}%` }} />
-                </div>
-                <span className="text-xs font-semibold text-black/50">{item.day}</span>
-              </div>
-            ))}
+          <div className="mt-6">
+            <TopicBreakdownChart rows={weeklyRows} color="var(--chart-1)" />
           </div>
         </GlassCard>
 
         <GlassCard className="p-5">
           <h2 className="text-xl font-semibold">Math mastery</h2>
-          <div className="mt-5 h-3 rounded bg-black/10">
-            <div className="h-3 rounded bg-brand" style={{ width: `${mastery}%` }} />
+          <div className="mt-5">
+            <MasteryRadialChart label="Math mastery" value={mastery} />
           </div>
           <p className="mt-3 text-sm leading-6 text-black/60">
             Calculated from fake local test sessions. Backend later replaces this with real result analytics.
           </p>
-          <div className="mt-5 grid gap-4">
-            {["Algebra", "Arithmetic", "Geometry", "Calculus"].map((topic, index) => {
-              const value = Math.max(12, mastery - index * 14);
-              return (
-                <div key={topic}>
-                  <div className="flex justify-between text-sm font-semibold">
-                    <span>{topic}</span>
-                    <span>{value}%</span>
-                  </div>
-                  <div className="mt-2 h-2 rounded bg-black/10">
-                    <div className="h-2 rounded bg-brand" style={{ width: `${value}%` }} />
-                  </div>
-                </div>
-              );
-            })}
+          <div className="mt-5">
+            <TopicBreakdownChart rows={masteryRows} color="var(--chart-2)" />
           </div>
         </GlassCard>
       </section>

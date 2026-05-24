@@ -4,6 +4,7 @@ import { BarChart3, CheckCircle2, Download, FileJson, FileUp, Link2, Plus, Searc
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 
+import { WeakTopicBars } from "@/components/questlab/charts/weak-topic-bars";
 import type { ApiExamPack, ApiExamPackItem, ApiExamPackResults, ApiTest, StrictPackImportSource } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { cn } from "@/shared/lib/cn";
@@ -186,6 +187,11 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
   const jsonRef = useRef<HTMLInputElement>(null);
 
   const rows = results.results;
+  const weakSkillRows = (results.weak_skills ?? []).map((skill) => ({
+    label: skill.skill,
+    value: skill.percent,
+    meta: `${skill.total} questions`,
+  }));
   const csv = useMemo(() => [
     "student,test,item,score,correct,total,submitted_at",
     ...rows.map((item) => [item.student_name, item.test_title, item.item_title, item.score, item.correct, item.total, item.submitted_at ?? ""].map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")),
@@ -485,7 +491,7 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
                 <button onClick={savePack} disabled={busy} className="rounded-2xl bg-ink px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">Save changes</button>
               </div>
             </section>
-            <section className="border-y border-black/8 bg-ink p-5 text-white sm:p-6"><h2 className="text-2xl font-semibold">Weak skills</h2><div className="mt-4 grid gap-3">{results.weak_skills?.length ? results.weak_skills.map((skill) => <div key={skill.skill} className="rounded-2xl bg-white/8 p-4"><div className="flex justify-between text-sm font-semibold"><span>{skill.skill}</span><span>{skill.percent}%</span></div><div className="mt-3 h-2 rounded-full bg-white/12"><div className="h-2 rounded-full bg-accent" style={{ width: `${skill.percent}%` }} /></div></div>) : <p className="text-sm text-white/65">Natijalar bo&apos;lsa weak skilllar chiqadi.</p>}</div></section>
+            <section className="border-y border-black/8 bg-white p-5 sm:p-6"><h2 className="text-2xl font-semibold">Weak skills</h2><div className="mt-4">{weakSkillRows.length ? <WeakTopicBars rows={weakSkillRows} /> : <p className="rounded-2xl bg-surface-soft p-5 text-sm text-muted">Natijalar bo&apos;lsa weak skilllar chiqadi.</p>}</div></section>
             <section className="border-y border-black/8 bg-white p-5 sm:p-6"><h2 className="text-2xl font-semibold">Pack qo&apos;shish usullari</h2><div className="mt-4 grid gap-3 text-sm text-black/58"><p><strong>Manual:</strong> bitta-bitta backend test tanlab qo&apos;shish.</p><p><strong>CSV:</strong> katta packni jadvaldan import qilish.</p><p><strong>JSON:</strong> boshqa akkaunt yoki backupdan pack itemlarni qayta yuklash.</p></div></section>
             <section className="border-y border-black/8 bg-white p-5 sm:p-6">
               <h2 className="text-2xl font-semibold">JSON import</h2>
