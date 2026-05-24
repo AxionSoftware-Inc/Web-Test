@@ -185,7 +185,15 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
   }
 
   async function createPackWithItems(items: DraftItem[]) {
-    if (!items.length) {
+    const knownIds = new Set(tests.map((test) => test.id));
+    const knownSlugs = new Set(tests.map((test) => test.slug));
+    const validItems = items.filter((item) => {
+      if (item.test && knownIds.has(item.test)) return true;
+      if (item.test_slug && knownSlugs.has(item.test_slug)) return true;
+      return false;
+    });
+    const invalidCount = items.length - validItems.length;
+    if (!validItems.length) {
       setWarning("Import yoki paste qilingan testlar topilmadi. Bo'sh pack yaratilmaydi.");
       return;
     }
@@ -205,11 +213,19 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
         is_active: true,
       });
       savePackManageCode(pack.slug, pack.manage_code);
-      if (items.length) {
-        const result = await questApi.bulkCreateExamPackItems(pack.slug, { manage_code: pack.manage_code, items });
-        if (result.skipped.length) {
-          setError(`${result.skipped.length} test qo'shilmadi.`);
+      if (validItems.length) {
+        const result = await questApi.bulkCreateExamPackItems(pack.slug, { manage_code: pack.manage_code, items: validItems });
+        if (!result.created.length) {
+          setWarning("Testlar packga qo'shilmadi. Bo'sh pack saqlanmadi.");
+          return;
         }
+        if (result.skipped.length) {
+          setError(`${result.skipped.length + invalidCount} test qo'shilmadi.`);
+        } else if (invalidCount) {
+          setError(`${invalidCount} test topilmadi va qo'shilmadi.`);
+        }
+        pack.item_count = result.created.length;
+        pack.items = result.created;
       }
       setPacks((items) => [pack, ...items]);
       setDraftItems([]);
