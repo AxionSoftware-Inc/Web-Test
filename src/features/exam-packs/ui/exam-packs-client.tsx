@@ -278,14 +278,27 @@ function importShapeSummary(raw: unknown) {
   return `top_keys=${Object.keys(raw).join(",") || "none"}, rows=${rows?.length ?? 0}, first_row_keys=${rows?.[0] && isRecord(rows[0]) ? Object.keys(rows[0]).join(",") : "none"}`;
 }
 
+function inferPackTitle(raw: unknown, fallback: string) {
+  if (isRecord(raw)) {
+    const direct = readString(raw, ["title", "name", "nom", "subject", "branch", "topic", "category"]);
+    if (direct) return direct;
+    const packTitle = isRecord(raw.pack) ? readString(raw.pack, ["title", "name", "nom", "subject", "branch", "topic", "category"]) : "";
+    if (packTitle) return packTitle;
+    const rows = firstArray(raw.tests, raw.questions, raw.items);
+    const rowTitle = rows?.find(isRecord);
+    if (rowTitle) return readString(rowTitle, ["title", "name", "nom", "subject", "branch", "topic", "category"], fallback);
+  }
+  return fallback;
+}
+
 export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { initialPacks: ApiExamPack[]; tests: ApiTest[]; usageBySlug?: Record<string, PackUsage> }) {
   const [packs, setPacks] = useState(initialPacks);
-  const [title, setTitle] = useState("DTM Algebra Pack");
-  const [examType, setExamType] = useState("DTM Math");
-  const [description, setDescription] = useState("Algebra bo'yicha tayyor testlar to'plami.");
+  const [title, setTitle] = useState("");
+  const [examType, setExamType] = useState("");
+  const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState<"public" | "private">("public");
-  const [accessCode, setAccessCode] = useState("2026");
-  const [priceLabel, setPriceLabel] = useState("99 000 so'm");
+  const [accessCode, setAccessCode] = useState("");
+  const [priceLabel, setPriceLabel] = useState("");
   const [mode, setMode] = useState<"select" | "draft">("draft");
   const [importMode, setImportMode] = useState<ImportMode>("json");
   const [selectedTestIds, setSelectedTestIds] = useState<number[]>([]);
@@ -340,19 +353,21 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
     return true;
   }
 
-  function applyPackInfoFromSource(source: StrictPackImportSource) {
+  function applyPackInfoFromSource(source: StrictPackImportSource, overwriteFilled = false) {
     const nextTitle = source.pack.title?.trim();
-    if (nextTitle) setTitle(nextTitle);
+    if (nextTitle && (overwriteFilled || !title.trim())) setTitle(nextTitle);
     const subject = source.pack.subject?.trim();
     const branch = source.pack.branch?.trim();
     const level = source.pack.level?.trim();
-    setExamType([subject, branch, level].filter(Boolean).join(" / ") || examType);
-    setDescription([branch, level, source.pack.language].filter(Boolean).join(" / "));
+    const nextExamType = [subject, branch, level].filter(Boolean).join(" / ");
+    const nextDescription = [branch, level, source.pack.language].filter(Boolean).join(" / ");
+    if (nextExamType && (overwriteFilled || !examType.trim())) setExamType(nextExamType);
+    if (nextDescription && (overwriteFilled || !description.trim())) setDescription(nextDescription);
   }
 
   function normalizeImportSource(raw: unknown): StrictPackImportSource | null {
     const fallbackPack = {
-      title,
+      title: inferPackTitle(raw, title || "Imported pack"),
       subject: examType.toLowerCase().includes("math") ? "math" : slugify(examType || "general"),
       branch: slugify(examType || title || "general"),
       level: "mixed",
@@ -494,7 +509,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
       setImportError("client_schema", "tests_empty", "JSON ichida tests bo'sh. Kamida bitta test bo'lmasa pack yaratilmaydi.");
       return;
     }
-    applyPackInfoFromSource(source);
+    applyPackInfoFromSource(source, true);
     if (!requireUniqueTitle(source.pack.title)) return;
     setSaving(true);
     setError("");
@@ -633,7 +648,8 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
     setError("");
     setNotice("");
     try {
-      const parsed = parsePastedValue(await file.text());
+      const text = normalizeJsonTextareaBackslashes(await file.text());
+      const parsed = parsePastedValue(text);
       const source = normalizeImportSource(parsed);
       if (source) {
         setLoadedFileName(file.name);
@@ -676,7 +692,8 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
   }
 
   function handleJsonPasteChange(value: string) {
-    setPasteValue(normalizeJsonTextareaBackslashes(value));
+    const normalized = normalizeJsonTextareaBackslashes(value);
+    setPasteValue(normalized);
     setJsonSource(null);
     setDraftItems([]);
     setSelectedTestIds([]);
@@ -684,13 +701,19 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
     setLoadedFileName("");
     setNotice(value.trim() ? "Paste qilingan JSON hali DBga saqlanmagan. Saqlash uchun chapdagi Create pack bosing." : "");
     setError("");
+    try {
+      const source = normalizeImportSource(parsePastedValue(normalized));
+      if (source) applyPackInfoFromSource(source, true);
+    } catch {
+      // Import may be incomplete while typing; save keeps the real validation path.
+    }
   }
 
   function previewJsonPackInfo() {
     if (!pasteValue.trim()) return;
     try {
       const source = normalizeImportSource(parsePastedValue(pasteValue));
-      if (source) applyPackInfoFromSource(source);
+      if (source) applyPackInfoFromSource(source, true);
     } catch {
       // Full validation runs on save; preview should not interrupt typing.
     }
