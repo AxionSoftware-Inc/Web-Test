@@ -4,12 +4,164 @@ import { BarChart3, CheckCircle2, Download, FileJson, FileUp, Link2, Plus, Searc
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 
-import type { ApiExamPack, ApiExamPackItem, ApiExamPackResults, ApiTest } from "@/shared/api/questlab-api";
+import type { ApiExamPack, ApiExamPackItem, ApiExamPackResults, ApiTest, StrictPackImportSource } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { cn } from "@/shared/lib/cn";
 import { getPackManageCode } from "@/shared/model/local-identity";
 import { Eyebrow, FieldShell, premiumInputClass } from "@/shared/ui/premium-shell";
 import { StudentPackClient } from "./student-pack-client";
+
+type PackImportQuestion = StrictPackImportSource["tests"][number]["questions"][number];
+type PackImportTest = StrictPackImportSource["tests"][number];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function readString(source: Record<string, unknown>, keys: string[], fallback = "") {
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  }
+  return fallback;
+}
+
+function readNumber(source: Record<string, unknown>, keys: string[], fallback: number) {
+  for (const key of keys) {
+    const value = source[key];
+    const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value.replace(/[^\d.]/g, "")) : NaN;
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return fallback;
+}
+
+function slugify(value: string) {
+  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50);
+}
+
+function normalizeJsonTextareaBackslashes(text: string) {
+  return text.replace(/\\+/g, (slashes) => slashes.length % 2 === 0 ? slashes : `${slashes}\\`);
+}
+
+function escapeLooseJsonBackslashes(text: string) {
+  let output = "";
+  let inString = false;
+  let escaped = false;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    const next = text[index + 1] ?? "";
+    if (!inString) {
+      output += char;
+      if (char === '"') inString = true;
+      continue;
+    }
+    if (escaped) {
+      output += char;
+      escaped = false;
+      continue;
+    }
+    if (char === '"') {
+      output += char;
+      inString = false;
+      continue;
+    }
+    if (char !== "\\") {
+      output += char;
+      continue;
+    }
+    const afterNext = text[index + 2] ?? "";
+    const jsonEscape = next === '"' || next === "\\" || next === "/" || next === "n" || next === "r" || next === "t" || next === "b" || next === "f";
+    const looksLikeLatexCommand = /[bfnrt]/.test(next) && /[A-Za-z]/.test(afterNext);
+    const validUnicodeEscape = next === "u" && /^[0-9a-fA-F]{4}$/.test(text.slice(index + 2, index + 6));
+    output += (jsonEscape && !looksLikeLatexCommand) || validUnicodeEscape ? char : "\\\\";
+    if ((jsonEscape && !looksLikeLatexCommand) || validUnicodeEscape) escaped = true;
+  }
+  return output;
+}
+
+function parseJsonImport(text: string) {
+  const trimmed = text.trim();
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const jsonText = fenced?.[1]?.trim() ?? trimmed;
+  try {
+    return JSON.parse(jsonText) as unknown;
+  } catch (error) {
+    try {
+      return JSON.parse(escapeLooseJsonBackslashes(jsonText)) as unknown;
+    } catch {
+      throw error;
+    }
+  }
+}
+
+function normalizeQuestion(raw: unknown, fallbackDifficulty: PackImportTest["difficulty"]): PackImportQuestion | null {
+  if (!isRecord(raw)) return null;
+  const options = Array.isArray(raw.options)
+    ? raw.options.map((item, index) => isRecord(item)
+      ? { id: readString(item, ["id", "key"], String.fromCharCode(65 + index)), text: readString(item, ["text", "label", "value", "body", "title"]) }
+      : { id: String.fromCharCode(65 + index), text: String(item) }).filter((item) => item.text)
+    : [];
+  const answer = raw.answer ?? raw.javob;
+  const correct = isRecord(answer) ? readString(answer, ["correct", "id", "value", "text"]) : readString(raw, ["correct", "correct_answer", "answer", "answer_key", "javob"], String(answer ?? ""));
+  const body = readString(raw, ["body", "prompt", "question", "text", "savol", "matn"]);
+  if (!body && !options.length && !correct) return null;
+  return {
+    type: readString(raw, ["type"], options.length ? "single_choice" : "short_answer") as PackImportQuestion["type"],
+    body,
+    options,
+    answer: { correct },
+    explanation: readString(raw, ["explanation", "solution", "commentary", "yechim", "izoh"]),
+    skills: ["general"],
+    difficulty: readString(raw, ["difficulty", "level"], fallbackDifficulty) as PackImportQuestion["difficulty"],
+  };
+}
+
+function normalizeImportSource(raw: unknown, pack: ApiExamPack): StrictPackImportSource | null {
+  if (!isRecord(raw) && !Array.isArray(raw)) return null;
+  const record = isRecord(raw) ? raw : {};
+  const packRecord = isRecord(record.pack) ? record.pack : record;
+  const fallbackPack = {
+    title: pack.title,
+    subject: slugify(readString(packRecord, ["subject"], pack.exam_type || "math")),
+    branch: slugify(readString(packRecord, ["branch", "topic", "category"], pack.exam_type || pack.title)),
+    level: readString(packRecord, ["level", "difficulty"], "mixed"),
+    language: readString(packRecord, ["language", "lang"], "uz"),
+  };
+  const rows = Array.isArray(raw)
+    ? raw
+    : Array.isArray(record.tests)
+      ? record.tests
+      : Array.isArray(record.questions)
+        ? record.questions
+        : [];
+  if (!rows.length) return null;
+  const tests = rows
+    .map((item, index) => {
+      if (!isRecord(item)) return null;
+      const questionRows = Array.isArray(item.questions) || Array.isArray(item.test_questions) || Array.isArray(item.savollar)
+        ? (item.questions ?? item.test_questions ?? item.savollar) as unknown[]
+        : null;
+      if (questionRows) {
+        const difficulty = readString(item, ["difficulty", "level"], "beginner") as PackImportTest["difficulty"];
+        const questions = questionRows.map((question) => normalizeQuestion(question, difficulty)).filter((question): question is PackImportQuestion => Boolean(question));
+        return questions.length ? {
+          title: readString(item, ["title", "name", "nom"], `${pack.title} ${index + 1}`),
+          topic: readString(item, ["topic", "topic_slug", "category", "branch", "subject"], fallbackPack.branch),
+          difficulty,
+          time_limit_minutes: readNumber(item, ["time_limit_minutes", "estimated_minutes", "minutes"], 15),
+          questions,
+        } : null;
+      }
+      return null;
+    })
+    .filter((item): item is PackImportTest => Boolean(item));
+  if (tests.length) return { version: "1.0", pack: fallbackPack, tests };
+  const questions = rows.map((item) => normalizeQuestion(item, "beginner")).filter((item): item is PackImportQuestion => Boolean(item));
+  return questions.length
+    ? { version: "1.0", pack: fallbackPack, tests: [{ title: readString(record, ["title", "name"], pack.title), topic: fallbackPack.branch, difficulty: "beginner", time_limit_minutes: 15, questions }] }
+    : null;
+}
 
 export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack: ApiExamPack; initialItems: ApiExamPackItem[]; results: ApiExamPackResults; tests: ApiTest[] }) {
   const [currentPack, setCurrentPack] = useState(pack);
@@ -27,6 +179,7 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
   const [selectedTestIds, setSelectedTestIds] = useState<number[]>([]);
   const [query, setQuery] = useState("");
   const [testQuery, setTestQuery] = useState("");
+  const [jsonValue, setJsonValue] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -187,21 +340,40 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
     }
   }
 
-  async function importJson(file: File) {
+  async function importJsonText(text: string, fileName?: string) {
     setBusy(true);
     setNotice("");
     try {
-      const raw = JSON.parse(await file.text()) as { items?: Array<{ test_slug?: string; title?: string; order?: number; is_required?: boolean; test?: number }> };
+      const raw = parseJsonImport(normalizeJsonTextareaBackslashes(text)) as { items?: Array<{ test_slug?: string; title?: string; order?: number; is_required?: boolean; test?: number }> };
+      const source = normalizeImportSource(raw, currentPack);
+      if (source) {
+        const imported = await questApi.importExamPackTests(pack.slug, { source, manage_code: getPackManageCode(pack.slug), manage_key: getPackManageCode(pack.slug) });
+        setItems((current) => [...current, ...imported.created].sort((a, b) => a.order - b.order));
+        setNotice(`${imported.created.length} ta yangi test ${fileName ? `${fileName} faylidan ` : ""}packga qo'shildi. ${imported.skipped.length} ta test o'tkazib yuborildi.`);
+        setJsonValue("");
+        return;
+      }
       const body = Array.isArray(raw.items) ? raw.items : [];
+      if (!body.length) {
+        setNotice("[client_schema/items_empty] JSON ichida tests[].questions yoki items[].test_slug topilmadi.");
+        return;
+      }
       const imported = await questApi.bulkCreateExamPackItems(pack.slug, { manage_code: getPackManageCode(pack.slug), items: body });
       setItems((current) => [...current, ...imported.created].sort((a, b) => a.order - b.order));
-      setNotice(`${imported.created.length} ta JSON item import qilindi. ${imported.skipped.length} ta qator o'tkazib yuborildi.`);
+      setNotice(`${imported.created.length} ta mavjud test item sifatida import qilindi. ${imported.skipped.length} ta qator o'tkazib yuborildi.`);
+      setJsonValue("");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "JSON import failed.");
     } finally {
       setBusy(false);
       if (jsonRef.current) jsonRef.current.value = "";
     }
+  }
+
+  async function importJson(file: File) {
+    const text = normalizeJsonTextareaBackslashes(await file.text());
+    setJsonValue(text);
+    await importJsonText(text, file.name);
   }
 
   return (
@@ -315,7 +487,23 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
             </section>
             <section className="border-y border-black/8 bg-[#151713] p-5 text-white sm:p-6"><h2 className="text-2xl font-semibold">Weak skills</h2><div className="mt-4 grid gap-3">{results.weak_skills?.length ? results.weak_skills.map((skill) => <div key={skill.skill} className="rounded-2xl bg-white/8 p-4"><div className="flex justify-between text-sm font-semibold"><span>{skill.skill}</span><span>{skill.percent}%</span></div><div className="mt-3 h-2 rounded-full bg-white/12"><div className="h-2 rounded-full bg-[#8fd6bd]" style={{ width: `${skill.percent}%` }} /></div></div>) : <p className="text-sm text-white/65">Natijalar bo&apos;lsa weak skilllar chiqadi.</p>}</div></section>
             <section className="border-y border-black/8 bg-white p-5 sm:p-6"><h2 className="text-2xl font-semibold">Pack qo&apos;shish usullari</h2><div className="mt-4 grid gap-3 text-sm text-black/58"><p><strong>Manual:</strong> bitta-bitta backend test tanlab qo&apos;shish.</p><p><strong>CSV:</strong> katta packni jadvaldan import qilish.</p><p><strong>JSON:</strong> boshqa akkaunt yoki backupdan pack itemlarni qayta yuklash.</p></div></section>
-            <section className="border-y border-black/8 bg-white p-5 sm:p-6"><h2 className="text-2xl font-semibold">Import format</h2><div className="mt-4 rounded-2xl bg-[#fbfbf6] p-4 font-mono text-xs leading-6 text-black/62">test_slug,title,order,is_required<br />algebra-basics,Algebra warmup,1,true</div><button onClick={() => download("pack-template.csv", "test_slug,title,order,is_required\nalgebra-basics,Algebra warmup,1,true\n", "text/csv;charset=utf-8")} className="mt-4 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold">Download template</button></section>
+            <section className="border-y border-black/8 bg-white p-5 sm:p-6">
+              <h2 className="text-2xl font-semibold">JSON import</h2>
+              <div className="mt-4 grid gap-3">
+                <textarea
+                  value={jsonValue}
+                  onChange={(event) => setJsonValue(normalizeJsonTextareaBackslashes(event.target.value))}
+                  rows={8}
+                  className={premiumInputClass}
+                  placeholder={'{ "tests": [{ "title": "Test title", "questions": [{ "body": "x^2", "options": ["A", "B"], "answer": "A" }] }] }'}
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => jsonRef.current?.click()} disabled={busy} className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold disabled:opacity-50">Upload JSON</button>
+                  <button onClick={() => void importJsonText(jsonValue)} disabled={busy || !jsonValue.trim()} className="rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">Add to pack</button>
+                </div>
+              </div>
+            </section>
+            <section className="border-y border-black/8 bg-white p-5 sm:p-6"><h2 className="text-2xl font-semibold">CSV format</h2><div className="mt-4 rounded-2xl bg-[#fbfbf6] p-4 font-mono text-xs leading-6 text-black/62">test_slug,title,order,is_required<br />algebra-basics,Algebra warmup,1,true</div><button onClick={() => download("pack-template.csv", "test_slug,title,order,is_required\nalgebra-basics,Algebra warmup,1,true\n", "text/csv;charset=utf-8")} className="mt-4 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold">Download template</button></section>
           </aside>
         </section>
 

@@ -196,9 +196,73 @@ function extractJson(text: string) {
   return end > start ? trimmed.slice(start, end + 1) : trimmed;
 }
 
+function escapeLooseJsonBackslashes(text: string) {
+  let output = "";
+  let inString = false;
+  let escaped = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    const next = text[index + 1] ?? "";
+
+    if (!inString) {
+      output += char;
+      if (char === '"') inString = true;
+      continue;
+    }
+
+    if (escaped) {
+      output += char;
+      escaped = false;
+      continue;
+    }
+
+    if (char === '"') {
+      output += char;
+      inString = false;
+      continue;
+    }
+
+    if (char !== "\\") {
+      output += char;
+      continue;
+    }
+
+    const afterNext = text[index + 2] ?? "";
+    const jsonEscape = next === '"' || next === "\\" || next === "/" || next === "n" || next === "r" || next === "t" || next === "b" || next === "f";
+    const looksLikeLatexCommand = /[bfnrt]/.test(next) && /[A-Za-z]/.test(afterNext);
+    const validUnicodeEscape = next === "u" && /^[0-9a-fA-F]{4}$/.test(text.slice(index + 2, index + 6));
+
+    if ((jsonEscape && !looksLikeLatexCommand) || validUnicodeEscape) {
+      output += char;
+      escaped = true;
+    } else {
+      output += "\\\\";
+    }
+  }
+
+  return output;
+}
+
+function parseJsonValue(text: string) {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch (error) {
+    try {
+      return JSON.parse(escapeLooseJsonBackslashes(text)) as unknown;
+    } catch {
+      throw error;
+    }
+  }
+}
+
+function normalizeJsonTextareaBackslashes(text: string) {
+  return text.replace(/\\+/g, (slashes) => slashes.length % 2 === 0 ? slashes : `${slashes}\\`);
+}
+
 function parsePastedValue(text: string) {
   const jsonText = extractJson(text);
-  if (jsonText.startsWith("{") || jsonText.startsWith("[")) return JSON.parse(jsonText) as unknown;
+  if (jsonText.startsWith("{") || jsonText.startsWith("[")) return parseJsonValue(jsonText);
   return parseLines(text);
 }
 
@@ -340,6 +404,22 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
         .map((item, index) => normalizeTest(item, `${pack.title} ${index + 1}`, pack.branch))
         .filter((item): item is ImportTest => Boolean(item));
       if (tests.length) return { version: "1.0", pack, tests };
+      const questions = sourceTests
+        .map((item) => normalizeQuestion(item, normalizeDifficulty(readString(sourceRecord, ["difficulty", "level"], "beginner"))))
+        .filter((item): item is ImportQuestion => Boolean(item));
+      if (questions.length) {
+        return {
+          version: "1.0",
+          pack,
+          tests: [{
+            title: readString(sourceRecord, ["title", "name"], pack.title),
+            topic: readString(sourceRecord, ["topic", "category", "branch", "subject"], pack.branch),
+            difficulty: normalizeDifficulty(readString(sourceRecord, ["difficulty", "level"], "beginner")),
+            time_limit_minutes: readNumber(sourceRecord, ["time_limit_minutes", "estimated_minutes", "estimatedMinutes", "minutes", "duration"], 15),
+            questions,
+          }],
+        };
+      }
     }
     if (source.test) {
       const test = normalizeTest(source.test, pack.title, pack.branch);
@@ -596,7 +676,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
   }
 
   function handleJsonPasteChange(value: string) {
-    setPasteValue(value);
+    setPasteValue(normalizeJsonTextareaBackslashes(value));
     setJsonSource(null);
     setDraftItems([]);
     setSelectedTestIds([]);

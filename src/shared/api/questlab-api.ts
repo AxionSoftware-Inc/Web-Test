@@ -633,6 +633,10 @@ export const questApi = {
       items: Array<{ test?: number; test_slug?: string; title?: string; order?: number; is_required?: boolean }>;
     },
   ) => apiPost<{ created: ApiExamPackItem[]; skipped: Array<{ test_slug: string; reason: string; layer?: string; code?: string; field?: string }> }>(`/exam-packs/${slug}/items/bulk/`, payload),
+  importExamPackTests: (
+    slug: string,
+    payload: { source: StrictPackImportSource; creator_name?: string; creator_code?: string; manage_key?: string; manage_code?: string },
+  ) => apiPost<{ created: ApiExamPackItem[]; tests: ApiTest[]; skipped: Array<{ title: string; reason: string; layer?: string; code?: string; field?: string }> }>(`/exam-packs/${slug}/items/import-tests/`, payload),
   updateExamPackItem: (
     slug: string,
     itemId: number,
