@@ -13,8 +13,8 @@ export function ArchitectureSection() {
         />
         <div className="grid gap-3">
           {architectureLayers.map((item, index) => (
-            <div key={item} className="flex items-center gap-4 rounded-md bg-[#f7f7f2] p-4">
-              <span className="grid size-8 place-items-center rounded bg-[#151713] text-sm font-semibold text-white">
+            <div key={item} className="flex items-center gap-4 rounded-md bg-background p-4">
+              <span className="grid size-8 place-items-center rounded bg-ink text-sm font-semibold text-white">
                 {index + 1}
               </span>
               <span className="font-medium">{item}</span>

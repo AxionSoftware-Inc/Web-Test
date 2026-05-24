@@ -23,7 +23,7 @@ export function MistakesClient({ initialSummary }: { initialSummary: ApiMistakes
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#f7f7ef] px-5 py-8 sm:px-8 lg:px-10">
+    <main className="min-h-screen bg-background px-5 py-8 sm:px-8 lg:px-10">
       <div className="mx-auto max-w-7xl">
         <header className="rounded-[28px] border border-black/8 bg-white/82 p-6 shadow-[0_24px_70px_rgba(0,0,0,0.08)]">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-black/40">Xatolar analizi</p>
@@ -39,7 +39,7 @@ export function MistakesClient({ initialSummary }: { initialSummary: ApiMistakes
         </header>
 
         <section className="mt-6 grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
-          <aside className="rounded-[28px] border border-black/8 bg-[#151713] p-5 text-white">
+          <aside className="rounded-[28px] border border-black/8 bg-ink p-5 text-white">
             <h2 className="text-2xl font-semibold">O&apos;rganish kerak bo&apos;lgan skilllar</h2>
             <div className="mt-4 grid gap-3">
               {summary.weak_skills.length ? summary.weak_skills.map((skill) => (
@@ -49,7 +49,7 @@ export function MistakesClient({ initialSummary }: { initialSummary: ApiMistakes
                     <span>{skill.percent}%</span>
                   </div>
                   <div className="mt-3 h-2 rounded-full bg-white/12">
-                    <div className="h-2 rounded-full bg-[#8fd6bd]" style={{ width: `${skill.percent}%` }} />
+                    <div className="h-2 rounded-full bg-accent" style={{ width: `${skill.percent}%` }} />
                   </div>
                   <p className="mt-3 text-sm leading-6 text-white/62">
                     {skill.percent < 50 ? "Avval asosiy tushunchani qayta o'rganing, keyin shu skill bo'yicha oson testdan boshlang." : "Xatolarni ko'rib chiqing va shu skill bo'yicha qayta mashq qiling."}
@@ -63,7 +63,7 @@ export function MistakesClient({ initialSummary }: { initialSummary: ApiMistakes
             <h2 className="text-2xl font-semibold">Noto&apos;g&apos;ri savollar</h2>
             <div className="mt-4 grid gap-3">
               {summary.mistakes.map((mistake) => (
-                <Link key={`${mistake.session_id}-${mistake.question_id}`} href={`/results/${mistake.session_id}/questions/${mistake.question_id}`} className="rounded-2xl border border-black/8 bg-white p-4 hover:bg-[#fbfbf8]">
+                <Link key={`${mistake.session_id}-${mistake.question_id}`} href={`/results/${mistake.session_id}/questions/${mistake.question_id}`} className="rounded-2xl border border-black/8 bg-white p-4 hover:bg-surface-soft">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-black/40">{mistake.test_title} / {mistake.topic}</p>
                   <div className="mt-2 font-semibold"><LatexText text={mistake.prompt} /></div>
                   <div className="mt-3 grid gap-2 text-sm text-black/58">
@@ -71,7 +71,7 @@ export function MistakesClient({ initialSummary }: { initialSummary: ApiMistakes
                     <p><span className="font-semibold text-black/75">To&apos;g&apos;ri javob:</span> {mistake.correct_answer}</p>
                     {mistake.skills.length ? <p><span className="font-semibold text-black/75">Skill:</span> {mistake.skills.join(", ")}</p> : null}
                   </div>
-                  {mistake.explanation ? <div className="mt-3 rounded-2xl bg-[#fbfbf6] p-3 text-sm leading-6 text-black/62"><LatexText text={mistake.explanation} /></div> : null}
+                  {mistake.explanation ? <div className="mt-3 rounded-2xl bg-surface-soft p-3 text-sm leading-6 text-black/62"><LatexText text={mistake.explanation} /></div> : null}
                 </Link>
               ))}
               {!summary.mistakes.length ? <p className="rounded-2xl bg-white p-5 text-sm text-black/56">Bu student uchun hali xato topilmadi. Avval test ishlab submit qiling.</p> : null}
@@ -86,7 +86,7 @@ export function MistakesClient({ initialSummary }: { initialSummary: ApiMistakes
 function Stat({ icon: Icon, label, value }: { icon: typeof BookOpenCheck; label: string; value: string | number }) {
   return (
     <div className="rounded-2xl border border-black/8 bg-white p-4">
-      <Icon className="size-5 text-[#276a5b]" />
+      <Icon className="size-5 text-brand" />
       <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-black/38">{label}</p>
       <p className="mt-1 text-2xl font-semibold">{value}</p>
     </div>

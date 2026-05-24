@@ -4,7 +4,7 @@ import { SubjectMapSection } from "@/features/landing/ui/subject-map-section";
 
 export function LandingPage() {
   return (
-    <main className="min-h-screen bg-[#f7f7f2] text-[#151713]">
+    <main className="min-h-screen bg-background text-ink">
       <div className="bg-[#fcfcf7]">
         <HeroSection />
       </div>

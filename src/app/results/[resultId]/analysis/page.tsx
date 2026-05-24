@@ -44,20 +44,20 @@ export default async function Page({ params }: PageProps) {
           <h2 className="text-xl font-semibold">Skill breakdown</h2>
           <div className="mt-5 grid gap-4">
             {skills.map((item) => (
-              <div key={item.skill} className="rounded-2xl border border-black/8 bg-[#fbfbf8] p-4">
+              <div key={item.skill} className="rounded-2xl border border-black/8 bg-surface-soft p-4">
                 <div className="flex justify-between gap-3 text-sm font-semibold">
                   <span>{item.skill}</span>
                   <span>{item.percent}%</span>
                 </div>
                 <div className="mt-3 h-3 overflow-hidden rounded-full bg-black/8">
-                  <div className="h-full rounded-full bg-gradient-to-r from-[#151713] to-[#8fd6bd]" style={{ width: `${item.percent}%` }} />
+                  <div className="h-full rounded-full bg-gradient-to-r from-ink to-accent" style={{ width: `${item.percent}%` }} />
                 </div>
                 <p className="mt-2 text-xs text-black/45">{item.correct}/{item.total} correct</p>
               </div>
             ))}
           </div>
         </div>
-        <aside className="rounded-3xl border border-black/10 bg-[#151713] p-5 text-white">
+        <aside className="rounded-3xl border border-black/10 bg-ink p-5 text-white">
           <h2 className="text-xl font-semibold">Recovery flow</h2>
           <div className="mt-4 grid gap-3 text-sm leading-6 text-white/70">
             <p className="rounded-2xl bg-white/8 p-3">1. Review wrong questions.</p>
@@ -65,7 +65,7 @@ export default async function Page({ params }: PageProps) {
             <p className="rounded-2xl bg-white/8 p-3">3. Work targeted practice.</p>
             <p className="rounded-2xl bg-white/8 p-3">4. Retake the test.</p>
           </div>
-          <Link href={`/results/${resultId}/questions`} className="mt-5 block rounded-2xl bg-[#8fd6bd] px-4 py-3 text-center text-sm font-semibold text-[#151713]">
+          <Link href={`/results/${resultId}/questions`} className="mt-5 block rounded-2xl bg-accent px-4 py-3 text-center text-sm font-semibold text-ink">
             Review questions
           </Link>
         </aside>

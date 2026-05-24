@@ -13,7 +13,7 @@ export function BackendSubmitButton({ sessionId }: { sessionId: string }) {
   }
 
   return (
-    <button type="button" onClick={submit} className="rounded-md bg-[#151713] px-4 py-2 text-sm font-semibold text-white">
+    <button type="button" onClick={submit} className="rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white">
       Confirm submit
     </button>
   );

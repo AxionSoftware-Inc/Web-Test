@@ -87,11 +87,11 @@ export function TestGeneratorPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f7f2] text-[#151713]">
+    <main className="min-h-screen bg-background text-ink">
       <Container className="py-8">
         <header className="flex flex-col justify-between gap-5 border-b border-black/10 pb-8 lg:flex-row lg:items-end">
           <div>
-            <Link href="/" className="text-sm font-semibold text-[#276a5b]">
+            <Link href="/" className="text-sm font-semibold text-brand">
               QuestLab
             </Link>
             <h1 className="mt-4 max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl">
@@ -185,7 +185,7 @@ function BuilderView({
     <section className="grid gap-5 py-8 lg:grid-cols-[0.8fr_1.2fr]">
       <aside className="rounded-lg border border-black/10 bg-white p-4">
         <div className="mb-4 flex items-center gap-2">
-          <ClipboardList className="size-5 text-[#276a5b]" />
+          <ClipboardList className="size-5 text-brand" />
           <h2 className="font-semibold">Test tanlash</h2>
         </div>
 
@@ -215,8 +215,8 @@ function BuilderView({
                 className={cn(
                   "rounded-md border p-4 text-left",
                   test.id === selectedTest?.id
-                    ? "border-[#276a5b] bg-[#edf7f3]"
-                    : "border-black/10 bg-[#fbfbf8]",
+                    ? "border-brand bg-brand-soft"
+                    : "border-black/10 bg-surface-soft",
                 )}
               >
                 <p className="font-semibold">{test.title}</p>
@@ -227,7 +227,7 @@ function BuilderView({
               </button>
             ))
           ) : (
-            <div className="rounded-md border border-dashed border-black/15 bg-[#fbfbf8] p-4 text-sm text-black/55">
+            <div className="rounded-md border border-dashed border-black/15 bg-surface-soft p-4 text-sm text-black/55">
               Bu filterlar bo&apos;yicha test topilmadi.
             </div>
           )}
@@ -238,20 +238,20 @@ function BuilderView({
         <div className="rounded-lg border border-black/10 bg-white p-4">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <FileCode2 className="size-5 text-[#276a5b]" />
+              <FileCode2 className="size-5 text-brand" />
               <h2 className="font-semibold">LaTeX source</h2>
             </div>
             <button
               type="button"
               onClick={onStart}
               disabled={!selectedTest || questions.length === 0}
-              className="inline-flex items-center gap-2 rounded-md bg-[#276a5b] px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+              className="inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
             >
               <Play className="size-4" />
               Start test
             </button>
           </div>
-          <pre className="max-h-80 overflow-auto rounded-md border border-black/10 bg-[#fbfbf8] p-4 text-sm leading-6">
+          <pre className="max-h-80 overflow-auto rounded-md border border-black/10 bg-surface-soft p-4 text-sm leading-6">
             {selectedTest?.latex ?? "Test tanlang yoki filterlarni o'zgartiring."}
           </pre>
         </div>
@@ -289,7 +289,7 @@ function ResultView({
       <div className="rounded-lg border border-black/10 bg-white p-5">
         <div className="flex flex-col justify-between gap-4 border-b border-black/10 pb-5 md:flex-row md:items-center">
           <div>
-            <p className="text-sm font-semibold text-[#276a5b]">{selectedTest.title}</p>
+            <p className="text-sm font-semibold text-brand">{selectedTest.title}</p>
             <h2 className="mt-2 text-3xl font-semibold">
               Result: {result.correct}/{result.total} ({result.percent}%)
             </h2>
@@ -305,7 +305,7 @@ function ResultView({
             <button
               type="button"
               onClick={onReset}
-              className="rounded-md bg-[#151713] px-4 py-2 text-sm font-semibold text-white"
+              className="rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white"
             >
               Choose test
             </button>
@@ -337,7 +337,7 @@ function SelectField<T extends string>({
       <select
         value={value}
         onChange={(event) => onChange(event.target.value as T)}
-        className="rounded-md border border-black/10 bg-[#fbfbf8] px-3 py-2 text-sm outline-none focus:border-[#276a5b]"
+        className="rounded-md border border-black/10 bg-surface-soft px-3 py-2 text-sm outline-none focus:border-brand"
       >
         {options.map((option) => (
           <option key={option} value={option}>
@@ -351,7 +351,7 @@ function SelectField<T extends string>({
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="min-w-20 rounded-md bg-[#f7f7f2] p-3 text-center">
+    <div className="min-w-20 rounded-md bg-background p-3 text-center">
       <p className="text-2xl font-semibold">{value}</p>
       <p className="mt-1 text-xs font-medium uppercase tracking-[0.12em] text-black/45">{label}</p>
     </div>

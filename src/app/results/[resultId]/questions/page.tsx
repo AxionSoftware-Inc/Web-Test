@@ -30,14 +30,14 @@ export default async function Page({ params }: PageProps) {
             <Link
               key={question.id}
               href={`/results/${resultId}/questions/${question.id}`}
-              className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm hover:bg-[#fbfbf8]"
+              className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm hover:bg-surface-soft"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-black/40">Question {item.order}</p>
                   <div className="mt-2 font-semibold"><LatexText text={question.prompt} /></div>
                 </div>
-                <span className={`rounded-xl px-3 py-2 text-sm font-semibold ${isCorrect ? "bg-[#edf7f3] text-[#276a5b]" : "bg-[#f8eeee] text-red-700"}`}>
+                <span className={`rounded-xl px-3 py-2 text-sm font-semibold ${isCorrect ? "bg-brand-soft text-brand" : "bg-danger-soft text-red-700"}`}>
                   {isCorrect ? "Correct" : "Review"}
                 </span>
               </div>

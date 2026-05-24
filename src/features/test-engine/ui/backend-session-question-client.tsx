@@ -67,11 +67,11 @@ export function BackendSessionQuestionClient({
       <div className="mb-5 rounded-lg border border-black/10 bg-white p-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="inline-flex items-center gap-2 rounded-md bg-[#151713] px-3 py-2 text-sm font-semibold text-white">
+            <span className="inline-flex items-center gap-2 rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white">
               <Timer className="size-4" />
               {timerLabel}
             </span>
-            <span className="rounded-md bg-[#edf7f3] px-3 py-2 text-sm font-semibold text-[#276a5b]">{answered}/{questions.length} answered</span>
+            <span className="rounded-md bg-brand-soft px-3 py-2 text-sm font-semibold text-brand">{answered}/{questions.length} answered</span>
             <span className="rounded-md bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700">{flagged} flagged</span>
           </div>
           <div className="min-w-0 flex-1 lg:max-w-md">
@@ -80,10 +80,10 @@ export function BackendSessionQuestionClient({
               <span>{progress}%</span>
             </div>
             <div className="mt-2 h-2 rounded bg-black/10">
-              <div className="h-2 rounded bg-[#276a5b]" style={{ width: `${progress}%` }} />
+              <div className="h-2 rounded bg-brand" style={{ width: `${progress}%` }} />
             </div>
           </div>
-          <Link href={`/test-session/${session.id}/submit`} className="rounded-md bg-[#151713] px-4 py-2 text-center text-sm font-semibold text-white">Finish test</Link>
+          <Link href={`/test-session/${session.id}/submit`} className="rounded-md bg-ink px-4 py-2 text-center text-sm font-semibold text-white">Finish test</Link>
         </div>
       </div>
 
@@ -99,9 +99,9 @@ export function BackendSessionQuestionClient({
               return (
                 <Link key={item.id} href={`/test-session/${session.id}/question/${itemIndex + 1}`} className={cn(
                   "relative rounded-md border px-3 py-2 text-center text-sm font-semibold",
-                  itemIndex === questionIndex && "border-[#151713] bg-[#151713] text-white",
-                  itemIndex !== questionIndex && state?.value && "border-[#276a5b]/40 bg-[#edf7f3] text-[#276a5b]",
-                  itemIndex !== questionIndex && !state?.value && "border-black/10 bg-[#fbfbf8]",
+                  itemIndex === questionIndex && "border-ink bg-ink text-white",
+                  itemIndex !== questionIndex && state?.value && "border-brand/40 bg-brand-soft text-brand",
+                  itemIndex !== questionIndex && !state?.value && "border-black/10 bg-surface-soft",
                 )}>
                   {itemIndex + 1}
                   {state?.is_flagged ? <span className="absolute right-1 top-1 size-1.5 rounded-full bg-amber-500" /> : null}
@@ -114,7 +114,7 @@ export function BackendSessionQuestionClient({
         <article className="rounded-lg border border-black/10 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 pb-4">
             <div>
-              <p className="text-sm font-semibold text-[#276a5b]">Question {questionIndex + 1} of {questions.length}</p>
+              <p className="text-sm font-semibold text-brand">Question {questionIndex + 1} of {questions.length}</p>
               <p className="mt-1 text-sm text-black/55">{question.type}</p>
             </div>
             <button type="button" onClick={toggleFlag} className={cn("inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold", current?.is_flagged ? "border-amber-300 bg-amber-50 text-amber-700" : "border-black/10")}>
@@ -129,23 +129,23 @@ export function BackendSessionQuestionClient({
               {question.options.map((option, optionIndex) => {
                 const selected = currentValue === option;
                 return (
-                  <button key={option} type="button" onClick={() => saveAnswer(option)} className={cn("flex items-start gap-3 rounded-lg border px-4 py-4 text-left text-sm leading-6 transition", selected ? "border-[#276a5b] bg-[#dff4eb] shadow-[0_0_0_3px_rgba(39,106,91,0.16)]" : "border-black/10 bg-[#fbfbf8] hover:border-black/25")}>
-                    <span className={cn("grid size-7 shrink-0 place-items-center rounded-md border text-xs font-bold", selected ? "border-[#276a5b] bg-[#276a5b] text-white" : "border-black/10 bg-white text-black/55")}>
+                  <button key={option} type="button" onClick={() => saveAnswer(option)} className={cn("flex items-start gap-3 rounded-lg border px-4 py-4 text-left text-sm leading-6 transition", selected ? "border-brand bg-[#dff4eb] shadow-[0_0_0_3px_rgba(39,106,91,0.16)]" : "border-black/10 bg-surface-soft hover:border-black/25")}>
+                    <span className={cn("grid size-7 shrink-0 place-items-center rounded-md border text-xs font-bold", selected ? "border-brand bg-brand text-white" : "border-black/10 bg-white text-black/55")}>
                       {selected ? <CheckCircle2 className="size-4" /> : String.fromCharCode(65 + optionIndex)}
                     </span>
                     <LatexText text={option} />
-                    {selected ? <span className="ml-auto shrink-0 rounded-md bg-white/70 px-2 py-1 text-xs font-semibold text-[#276a5b]">{savingQuestionId === question.id ? "Saving..." : "Selected"}</span> : null}
+                    {selected ? <span className="ml-auto shrink-0 rounded-md bg-white/70 px-2 py-1 text-xs font-semibold text-brand">{savingQuestionId === question.id ? "Saving..." : "Selected"}</span> : null}
                   </button>
                 );
               })}
             </div>
           ) : (
-            <input value={currentValue} onChange={(event) => saveAnswer(event.target.value)} placeholder="Answer" className="mt-7 w-full rounded-lg border border-black/10 bg-[#fbfbf8] px-4 py-4 text-sm font-semibold text-[#151713] caret-[#276a5b] outline-none focus:border-[#276a5b]" />
+            <input value={currentValue} onChange={(event) => saveAnswer(event.target.value)} placeholder="Answer" className="mt-7 w-full rounded-lg border border-black/10 bg-surface-soft px-4 py-4 text-sm font-semibold text-ink caret-brand outline-none focus:border-brand" />
           )}
 
           <div className="mt-8 flex flex-col justify-between gap-3 sm:flex-row">
             <Link href={`/test-session/${session.id}/question/${previous}`} className="inline-flex items-center justify-center gap-2 rounded-md border border-black/10 px-4 py-3 text-sm font-semibold"><ArrowLeft className="size-4" />Previous</Link>
-            <Link href={questionIndex + 1 === questions.length ? `/test-session/${session.id}/submit` : `/test-session/${session.id}/question/${next}`} className="inline-flex items-center justify-center gap-2 rounded-md bg-[#151713] px-4 py-3 text-sm font-semibold text-white">
+            <Link href={questionIndex + 1 === questions.length ? `/test-session/${session.id}/submit` : `/test-session/${session.id}/question/${next}`} className="inline-flex items-center justify-center gap-2 rounded-md bg-ink px-4 py-3 text-sm font-semibold text-white">
               {questionIndex + 1 === questions.length ? "Finish test" : "Next question"}<ArrowRight className="size-4" />
             </Link>
           </div>
@@ -153,7 +153,7 @@ export function BackendSessionQuestionClient({
 
         <aside className="grid gap-4 lg:sticky lg:top-24 lg:self-start">
           <SummaryCard answers={session.answers} questions={questions} />
-          <Link href={`/test-session/${session.id}/submit`} className="rounded-md bg-[#276a5b] px-4 py-3 text-center text-sm font-semibold text-white">Finish test</Link>
+          <Link href={`/test-session/${session.id}/submit`} className="rounded-md bg-brand px-4 py-3 text-center text-sm font-semibold text-white">Finish test</Link>
         </aside>
       </div>
     </section>

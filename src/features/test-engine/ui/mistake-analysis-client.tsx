@@ -36,7 +36,7 @@ export function MistakeAnalysisClient({
               <span className={statusClass(item.status)}>{item.status}</span>
             </div>
             <div className="mt-4 h-2 rounded bg-black/10">
-              <div className="h-2 rounded bg-[#276a5b]" style={{ width: `${Math.round((item.correct / item.total) * 100)}%` }} />
+              <div className="h-2 rounded bg-brand" style={{ width: `${Math.round((item.correct / item.total) * 100)}%` }} />
             </div>
           </GlassCard>
         ))}
@@ -51,7 +51,7 @@ export function MistakeAnalysisClient({
               : "No major weak skill found. Retake or move to the next level."}
           </p>
           <div className="mt-5 grid gap-3">
-            <Link href="/learn/algebra-foundations/quadratics/factoring-basics" className="rounded-xl bg-[#151713] px-4 py-3 text-center text-sm font-semibold text-white">
+            <Link href="/learn/algebra-foundations/quadratics/factoring-basics" className="rounded-xl bg-ink px-4 py-3 text-center text-sm font-semibold text-white">
               Recommended lesson
             </Link>
             <Link href="/practice/algebra/targeted" className="rounded-xl border border-black/10 bg-white/60 px-4 py-3 text-center text-sm font-semibold">
@@ -69,12 +69,12 @@ export function MistakeAnalysisClient({
 
 function statusClass(status: "strong" | "review" | "weak") {
   if (status === "strong") {
-    return "rounded-xl bg-[#edf7f3] px-3 py-2 text-sm font-semibold text-[#276a5b]";
+    return "rounded-xl bg-brand-soft px-3 py-2 text-sm font-semibold text-brand";
   }
 
   if (status === "review") {
     return "rounded-xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700";
   }
 
-  return "rounded-xl bg-[#f8eeee] px-3 py-2 text-sm font-semibold text-[#8d3d3d]";
+  return "rounded-xl bg-danger-soft px-3 py-2 text-sm font-semibold text-[#8d3d3d]";
 }

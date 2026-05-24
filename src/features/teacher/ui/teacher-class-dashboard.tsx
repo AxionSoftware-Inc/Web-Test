@@ -224,7 +224,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f7ef] px-5 py-8 text-[#151713] sm:px-8 lg:px-10">
+    <main className="min-h-screen bg-background px-5 py-8 text-ink sm:px-8 lg:px-10">
       <div className="mx-auto max-w-7xl">
         <header className="overflow-hidden rounded-[32px] border border-black/8 bg-white shadow-[0_24px_80px_rgba(21,23,19,0.09)]">
           <div className="grid gap-0 lg:grid-cols-[1fr_360px]">
@@ -235,7 +235,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                   <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">{classroom.name}</h1>
                   <p className="mt-4 max-w-2xl text-sm leading-6 text-black/58">{classroom.description || "Class description qo'shilmagan."}</p>
                 </div>
-                <span className="rounded-2xl bg-[#edf7f3] px-4 py-3 text-sm font-semibold capitalize text-[#276a5b]">{classroom.visibility}</span>
+                <span className="rounded-2xl bg-brand-soft px-4 py-3 text-sm font-semibold capitalize text-brand">{classroom.visibility}</span>
               </div>
               <div className="mt-7 flex flex-wrap gap-2">
                 <ActionButton icon={Link2} onClick={copyStudentLink}>Copy student link</ActionButton>
@@ -253,9 +253,9 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                   }}
                 />
               </div>
-              {notice ? <p className="mt-4 rounded-2xl bg-[#fbfbf6] px-4 py-3 text-sm font-semibold text-black/62">{notice}</p> : null}
+              {notice ? <p className="mt-4 rounded-2xl bg-surface-soft px-4 py-3 text-sm font-semibold text-black/62">{notice}</p> : null}
             </div>
-            <div className="border-t border-black/8 bg-[#151713] p-6 text-white lg:border-l lg:border-t-0">
+            <div className="border-t border-black/8 bg-ink p-6 text-white lg:border-l lg:border-t-0">
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/45">Class health</p>
               <div className="mt-5 grid grid-cols-2 gap-3">
                 <Metric icon={Clipboard} label="Sessions" value={assignments.length} dark />
@@ -274,13 +274,13 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                 <Eyebrow>Test sessions</Eyebrow>
                 <h2 className="mt-2 text-2xl font-semibold">Class ichida sessiya ochish</h2>
               </div>
-              <Link href={`/teacher/classes/${classroom.slug}/assign`} className="inline-flex items-center gap-2 rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white">
+              <Link href={`/teacher/classes/${classroom.slug}/assign`} className="inline-flex items-center gap-2 rounded-2xl bg-ink px-4 py-3 text-sm font-semibold text-white">
                 <Plus className="size-4" />
                 Advanced setup
               </Link>
             </div>
 
-            <div className="mt-5 grid gap-4 rounded-3xl border border-black/8 bg-[#fbfbf6] p-4 lg:grid-cols-2 xl:grid-cols-[1fr_1fr_auto] xl:items-end">
+            <div className="mt-5 grid gap-4 rounded-3xl border border-black/8 bg-surface-soft p-4 lg:grid-cols-2 xl:grid-cols-[1fr_1fr_auto] xl:items-end">
               {!tests.length ? <p className="rounded-2xl bg-white p-4 text-sm font-semibold text-black/55 lg:col-span-2 xl:col-span-3">Published test topilmadi. Avval CRUD orqali test yarating yoki draft testni published qiling.</p> : null}
               <FieldShell label="Backend test">
                 <select
@@ -322,7 +322,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                       <option value="first">First attempt</option>
                     </select>
                   </FieldShell>
-                  <button type="button" onClick={() => setShowAnswersAfterDeadline((value) => !value)} className={cn("rounded-2xl border px-4 py-3 text-sm font-semibold", showAnswersAfterDeadline ? "border-[#8fd6bd] bg-[#edf7f3] text-[#276a5b]" : "border-black/10 bg-white text-black/55")}>Show answers after due</button>
+                  <button type="button" onClick={() => setShowAnswersAfterDeadline((value) => !value)} className={cn("rounded-2xl border px-4 py-3 text-sm font-semibold", showAnswersAfterDeadline ? "border-accent bg-brand-soft text-brand" : "border-black/10 bg-white text-black/55")}>Show answers after due</button>
                   <button type="button" onClick={() => setAllowLateSubmission((value) => !value)} className={cn("rounded-2xl border px-4 py-3 text-sm font-semibold", allowLateSubmission ? "border-amber-200 bg-amber-50 text-amber-700" : "border-black/10 bg-white text-black/55")}>Late submission</button>
                 </>
               ) : null}
@@ -330,11 +330,11 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                 <button
                   type="button"
                   onClick={() => setIsActive((value) => !value)}
-                  className={cn("rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold", isActive ? "bg-[#edf7f3] text-[#276a5b]" : "bg-white text-black/55")}
+                  className={cn("rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold", isActive ? "bg-brand-soft text-brand" : "bg-white text-black/55")}
                 >
                   {isActive ? "Active" : "Paused"}
                 </button>
-                <button onClick={addAssignment} disabled={busy || !selectedTestId || !tests.length} className="inline-flex items-center gap-2 rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">
+                <button onClick={addAssignment} disabled={busy || !selectedTestId || !tests.length} className="inline-flex items-center gap-2 rounded-2xl bg-ink px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">
                   <Plus className="size-4" />
                   {mode === "homework" ? "Create homework" : "Open session"}
                 </button>
@@ -353,34 +353,34 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-lg font-semibold">{item.title}</h3>
                       <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-semibold capitalize text-black/50">{item.mode}</span>
-                      <span className={cn("rounded-full px-3 py-1 text-xs font-semibold", item.is_active ? "bg-[#edf7f3] text-[#276a5b]" : "bg-black/5 text-black/45")}>{item.is_active ? "Active" : "Paused"}</span>
+                      <span className={cn("rounded-full px-3 py-1 text-xs font-semibold", item.is_active ? "bg-brand-soft text-brand" : "bg-black/5 text-black/45")}>{item.is_active ? "Active" : "Paused"}</span>
                     </div>
                     <p className="mt-2 text-sm text-black/52">{item.test_title} / {item.difficulty} / {item.question_count} questions</p>
                     {item.mode === "homework" ? (
                       <p className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-black/52">
-                        <CalendarClock className="size-4 text-[#276a5b]" />
+                        <CalendarClock className="size-4 text-brand" />
                         Due: {item.due_at ? new Date(item.due_at).toLocaleString() : "No deadline"} / {item.attempt_limit} attempt
                       </p>
                     ) : null}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <button onClick={() => void copySessionLink(item.id)} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]">
+                    <button onClick={() => void copySessionLink(item.id)} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-surface-soft">
                       <Send className="size-4" />
                       Copy link
                     </button>
-                    <button onClick={() => void toggleAssignment(item)} disabled={busy} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6] disabled:opacity-50">
-                      {item.is_active ? <ToggleRight className="size-4 text-[#276a5b]" /> : <ToggleLeft className="size-4 text-black/40" />}
+                    <button onClick={() => void toggleAssignment(item)} disabled={busy} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-surface-soft disabled:opacity-50">
+                      {item.is_active ? <ToggleRight className="size-4 text-brand" /> : <ToggleLeft className="size-4 text-black/40" />}
                       {item.is_active ? "Close" : "Open"}
                     </button>
                     <button onClick={() => void removeAssignment(item)} disabled={busy} className="inline-flex items-center gap-2 rounded-2xl border border-red-100 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50">
                       <Trash2 className="size-4" />
                       Remove
                     </button>
-                    <Link href={`/class/${classroom.slug}/assignments/${item.id}`} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]">
+                    <Link href={`/class/${classroom.slug}/assignments/${item.id}`} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-surface-soft">
                       <Eye className="size-4" />
                       Preview
                     </Link>
-                    <Link href={`/tests/${item.test_slug}`} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]">
+                    <Link href={`/tests/${item.test_slug}`} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-surface-soft">
                       Open test
                     </Link>
                   </div>
@@ -397,7 +397,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
           </div>
 
           <aside className="grid gap-6">
-            <section className="rounded-[28px] border border-black/8 bg-[#151713] p-5 text-white shadow-[0_18px_55px_rgba(21,23,19,0.11)]">
+            <section className="rounded-[28px] border border-black/8 bg-ink p-5 text-white shadow-[0_18px_55px_rgba(21,23,19,0.11)]">
               <h2 className="text-2xl font-semibold">Weak skills</h2>
               <div className="mt-4 grid gap-3">
                 {results.weak_skills.length ? results.weak_skills.map((item) => (
@@ -407,7 +407,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                       <span>{item.percent}%</span>
                     </div>
                     <div className="mt-3 h-2 rounded-full bg-white/12">
-                      <div className="h-2 rounded-full bg-[#8fd6bd]" style={{ width: `${item.percent}%` }} />
+                      <div className="h-2 rounded-full bg-accent" style={{ width: `${item.percent}%` }} />
                     </div>
                   </div>
                 )) : <p className="text-sm leading-6 text-white/65">Studentlar test topshirgandan keyin weak skilllar shu yerda chiqadi.</p>}
@@ -416,14 +416,14 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
 
             <section className="rounded-[28px] border border-black/8 bg-white/82 p-5 shadow-[0_18px_55px_rgba(21,23,19,0.07)]">
               <h2 className="text-2xl font-semibold">Import format</h2>
-              <div className="mt-4 rounded-2xl bg-[#fbfbf6] p-4 font-mono text-xs leading-6 text-black/62">
+              <div className="mt-4 rounded-2xl bg-surface-soft p-4 font-mono text-xs leading-6 text-black/62">
                 test_slug,title,is_active,mode,due_at,attempt_limit,show_answers_after_deadline,allow_late_submission,grading_policy<br />
                 algebra-basics,Algebra homework,true,homework,2026-05-25T18:00:00Z,2,true,true,best<br />
                 linear-equations,Linear live,true,session,,1,false,false,best
               </div>
               <button
                 onClick={() => downloadFile("class-assignment-template.csv", "test_slug,title,is_active,mode,due_at,attempt_limit,show_answers_after_deadline,allow_late_submission,grading_policy\nalgebra-basics,Algebra homework,true,homework,2026-05-25T18:00:00Z,2,true,true,best\n", "text/csv;charset=utf-8")}
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]"
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-surface-soft"
               >
                 <Download className="size-4" />
                 Download template
@@ -438,7 +438,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
               <Eyebrow>Session analytics</Eyebrow>
               <h2 className="mt-2 text-2xl font-semibold">Har bir sessiya bo&apos;yicha holat</h2>
             </div>
-            <span className="rounded-2xl bg-[#fbfbf6] px-4 py-3 text-sm font-semibold text-black/52">
+            <span className="rounded-2xl bg-surface-soft px-4 py-3 text-sm font-semibold text-black/52">
               {results.students_submitted}/{results.students_total || results.students_submitted} students submitted
             </span>
           </div>
@@ -451,7 +451,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                     <p className="mt-1 text-sm text-black/50">{item.test_title}</p>
                     <p className="mt-1 text-xs font-semibold capitalize text-black/38">{item.mode}{item.due_at ? ` / due ${new Date(item.due_at).toLocaleDateString()}` : ""}</p>
                   </div>
-                  <span className={cn("rounded-full px-3 py-1 text-xs font-semibold", item.is_active ? "bg-[#edf7f3] text-[#276a5b]" : "bg-black/5 text-black/45")}>
+                  <span className={cn("rounded-full px-3 py-1 text-xs font-semibold", item.is_active ? "bg-brand-soft text-brand" : "bg-black/5 text-black/45")}>
                     {item.is_active ? "Open" : "Closed"}
                   </span>
                 </div>
@@ -461,7 +461,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                   <MiniMetric label="Avg" value={`${item.average_score}%`} />
                   <MiniMetric label="Late" value={item.late_submissions} />
                 </div>
-                <button onClick={() => void copySessionLink(item.assignment_id)} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]">
+                <button onClick={() => void copySessionLink(item.assignment_id)} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-surface-soft">
                   <Link2 className="size-4" />
                   Copy session link
                 </button>
@@ -476,27 +476,27 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
               <Eyebrow>Results</Eyebrow>
               <h2 className="mt-2 text-2xl font-semibold">Student results</h2>
             </div>
-            <button onClick={exportResults} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]">
+            <button onClick={exportResults} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-surface-soft">
               <Download className="size-4" />
               Export table
             </button>
           </div>
           <div className="mt-5 overflow-hidden rounded-3xl border border-black/8 bg-white">
-            <div className="grid grid-cols-[1.1fr_1fr_100px_110px] gap-3 border-b border-black/8 bg-[#fbfbf6] px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-black/40 max-md:hidden">
+            <div className="grid grid-cols-[1.1fr_1fr_100px_110px] gap-3 border-b border-black/8 bg-surface-soft px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-black/40 max-md:hidden">
               <span>Student</span>
               <span>Assignment</span>
               <span>Correct</span>
               <span>Score</span>
             </div>
             {resultRows.map((item) => (
-              <Link key={item.session_id} href={`/results/${item.session_id}`} className="grid gap-3 border-b border-black/6 px-4 py-4 hover:bg-[#fbfbf6] md:grid-cols-[1.1fr_1fr_100px_110px] md:items-center">
+              <Link key={item.session_id} href={`/results/${item.session_id}`} className="grid gap-3 border-b border-black/6 px-4 py-4 hover:bg-surface-soft md:grid-cols-[1.1fr_1fr_100px_110px] md:items-center">
                 <div>
                   <p className="font-semibold">{item.student_name}</p>
                   <p className="mt-1 text-xs text-black/45">{item.submitted_at ? new Date(item.submitted_at).toLocaleString() : "Submitted"}</p>
                 </div>
                 <p className="text-sm text-black/58">{item.assignment_title || item.test_title}</p>
                 <p className="text-sm font-semibold text-black/62">{item.correct}/{item.total}</p>
-                <span className="rounded-xl bg-[#edf7f3] px-3 py-2 text-center text-sm font-semibold text-[#276a5b]">{item.score}%</span>
+                <span className="rounded-xl bg-brand-soft px-3 py-2 text-center text-sm font-semibold text-brand">{item.score}%</span>
               </Link>
             ))}
             {!resultRows.length ? <p className="p-6 text-sm text-black/56">Hali submitted natijalar yo&apos;q.</p> : null}
@@ -507,7 +507,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
           <Eyebrow>Students</Eyebrow>
           <h2 className="mt-2 text-2xl font-semibold">O&apos;quvchi kesimida progress</h2>
           <div className="mt-5 overflow-hidden rounded-3xl border border-black/8 bg-white">
-            <div className="grid grid-cols-[1fr_120px_120px_180px] gap-3 border-b border-black/8 bg-[#fbfbf6] px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-black/40 max-md:hidden">
+            <div className="grid grid-cols-[1fr_120px_120px_180px] gap-3 border-b border-black/8 bg-surface-soft px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-black/40 max-md:hidden">
               <span>Student</span>
               <span>Completed</span>
               <span>Average</span>
@@ -517,7 +517,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
               <div key={student.student_code} className="grid gap-3 border-b border-black/6 px-4 py-4 md:grid-cols-[1fr_120px_120px_180px] md:items-center">
                 <p className="font-semibold">{student.student_name}</p>
                 <p className="text-sm text-black/58">{student.completed}/{assignments.length} tests</p>
-                <span className="w-fit rounded-xl bg-[#edf7f3] px-3 py-2 text-sm font-semibold text-[#276a5b]">{student.average_score}%</span>
+                <span className="w-fit rounded-xl bg-brand-soft px-3 py-2 text-sm font-semibold text-brand">{student.average_score}%</span>
                 <p className="text-sm text-black/48">{student.last_submitted_at ? new Date(student.last_submitted_at).toLocaleString() : "No submit"}</p>
               </div>
             ))}
@@ -531,7 +531,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
 
 function ActionButton({ icon: Icon, children, onClick }: { icon: typeof Link2; children: React.ReactNode; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]">
+    <button onClick={onClick} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-surface-soft">
       <Icon className="size-4" />
       {children}
     </button>
@@ -540,8 +540,8 @@ function ActionButton({ icon: Icon, children, onClick }: { icon: typeof Link2; c
 
 function Metric({ icon: Icon, label, value, dark = false }: { icon: typeof Clipboard; label: string; value: string | number; dark?: boolean }) {
   return (
-    <div className={cn("rounded-2xl p-4", dark ? "bg-white/8" : "bg-[#fbfbf8]")}>
-      <Icon className={cn("size-4", dark ? "text-[#8fd6bd]" : "text-[#276a5b]")} />
+    <div className={cn("rounded-2xl p-4", dark ? "bg-white/8" : "bg-surface-soft")}>
+      <Icon className={cn("size-4", dark ? "text-accent" : "text-brand")} />
       <p className={cn("mt-3 text-xs font-semibold uppercase tracking-[0.14em]", dark ? "text-white/45" : "text-black/40")}>{label}</p>
       <p className="mt-2 text-2xl font-semibold">{value}</p>
     </div>
@@ -550,7 +550,7 @@ function Metric({ icon: Icon, label, value, dark = false }: { icon: typeof Clipb
 
 function MiniMetric({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-2xl bg-[#fbfbf6] p-3">
+    <div className="rounded-2xl bg-surface-soft p-3">
       <p className="text-xs font-semibold text-black/38">{label}</p>
       <p className="mt-1 text-lg font-semibold">{value}</p>
     </div>

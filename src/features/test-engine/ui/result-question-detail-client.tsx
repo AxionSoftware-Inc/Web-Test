@@ -24,26 +24,26 @@ export function ResultQuestionDetailClient({
   return (
     <article className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 pb-4">
-        <p className="text-sm font-semibold text-[#276a5b]">{question.type}</p>
-        <span className={correct ? "rounded-md bg-[#edf7f3] px-3 py-1 text-sm font-semibold text-[#276a5b]" : "rounded-md bg-[#f8eeee] px-3 py-1 text-sm font-semibold text-[#8d3d3d]"}>
+        <p className="text-sm font-semibold text-brand">{question.type}</p>
+        <span className={correct ? "rounded-md bg-brand-soft px-3 py-1 text-sm font-semibold text-brand" : "rounded-md bg-danger-soft px-3 py-1 text-sm font-semibold text-[#8d3d3d]"}>
           {userAnswer ? (correct ? "Correct" : "Wrong") : "Skipped"}
         </span>
       </div>
       <p className="mt-6 whitespace-pre-wrap text-lg leading-8">{question.prompt}</p>
       <div className="mt-5 flex flex-wrap gap-2">
         {skills.map((skill) => (
-          <span key={skill} className="rounded-xl bg-[#edf7f3] px-3 py-2 text-sm font-semibold text-[#276a5b]">
+          <span key={skill} className="rounded-xl bg-brand-soft px-3 py-2 text-sm font-semibold text-brand">
             {skill}
           </span>
         ))}
       </div>
       <div className="mt-6 grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl border border-black/10 bg-[#fbfbf8] p-4 text-sm">
+        <div className="rounded-xl border border-black/10 bg-surface-soft p-4 text-sm">
           <p className="font-semibold">Your answer</p>
           <p className="mt-2 text-black/65">{userAnswer || "No answer"}</p>
         </div>
-        <div className="rounded-xl bg-[#edf7f3] p-4 text-sm">
-          <p className="font-semibold text-[#276a5b]">Correct answer</p>
+        <div className="rounded-xl bg-brand-soft p-4 text-sm">
+          <p className="font-semibold text-brand">Correct answer</p>
           <p className="mt-2">{question.answer || "Answer unavailable"}</p>
         </div>
       </div>

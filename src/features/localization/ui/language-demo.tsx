@@ -30,14 +30,14 @@ export function LanguageDemo() {
             key={item}
             type="button"
             onClick={() => setLocale(item as keyof typeof dictionary)}
-            className={item === locale ? "rounded-xl bg-[#151713] px-3 py-2 text-sm font-semibold text-white" : "rounded-xl bg-white/60 px-3 py-2 text-sm font-semibold"}
+            className={item === locale ? "rounded-xl bg-ink px-3 py-2 text-sm font-semibold text-white" : "rounded-xl bg-white/60 px-3 py-2 text-sm font-semibold"}
           >
             {item.toUpperCase()}
           </button>
         ))}
       </div>
       <h2 className="mt-5 text-2xl font-semibold">{dictionary[locale].title}</h2>
-      <p className="mt-3 text-sm font-semibold text-[#276a5b]">{dictionary[locale].cta}</p>
+      <p className="mt-3 text-sm font-semibold text-brand">{dictionary[locale].cta}</p>
     </GlassCard>
   );
 }

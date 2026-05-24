@@ -98,7 +98,7 @@ export function GoogleLoginClient() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f4f2ea] px-5 py-10 text-[#151713] sm:px-8">
+    <main className="min-h-screen bg-background px-5 py-10 text-ink sm:px-8">
       <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" onLoad={initGoogle} />
       <div className="mx-auto max-w-3xl">
         <PremiumPanel>
@@ -131,7 +131,7 @@ export function GoogleLoginClient() {
                       key={role.id}
                       type="button"
                       onClick={() => setSelectedRole(role.id)}
-                      className={`rounded-2xl border p-4 text-left ${active ? "border-[#151713] bg-[#151713] text-white" : "border-black/8 bg-[#fbfbf6] text-[#151713]"}`}
+                      className={`rounded-2xl border p-4 text-left ${active ? "border-ink bg-ink text-white" : "border-black/8 bg-surface-soft text-ink"}`}
                     >
                       <Icon className="size-5" />
                       <p className="mt-3 font-semibold">{role.label}</p>
@@ -140,7 +140,7 @@ export function GoogleLoginClient() {
                   );
                 })}
               </div>
-              <button onClick={chooseRole} disabled={busy} className="mt-5 rounded-2xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
+              <button onClick={chooseRole} disabled={busy} className="mt-5 rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
                 {busy ? "Saving..." : "Continue"}
               </button>
             </section>

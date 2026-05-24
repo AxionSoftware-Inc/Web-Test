@@ -63,7 +63,7 @@ export function RoleSwitcher() {
         className="inline-flex items-center gap-2 rounded-xl border border-black/8 bg-white px-3 py-2 text-sm font-semibold text-black/70 shadow-[0_10px_30px_rgba(0,0,0,0.04)] disabled:opacity-60"
         disabled={saving}
       >
-        <Icon className="size-4 text-[#276a5b]" />
+        <Icon className="size-4 text-brand" />
         <span className="hidden sm:inline">{activeRole.label}</span>
         <ChevronDown className="size-4 text-black/38" />
       </button>
@@ -77,15 +77,15 @@ export function RoleSwitcher() {
                 key={role.id}
                 type="button"
                 onClick={() => selectRole(role.id)}
-                className="flex w-full items-start gap-3 rounded-2xl p-3 text-left hover:bg-[#fbfbf6]"
+                className="flex w-full items-start gap-3 rounded-2xl p-3 text-left hover:bg-surface-soft"
               >
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#edf7f3] text-[#276a5b]">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand">
                   <RoleIcon className="size-5" />
                 </span>
                 <span>
                   <span className="flex items-center gap-2 font-semibold">
                     {role.label}
-                    {role.id === activeRole.id ? <span className="rounded-full bg-[#edf7f3] px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-[#276a5b]">Active</span> : null}
+                    {role.id === activeRole.id ? <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-brand">Active</span> : null}
                   </span>
                   <span className="mt-1 block text-xs leading-5 text-black/50">{role.description}</span>
                 </span>
@@ -93,7 +93,7 @@ export function RoleSwitcher() {
             );
           })}
           <div className="mt-2 border-t border-black/8 p-2">
-            <Link href={activeRole.home} className="block rounded-2xl bg-[#151713] px-4 py-3 text-center text-sm font-semibold text-white" onClick={() => setOpen(false)}>
+            <Link href={activeRole.home} className="block rounded-2xl bg-ink px-4 py-3 text-center text-sm font-semibold text-white" onClick={() => setOpen(false)}>
               Open {activeRole.label} workspace
             </Link>
           </div>

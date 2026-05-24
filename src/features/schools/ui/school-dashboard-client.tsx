@@ -65,8 +65,8 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
         portal_subdomain: slugify(name),
         portal_domain: "",
         logo_url: "",
-        primary_color: "#151713",
-        accent_color: "#8fd6bd",
+        primary_color: "var(--ink)",
+        accent_color: "var(--accent)",
         student_invite_code: `ST-${Date.now().toString().slice(-4)}`,
       });
       saveSchoolManageCode(school.slug, school.manage_code);
@@ -118,7 +118,7 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
   }
 
   return (
-    <main className="min-h-screen bg-[#f4f2ea] text-[#151713]">
+    <main className="min-h-screen bg-background text-ink">
       <div className="mx-auto max-w-7xl p-4 lg:p-6">
         <div className="grid gap-4 xl:grid-cols-[320px_1fr]">
           <aside className="grid gap-4">
@@ -127,7 +127,7 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
               <h1 className="mt-2 text-2xl font-semibold">Schools</h1>
               <div className="mt-4 grid gap-2">
                 {schools.map((school) => (
-                  <button key={school.id} onClick={() => setActiveSlug(school.slug)} className={`rounded-2xl border p-4 text-left ${school.slug === activeSlug ? "border-[#151713] bg-[#151713] text-white" : "border-black/8 bg-white"}`}>
+                  <button key={school.id} onClick={() => setActiveSlug(school.slug)} className={`rounded-2xl border p-4 text-left ${school.slug === activeSlug ? "border-ink bg-ink text-white" : "border-black/8 bg-white"}`}>
                     <p className="font-semibold">{school.name}</p>
                     <p className={`mt-1 text-sm ${school.slug === activeSlug ? "text-white/55" : "text-black/45"}`}>{school.teacher_count} teachers</p>
                   </button>
@@ -141,7 +141,7 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
                 <Input label="School name" value={name} onChange={setName} />
                 <Input label="Owner" value={owner} onChange={setOwner} />
                 <FieldShell label="Description"><textarea value={description} onChange={(event) => setDescription(event.target.value)} className={premiumInputClass} rows={3} /></FieldShell>
-                <button onClick={createSchool} disabled={busy} className="rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">Create school</button>
+                <button onClick={createSchool} disabled={busy} className="rounded-2xl bg-ink px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">Create school</button>
               </div>
             </Panel>
           </aside>
@@ -173,7 +173,7 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
                       {teacherMatches.length ? (
                         <div className="absolute z-20 mt-2 w-full rounded-2xl border border-black/8 bg-white p-2 shadow-xl">
                           {teacherMatches.map((profile) => (
-                            <button key={profile.identity_code} onClick={() => pickTeacher(profile)} className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-[#f4f2ea]">
+                            <button key={profile.identity_code} onClick={() => pickTeacher(profile)} className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-background">
                               <span className="font-semibold">{profile.display_name || profile.email}</span>
                               <span className="block text-black/45">{profile.email}</span>
                             </button>
@@ -188,7 +188,7 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
                       {classOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
                     </select>
                   </FieldShell>
-                  <button onClick={addTeacher} disabled={busy || !activeSlug} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"><Plus className="size-4" />Add teacher</button>
+                  <button onClick={addTeacher} disabled={busy || !activeSlug} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-ink px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"><Plus className="size-4" />Add teacher</button>
                 </div>
               </Panel>
 
@@ -209,15 +209,15 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
             <Panel>
               <div className="flex items-center justify-between gap-3">
                 <div><Eyebrow>Classes</Eyebrow><h2 className="mt-2 text-2xl font-semibold">Class list</h2></div>
-                <Link href="/schools/classes" className="rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white">Open classes</Link>
+                <Link href="/schools/classes" className="rounded-2xl bg-ink px-4 py-3 text-sm font-semibold text-white">Open classes</Link>
               </div>
               <div className="mt-5 grid gap-3">
                 {schoolClasses.map((item) => (
-                  <Link key={item.class_id} href={`/schools/classes/${item.class_slug}`} className="grid gap-3 rounded-2xl border border-black/8 bg-white p-4 hover:bg-[#fbfbf6] md:grid-cols-[1fr_170px_120px_100px] md:items-center">
+                  <Link key={item.class_id} href={`/schools/classes/${item.class_slug}`} className="grid gap-3 rounded-2xl border border-black/8 bg-white p-4 hover:bg-surface-soft md:grid-cols-[1fr_170px_120px_100px] md:items-center">
                     <div><p className="font-semibold">{item.class_name}</p><p className="text-sm text-black/45">Teacher: {item.teacher_name}</p></div>
                     <p className="text-sm text-black/58">{item.sessions_total} sessions</p>
                     <p className="text-sm text-black/58">{item.students_submitted} students</p>
-                    <span className="rounded-xl bg-[#edf7f3] px-3 py-2 text-center text-sm font-semibold text-[#276a5b]">{item.average_score}%</span>
+                    <span className="rounded-xl bg-brand-soft px-3 py-2 text-center text-sm font-semibold text-brand">{item.average_score}%</span>
                   </Link>
                 ))}
                 {!schoolClasses.length ? <p className="rounded-2xl bg-white p-5 text-sm text-black/56">Bu schoolga hali class bog&apos;lanmagan.</p> : null}
@@ -240,5 +240,5 @@ function Input({ label, value, onChange }: { label: string; value: string; onCha
 }
 
 function Metric({ icon: Icon, label, value }: { icon: typeof Building2; label: string; value: string | number }) {
-  return <div className="min-w-24 rounded-2xl border border-black/8 bg-white p-3"><Icon className="size-4 text-[#276a5b]" /><p className="mt-2 text-xs font-semibold text-black/38">{label}</p><p className="mt-1 text-xl font-semibold">{value}</p></div>;
+  return <div className="min-w-24 rounded-2xl border border-black/8 bg-white p-3"><Icon className="size-4 text-brand" /><p className="mt-2 text-xs font-semibold text-black/38">{label}</p><p className="mt-1 text-xl font-semibold">{value}</p></div>;
 }

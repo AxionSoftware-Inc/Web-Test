@@ -52,7 +52,7 @@ export function TeacherStudentsPage({ classes, results }: { classes: ApiTeacherC
       </div>
 
       <div className="mt-5 overflow-hidden rounded-3xl border border-black/8 bg-white">
-        <div className="grid grid-cols-[1fr_1fr_120px_120px_180px] gap-3 border-b border-black/8 bg-[#fbfbf6] px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-black/40 max-lg:hidden">
+        <div className="grid grid-cols-[1fr_1fr_120px_120px_180px] gap-3 border-b border-black/8 bg-surface-soft px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-black/40 max-lg:hidden">
           <span>Student</span>
           <span>Class</span>
           <span>Completed</span>
@@ -60,14 +60,14 @@ export function TeacherStudentsPage({ classes, results }: { classes: ApiTeacherC
           <span>Last submit</span>
         </div>
         {filtered.map((student) => (
-          <Link key={`${student.class_slug}-${student.student_code}`} href={`/teacher/classes/${student.class_slug}`} className="grid gap-3 border-b border-black/6 px-4 py-4 hover:bg-[#fbfbf6] lg:grid-cols-[1fr_1fr_120px_120px_180px] lg:items-center">
+          <Link key={`${student.class_slug}-${student.student_code}`} href={`/teacher/classes/${student.class_slug}`} className="grid gap-3 border-b border-black/6 px-4 py-4 hover:bg-surface-soft lg:grid-cols-[1fr_1fr_120px_120px_180px] lg:items-center">
             <div>
               <p className="font-semibold">{student.student_name}</p>
               <p className="mt-1 text-xs text-black/45">{student.student_code}</p>
             </div>
             <p className="text-sm font-semibold text-black/58">{student.class_name}</p>
             <p className="text-sm text-black/58">{student.completed} tests</p>
-            <span className="w-fit rounded-xl bg-[#edf7f3] px-3 py-2 text-sm font-semibold text-[#276a5b]">{student.average_score}%</span>
+            <span className="w-fit rounded-xl bg-brand-soft px-3 py-2 text-sm font-semibold text-brand">{student.average_score}%</span>
             <p className="text-sm text-black/48">{student.last_submitted_at ? new Date(student.last_submitted_at).toLocaleString() : "No submit"}</p>
           </Link>
         ))}
@@ -80,7 +80,7 @@ export function TeacherStudentsPage({ classes, results }: { classes: ApiTeacherC
 function Metric({ icon: Icon, label, value }: { icon: typeof UsersRound; label: string; value: string | number }) {
   return (
     <div className="rounded-2xl border border-black/8 bg-white p-4">
-      <Icon className="size-4 text-[#276a5b]" />
+      <Icon className="size-4 text-brand" />
       <p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-black/38">{label}</p>
       <p className="mt-1 text-xl font-semibold">{value}</p>
     </div>

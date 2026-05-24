@@ -10,10 +10,10 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <main className="min-h-screen bg-[#f7f7f2] text-[#151713]">
+    <main className="min-h-screen bg-background text-ink">
       <Container className="py-10">
         <GlassCard className="p-6 md:p-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#276a5b]">Practice</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-brand">Practice</p>
           <h1 className="mt-3 text-5xl font-semibold leading-tight">Algebra practice hub</h1>
           <p className="mt-5 max-w-2xl text-sm leading-6 text-black/62">
             Choose a focused drill. Practice is not a final test: hints, retry and explanations can be added here before backend.

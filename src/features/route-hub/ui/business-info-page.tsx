@@ -15,10 +15,10 @@ export function BusinessInfoPage({
   bullets: string[];
 }) {
   return (
-    <main className="min-h-screen bg-[#f7f7f2] text-[#151713]">
+    <main className="min-h-screen bg-background text-ink">
       <Container className="py-10">
         <GlassCard className="p-6 md:p-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#276a5b]">
+          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-brand">
             {eyebrow}
           </p>
           <h1 className="mt-3 max-w-4xl text-5xl font-semibold leading-tight">{title}</h1>
@@ -31,7 +31,7 @@ export function BusinessInfoPage({
             ))}
           </div>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/subjects/mathematics/topics/algebra" className="rounded-xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white">
+            <Link href="/subjects/mathematics/topics/algebra" className="rounded-xl bg-ink px-5 py-3 text-sm font-semibold text-white">
               Try Algebra MVP
             </Link>
             <Link href="/profile" className="rounded-xl border border-black/10 bg-white/70 px-5 py-3 text-sm font-semibold">

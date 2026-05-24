@@ -44,14 +44,14 @@ export function AlgebraTopicPage({ levels }: { levels: ApiLevel[] }) {
   const primaryTest = allTests[0];
 
   return (
-    <main className="min-h-screen bg-[#f7f7f2] text-[#151713]">
+    <main className="min-h-screen bg-background text-ink">
       <Container className="py-8">
         <header className="grid gap-5 border-b border-black/10 pb-8 lg:grid-cols-[1fr_360px] lg:items-end">
           <div>
-            <Link href="/subjects/mathematics" className="text-sm font-semibold text-[#276a5b]">
+            <Link href="/subjects/mathematics" className="text-sm font-semibold text-brand">
               Mathematics
             </Link>
-            <p className="mt-7 text-sm font-semibold uppercase tracking-[0.14em] text-[#276a5b]">
+            <p className="mt-7 text-sm font-semibold uppercase tracking-[0.14em] text-brand">
               Core math topic
             </p>
             <h1 className="mt-3 max-w-4xl text-5xl font-semibold leading-tight">Algebra</h1>
@@ -63,7 +63,7 @@ export function AlgebraTopicPage({ levels }: { levels: ApiLevel[] }) {
               {primaryTest ? (
                 <Link
                   href={`/tests/${primaryTest.slug}/start`}
-                  className="rounded-md bg-[#151713] px-5 py-3 text-sm font-semibold text-white"
+                  className="rounded-md bg-ink px-5 py-3 text-sm font-semibold text-white"
                 >
                   Start Algebra Test
                 </Link>
@@ -78,7 +78,7 @@ export function AlgebraTopicPage({ levels }: { levels: ApiLevel[] }) {
             <p className="text-sm text-black/50">Algebra mastery</p>
             <h2 className="mt-2 text-4xl font-semibold">68%</h2>
             <div className="mt-5 h-3 rounded bg-black/10">
-              <div className="h-3 w-[68%] rounded bg-[#276a5b]" />
+              <div className="h-3 w-[68%] rounded bg-brand" />
             </div>
             <p className="mt-3 text-sm leading-6 text-black/60">
               Strong in basic equations. Needs more work on functions and word problems.
@@ -93,29 +93,29 @@ export function AlgebraTopicPage({ levels }: { levels: ApiLevel[] }) {
             <article key={level.difficulty} className="rounded-lg border border-black/10 bg-white p-5">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-2xl font-semibold">{level.label}</h2>
-                <span className="rounded-md bg-[#edf7f3] px-3 py-1 text-xs font-semibold uppercase tracking-[0.1em] text-[#276a5b]">
+                <span className="rounded-md bg-brand-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.1em] text-brand">
                   {meta.status}
                 </span>
               </div>
               <p className="mt-3 text-sm leading-6 text-black/62">{meta.copy}</p>
               <div className="mt-5 h-2 rounded bg-black/10">
-                <div className="h-2 rounded bg-[#276a5b]" style={{ width: `${meta.mastery}%` }} />
+                <div className="h-2 rounded bg-brand" style={{ width: `${meta.mastery}%` }} />
               </div>
               <p className="mt-2 text-sm font-semibold">{meta.mastery}% mastery</p>
               <div className="mt-5 flex flex-wrap gap-2">
                 {meta.skills.map((skill) => (
-                  <span key={skill} className="rounded-md border border-black/10 bg-[#fbfbf8] px-3 py-2 text-sm text-black/62">
+                  <span key={skill} className="rounded-md border border-black/10 bg-surface-soft px-3 py-2 text-sm text-black/62">
                     {skill}
                   </span>
                 ))}
               </div>
               <div className="mt-5 grid gap-2 border-t border-black/10 pt-5">
                 {level.tests.map((test) => (
-                    <div key={test.slug} className="rounded-md bg-[#fbfbf8] p-3">
+                    <div key={test.slug} className="rounded-md bg-surface-soft p-3">
                       <p className="text-sm font-semibold">{test.title}</p>
                       <p className="mt-1 text-xs text-black/50">{test.estimated_minutes} min / {test.difficulty}</p>
                       <div className="mt-3 flex flex-wrap gap-2">
-                        <Link href={`/tests/${test.slug}/start`} className="rounded-md bg-[#151713] px-3 py-2 text-xs font-semibold text-white">
+                        <Link href={`/tests/${test.slug}/start`} className="rounded-md bg-ink px-3 py-2 text-xs font-semibold text-white">
                           Start test
                         </Link>
                         <Link href={`/tests/${test.slug}`} className="rounded-md border border-black/10 px-3 py-2 text-xs font-semibold">
@@ -132,17 +132,17 @@ export function AlgebraTopicPage({ levels }: { levels: ApiLevel[] }) {
         <section className="grid gap-5 lg:grid-cols-[1fr_360px]">
           <div className="rounded-lg border border-black/10 bg-white p-5">
             <div className="flex items-center gap-2">
-              <Layers3 className="size-5 text-[#276a5b]" />
+              <Layers3 className="size-5 text-brand" />
               <h2 className="text-xl font-semibold">Algebra roadmap</h2>
             </div>
             <div className="mt-5 grid gap-3">
               {algebraRoadmap.map((step, index) => (
-                <div key={step} className="flex items-center gap-3 rounded-md border border-black/10 bg-[#fbfbf8] p-4">
+                <div key={step} className="flex items-center gap-3 rounded-md border border-black/10 bg-surface-soft p-4">
                   <span className="grid size-8 shrink-0 place-items-center rounded-md bg-white text-sm font-semibold">
                     {index + 1}
                   </span>
                   <span className="font-semibold">{step}</span>
-                  {index < 4 ? <CheckCircle2 className="ml-auto size-5 text-[#276a5b]" /> : <Clock className="ml-auto size-5 text-black/35" />}
+                  {index < 4 ? <CheckCircle2 className="ml-auto size-5 text-brand" /> : <Clock className="ml-auto size-5 text-black/35" />}
                 </div>
               ))}
             </div>
@@ -151,15 +151,15 @@ export function AlgebraTopicPage({ levels }: { levels: ApiLevel[] }) {
           <aside className="grid gap-5">
             <div className="rounded-lg border border-black/10 bg-white p-5">
               <div className="flex items-center gap-2">
-                <Target className="size-5 text-[#276a5b]" />
+                <Target className="size-5 text-brand" />
                 <h2 className="text-xl font-semibold">Available tests</h2>
               </div>
               <div className="mt-4 grid gap-3">
                 {allTests.map((test) => (
-                  <Link key={test.slug} href={`/tests/${test.slug}`} className="rounded-md border border-black/10 bg-[#fbfbf8] p-4">
+                  <Link key={test.slug} href={`/tests/${test.slug}`} className="rounded-md border border-black/10 bg-surface-soft p-4">
                     <p className="font-semibold">{test.title}</p>
                     <p className="mt-1 text-sm text-black/55">{test.difficulty} / {test.estimated_minutes} min</p>
-                    <span className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-[#276a5b]">
+                    <span className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-brand">
                       Open
                       <ArrowRight className="size-4" />
                     </span>
@@ -168,13 +168,13 @@ export function AlgebraTopicPage({ levels }: { levels: ApiLevel[] }) {
               </div>
             </div>
 
-            <div className="rounded-lg border border-black/10 bg-[#151713] p-5 text-white">
+            <div className="rounded-lg border border-black/10 bg-ink p-5 text-white">
               <h2 className="text-xl font-semibold">Today&apos;s focus</h2>
               <p className="mt-3 text-sm leading-6 text-white/65">
                 Quadratic equations basics testini ishlang, keyin wrong answer review orqali zaif joylarni belgilang.
               </p>
               {primaryTest ? (
-                <Link href={`/tests/${primaryTest.slug}/start`} className="mt-5 block rounded-md bg-[#8fd6bd] px-4 py-3 text-center text-sm font-semibold text-[#151713]">
+                <Link href={`/tests/${primaryTest.slug}/start`} className="mt-5 block rounded-md bg-accent px-4 py-3 text-center text-sm font-semibold text-ink">
                   Start now
                 </Link>
               ) : null}

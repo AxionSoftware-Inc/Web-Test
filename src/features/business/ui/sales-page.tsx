@@ -21,17 +21,17 @@ type SalesPageContent = {
 
 export function SalesPage({ content }: { content: SalesPageContent }) {
   return (
-    <main className="min-h-screen bg-[#f7f7f2] text-[#151713]">
+    <main className="min-h-screen bg-background text-ink">
       <Container className="py-10">
         <section className="grid gap-5 lg:grid-cols-[1fr_380px] lg:items-stretch">
           <GlassCard className="p-6 md:p-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#276a5b]">
+            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-brand">
               {content.eyebrow}
             </p>
             <h1 className="mt-3 max-w-4xl text-5xl font-semibold leading-tight">{content.title}</h1>
             <p className="mt-5 max-w-2xl text-sm leading-6 text-black/62">{content.copy}</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href={content.primaryHref} className="rounded-xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white">
+              <Link href={content.primaryHref} className="rounded-xl bg-ink px-5 py-3 text-sm font-semibold text-white">
                 {content.primaryLabel}
               </Link>
               <Link href={content.secondaryHref} className="rounded-xl border border-black/10 bg-white/70 px-5 py-3 text-sm font-semibold">
@@ -60,7 +60,7 @@ export function SalesPage({ content }: { content: SalesPageContent }) {
             <div className="mt-5 grid gap-3">
               {content.workflow.map(([title, copy], index) => (
                 <div key={title} className="flex gap-3 rounded-xl bg-white/58 p-4">
-                  <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[#151713] text-sm font-semibold text-white">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-ink text-sm font-semibold text-white">
                     {index + 1}
                   </span>
                   <div>
@@ -75,7 +75,7 @@ export function SalesPage({ content }: { content: SalesPageContent }) {
           <div className="grid gap-5 md:grid-cols-2">
             {content.features.map(([title, copy, Icon]) => (
               <GlassCard key={title} className="p-5">
-                <div className="grid size-12 place-items-center rounded-xl bg-[#edf7f3] text-[#276a5b]">
+                <div className="grid size-12 place-items-center rounded-xl bg-brand-soft text-brand">
                   <Icon className="size-6" />
                 </div>
                 <h3 className="mt-5 text-xl font-semibold">{title}</h3>

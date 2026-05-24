@@ -4,7 +4,7 @@ import { cn } from "@/shared/lib/cn";
 
 export function PremiumPage({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <main className={cn("min-h-screen bg-[#f7f7ef] px-5 py-8 text-[#151713] sm:px-8 lg:px-10", className)}>
+    <main className={cn("min-h-screen bg-background px-5 py-8 text-ink sm:px-8 lg:px-10", className)}>
       <div className="mx-auto max-w-7xl">{children}</div>
     </main>
   );
@@ -31,4 +31,4 @@ export function FieldShell({ label, children }: { label: string; children: React
   );
 }
 
-export const premiumInputClass = "rounded-2xl border border-black/10 bg-white px-4 py-3 outline-none transition focus:border-[#276a5b]/50 focus:ring-4 focus:ring-[#8fd6bd]/20";
+export const premiumInputClass = "rounded-2xl border border-black/10 bg-white px-4 py-3 outline-none transition focus:border-brand/50 focus:ring-4 focus:ring-accent/20";

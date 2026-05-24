@@ -14,7 +14,7 @@ export function LearningLoopSection() {
         <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {learningLoop.map((step, index) => (
             <article key={step.title} className="rounded-lg border border-black/10 bg-white p-5">
-              <span className="grid size-9 place-items-center rounded-md bg-[#276a5b] text-sm font-semibold text-white">
+              <span className="grid size-9 place-items-center rounded-md bg-brand text-sm font-semibold text-white">
                 {index + 1}
               </span>
               <h3 className="mt-6 text-lg font-semibold">{step.title}</h3>

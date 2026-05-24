@@ -19,11 +19,11 @@ export default async function Page({ params }: PageProps) {
   const question = await questApi.question(questionId);
 
   return (
-    <main className="min-h-screen bg-[#f7f7f2] text-[#151713]">
+    <main className="min-h-screen bg-background text-ink">
       <Container className="py-10">
         <section className="grid gap-5 lg:grid-cols-[1fr_360px]">
           <GlassCard className="p-6">
-            <p className="text-sm font-semibold text-[#276a5b]">Solve mode</p>
+            <p className="text-sm font-semibold text-brand">Solve mode</p>
             <p className="mt-6 whitespace-pre-wrap text-lg leading-8"><LatexText text={question.prompt} /></p>
             {question.options.length > 0 ? (
               <div className="mt-6 grid gap-3">
@@ -40,7 +40,7 @@ export default async function Page({ params }: PageProps) {
           <GlassCard className="p-5">
             <h2 className="text-xl font-semibold">Demo actions</h2>
             <div className="mt-4 grid gap-3">
-              <Link href={`/questions/${question.id}/solutions`} className="rounded-xl bg-[#151713] px-4 py-3 text-center text-sm font-semibold text-white">Show solution</Link>
+              <Link href={`/questions/${question.id}/solutions`} className="rounded-xl bg-ink px-4 py-3 text-center text-sm font-semibold text-white">Show solution</Link>
               <Link href="/practice/algebra/targeted" className="rounded-xl border border-black/10 bg-white/70 px-4 py-3 text-center text-sm font-semibold">Practice similar</Link>
             </div>
           </GlassCard>

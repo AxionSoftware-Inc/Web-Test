@@ -40,13 +40,13 @@ export default async function Page({ params }: PageProps) {
     >
       <section className="grid gap-5 py-8 lg:grid-cols-[1fr_320px]">
         <article className="rounded-3xl border border-black/10 bg-white p-6">
-          <span className={`rounded-xl px-3 py-2 text-sm font-semibold ${isCorrect ? "bg-[#edf7f3] text-[#276a5b]" : "bg-[#f8eeee] text-red-700"}`}>
+          <span className={`rounded-xl px-3 py-2 text-sm font-semibold ${isCorrect ? "bg-brand-soft text-brand" : "bg-danger-soft text-red-700"}`}>
             {isCorrect ? "Correct" : "Needs review"}
           </span>
           <div className="mt-5 text-xl font-semibold"><LatexText text={question.prompt} /></div>
           <div className="mt-5 grid gap-3">
             {question.options.map((option) => (
-              <div key={option} className="rounded-2xl border border-black/8 bg-[#fbfbf8] p-4 text-sm">
+              <div key={option} className="rounded-2xl border border-black/8 bg-surface-soft p-4 text-sm">
                 <LatexText text={option} />
               </div>
             ))}
@@ -55,17 +55,17 @@ export default async function Page({ params }: PageProps) {
             <Info label="Your answer" value={userAnswer || "Skipped"} />
             <Info label="Correct answer" value={question.answer} />
           </div>
-          <div className="mt-6 rounded-2xl bg-[#edf7f3] p-4">
-            <p className="text-sm font-semibold text-[#276a5b]">Explanation</p>
+          <div className="mt-6 rounded-2xl bg-brand-soft p-4">
+            <p className="text-sm font-semibold text-brand">Explanation</p>
             <p className="mt-2 text-sm leading-6 text-black/66"><LatexText text={question.explanation} /></p>
           </div>
         </article>
-        <aside className="rounded-3xl border border-black/10 bg-[#151713] p-5 text-white">
+        <aside className="rounded-3xl border border-black/10 bg-ink p-5 text-white">
           <h2 className="font-semibold">Recovery path</h2>
           <p className="mt-3 text-sm leading-6 text-white/68">
             Shu skill bo‘yicha targeted practice ishlang va testni qayta topshiring.
           </p>
-          <Link href="/subjects/mathematics/topics/algebra" className="mt-5 block rounded-2xl bg-[#8fd6bd] px-4 py-3 text-center text-sm font-semibold text-[#151713]">
+          <Link href="/subjects/mathematics/topics/algebra" className="mt-5 block rounded-2xl bg-accent px-4 py-3 text-center text-sm font-semibold text-ink">
             Open Algebra
           </Link>
         </aside>
@@ -76,7 +76,7 @@ export default async function Page({ params }: PageProps) {
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-black/8 bg-[#fbfbf8] p-4">
+    <div className="rounded-2xl border border-black/8 bg-surface-soft p-4">
       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-black/40">{label}</p>
       <p className="mt-2 font-semibold"><LatexText text={value} /></p>
     </div>

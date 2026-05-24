@@ -19,7 +19,7 @@ export function SubjectMapSection() {
       <Container className="py-12">
         <div className="mb-7 flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <SectionHeading eyebrow="Modules" title="Backend bilan ishlaydigan asosiy yo‘llar" />
-          <Link href="/crud" className="rounded-2xl border border-black/10 bg-[#fbfbf6] px-5 py-3 text-sm font-semibold">
+          <Link href="/crud" className="rounded-2xl border border-black/10 bg-surface-soft px-5 py-3 text-sm font-semibold">
             Add test
           </Link>
         </div>
@@ -27,8 +27,8 @@ export function SubjectMapSection() {
           {cards.map((card) => {
             const Icon = card.icon;
             return (
-              <Link key={card.title} href={card.href} className="flex min-h-[165px] flex-col justify-between rounded-3xl border border-black/8 bg-[#fbfbf6] p-5 hover:bg-white">
-                <Icon className="size-6 text-[#276a5b]" />
+              <Link key={card.title} href={card.href} className="flex min-h-[165px] flex-col justify-between rounded-3xl border border-black/8 bg-surface-soft p-5 hover:bg-white">
+                <Icon className="size-6 text-brand" />
                 <div>
                   <h3 className="text-lg font-semibold">{card.title}</h3>
                   <p className="mt-2 text-sm leading-5 text-black/55">{card.copy}</p>

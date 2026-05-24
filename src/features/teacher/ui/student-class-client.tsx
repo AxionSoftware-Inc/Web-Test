@@ -25,7 +25,7 @@ export function StudentClassClient({ classroom, assignments }: { classroom: ApiT
   return (
     <div className="grid gap-6 lg:grid-cols-[390px_1fr]">
       <section className="rounded-[30px] border border-black/8 bg-white p-6 shadow-[0_24px_70px_rgba(0,0,0,0.08)]">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#276a5b]">Class test entry</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">Class test entry</p>
         <h1 className="mt-2 text-3xl font-semibold">{classroom.name}</h1>
         <p className="mt-3 text-sm leading-6 text-black/58">{classroom.description || "O'qituvchi yuborgan link orqali test sessionni boshlang."}</p>
 
@@ -39,12 +39,12 @@ export function StudentClassClient({ classroom, assignments }: { classroom: ApiT
         <div className="mt-6 grid gap-4">
           <label className="grid gap-2 text-sm font-semibold text-black/65">
             Student name
-            <input value={studentName} onChange={(event) => setStudentName(event.target.value)} className="rounded-2xl border border-black/10 bg-white px-4 py-3 outline-none focus:border-[#276a5b]/50 focus:ring-4 focus:ring-[#8fd6bd]/20" />
+            <input value={studentName} onChange={(event) => setStudentName(event.target.value)} className="rounded-2xl border border-black/10 bg-white px-4 py-3 outline-none focus:border-brand/50 focus:ring-4 focus:ring-accent/20" />
           </label>
           {classroom.visibility === "private" ? (
             <label className="grid gap-2 text-sm font-semibold text-black/65">
               Join code
-              <input value={joinCode} onChange={(event) => setJoinCode(event.target.value)} className="rounded-2xl border border-black/10 bg-white px-4 py-3 outline-none focus:border-[#276a5b]/50 focus:ring-4 focus:ring-[#8fd6bd]/20" />
+              <input value={joinCode} onChange={(event) => setJoinCode(event.target.value)} className="rounded-2xl border border-black/10 bg-white px-4 py-3 outline-none focus:border-brand/50 focus:ring-4 focus:ring-accent/20" />
             </label>
           ) : null}
           {error ? <p className="rounded-2xl bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p> : null}
@@ -56,7 +56,7 @@ export function StudentClassClient({ classroom, assignments }: { classroom: ApiT
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-black/38">Open sessions</p>
             <h2 className="mt-2 text-2xl font-semibold">{singleSession ? "Teacher yuborgan test session" : "Boshlash mumkin bo'lgan sessionlar"}</h2>
           </div>
-          <span className="rounded-2xl bg-[#edf7f3] px-4 py-3 text-sm font-semibold text-[#276a5b]">{activeAssignments.length} open</span>
+          <span className="rounded-2xl bg-brand-soft px-4 py-3 text-sm font-semibold text-brand">{activeAssignments.length} open</span>
         </div>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           {activeAssignments.map((item) => (
@@ -115,7 +115,7 @@ function AssignmentCard({
           <p className="text-lg font-semibold">{assignment.title}</p>
           <p className="mt-2 text-sm text-black/52">{assignment.test_title}</p>
         </div>
-            <span className="rounded-xl bg-[#edf7f3] px-3 py-2 text-xs font-semibold capitalize text-[#276a5b]">{assignment.mode}</span>
+            <span className="rounded-xl bg-brand-soft px-3 py-2 text-xs font-semibold capitalize text-brand">{assignment.mode}</span>
       </div>
       <div className="mt-5 grid grid-cols-2 gap-2">
         <Mini label="Questions" value={assignment.question_count} />
@@ -123,7 +123,7 @@ function AssignmentCard({
         {assignment.mode === "homework" ? <Mini label="Due" value={assignment.due_at ? new Date(assignment.due_at).toLocaleDateString() : "No due"} /> : null}
         {assignment.mode === "homework" ? <Mini label="Late" value={assignment.allow_late_submission ? "Allowed" : "Closed"} /> : <Mini label="Status" value="Open" />}
       </div>
-      <button onClick={start} disabled={starting} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
+      <button onClick={start} disabled={starting} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
         {starting ? "Ochilyapti..." : assignment.mode === "homework" ? "Start homework" : "Start test session"}
         <ArrowRight className="size-4" />
       </button>
@@ -133,8 +133,8 @@ function AssignmentCard({
 
 function Step({ icon: Icon, title, copy }: { icon: typeof UserRound; title: string; copy: string }) {
   return (
-    <div className="flex gap-3 rounded-2xl bg-[#fbfbf6] p-3">
-      <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#edf7f3] text-[#276a5b]">
+    <div className="flex gap-3 rounded-2xl bg-surface-soft p-3">
+      <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand">
         <Icon className="size-4" />
       </span>
       <span>
@@ -147,7 +147,7 @@ function Step({ icon: Icon, title, copy }: { icon: typeof UserRound; title: stri
 
 function Mini({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-2xl bg-[#fbfbf6] p-3">
+    <div className="rounded-2xl bg-surface-soft p-3">
       <p className="text-xs font-semibold text-black/38">{label}</p>
       <p className="mt-1 text-sm font-semibold">{value}</p>
     </div>

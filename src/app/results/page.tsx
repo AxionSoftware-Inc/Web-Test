@@ -18,7 +18,7 @@ export default function Page() {
 
           return (
             <Link key={test.id} href={`/results/${getResultId(sessionId)}`} className="rounded-lg border border-black/10 bg-white p-5">
-              <p className="text-sm font-semibold text-[#276a5b]">{test.subject}</p>
+              <p className="text-sm font-semibold text-brand">{test.subject}</p>
               <h2 className="mt-2 text-xl font-semibold">{test.title}</h2>
               <p className="mt-2 text-sm text-black/55">Open detailed result and question review.</p>
             </Link>

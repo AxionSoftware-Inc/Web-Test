@@ -32,11 +32,11 @@ const plans = [
 
 export default function Page() {
   return (
-    <main className="min-h-screen bg-[#f7f7f2] text-[#151713]">
+    <main className="min-h-screen bg-background text-ink">
       <Container className="py-10">
         <section className="grid gap-5 lg:grid-cols-[1fr_360px] lg:items-stretch">
           <GlassCard className="p-6 md:p-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#276a5b]">School plan</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-brand">School plan</p>
             <h1 className="mt-3 max-w-3xl text-4xl font-semibold leading-tight md:text-5xl">
               O&apos;quv markaz uchun bitta account, barcha teacher va student natijalari bir joyda
             </h1>
@@ -44,7 +44,7 @@ export default function Page() {
               School class ochmaydi. School teacherlarni qo&apos;shadi, teacher classlarini bog&apos;laydi va umumiy analytics, reports, branded portalni boshqaradi.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link href="/schools/dashboard" className="inline-flex items-center gap-2 rounded-xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white">
+              <Link href="/schools/dashboard" className="inline-flex items-center gap-2 rounded-xl bg-ink px-5 py-3 text-sm font-semibold text-white">
                 Open school dashboard
                 <ArrowRight className="size-4" />
               </Link>
@@ -68,7 +68,7 @@ export default function Page() {
         <section id="pricing" className="mt-6 grid gap-5 md:grid-cols-3">
           {plans.map((plan) => (
             <GlassCard key={plan.title} className="p-5">
-              <div className="grid size-11 place-items-center rounded-xl bg-[#edf7f3] text-[#276a5b]">
+              <div className="grid size-11 place-items-center rounded-xl bg-brand-soft text-brand">
                 <CheckCircle2 className="size-5" />
               </div>
               <h2 className="mt-5 text-xl font-semibold">{plan.title}</h2>
@@ -90,7 +90,7 @@ function Mini({ icon: Icon, label, value }: { icon: typeof Building2; label: str
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl bg-white/58 p-3 text-sm">
       <span className="inline-flex items-center gap-2 text-black/55">
-        <Icon className="size-4 text-[#276a5b]" />
+        <Icon className="size-4 text-brand" />
         {label}
       </span>
       <strong>{value}</strong>

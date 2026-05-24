@@ -19,7 +19,7 @@ export function StudentPackClient({ pack, items }: { pack: ApiExamPack; items: A
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-black/40">{pack.exam_type || "Exam pack"}</p>
         <h1 className="mt-2 text-3xl font-semibold"><LatexText text={pack.title} /></h1>
         <p className="mt-3 text-sm leading-6 text-black/58"><LatexText text={pack.description} /></p>
-        <div className="mt-4 inline-flex rounded-xl bg-[#edf7f3] px-3 py-2 text-sm font-semibold text-[#276a5b]">{pack.price_label || "Free"}</div>
+        <div className="mt-4 inline-flex rounded-xl bg-brand-soft px-3 py-2 text-sm font-semibold text-brand">{pack.price_label || "Free"}</div>
         <div className="mt-6 grid gap-4">
           <label className="grid gap-2 text-sm font-semibold text-black/65">
             Student name
@@ -79,7 +79,7 @@ function PackItemCard({
     <article className="rounded-3xl border border-black/8 bg-white p-5">
       <p className="text-lg font-semibold"><LatexText text={item.title} /></p>
       <p className="mt-2 text-sm text-black/52"><LatexText text={`${item.test_title} / ${item.difficulty} / ${item.question_count} questions`} /></p>
-      <button onClick={start} disabled={starting || !studentName} className="mt-5 w-full rounded-2xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
+      <button onClick={start} disabled={starting || !studentName} className="mt-5 w-full rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
         {starting ? "Starting..." : "Start test"}
       </button>
     </article>

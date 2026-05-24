@@ -39,7 +39,7 @@ export default async function Page({ params }: PageProps) {
                 </div>
                 <div className="flex gap-2 text-sm font-semibold">
                   {answer?.is_flagged ? <span className="rounded-md bg-amber-50 px-3 py-1 text-amber-700">Flagged</span> : null}
-                  <span className={answer?.value ? "rounded-md bg-[#edf7f3] px-3 py-1 text-[#276a5b]" : "rounded-md bg-[#f8eeee] px-3 py-1 text-[#8d3d3d]"}>
+                  <span className={answer?.value ? "rounded-md bg-brand-soft px-3 py-1 text-brand" : "rounded-md bg-danger-soft px-3 py-1 text-[#8d3d3d]"}>
                     {answer?.value ? "Answered" : "Unanswered"}
                   </span>
                 </div>
@@ -54,7 +54,7 @@ export default async function Page({ params }: PageProps) {
             <div className="flex justify-between border-b border-black/10 pb-2"><span>Unanswered</span><strong>{questions.length - answered}</strong></div>
             <div className="flex justify-between border-b border-black/10 pb-2"><span>Flagged</span><strong>{flagged}</strong></div>
           </div>
-          <Link href={`/test-session/${sessionId}/submit`} className="mt-5 block rounded-md bg-[#151713] px-4 py-3 text-center text-sm font-semibold text-white">Submit test</Link>
+          <Link href={`/test-session/${sessionId}/submit`} className="mt-5 block rounded-md bg-ink px-4 py-3 text-center text-sm font-semibold text-white">Submit test</Link>
         </aside>
       </section>
     </TestShell>

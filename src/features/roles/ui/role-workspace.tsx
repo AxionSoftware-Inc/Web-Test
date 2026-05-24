@@ -65,9 +65,9 @@ export function RoleWorkspace() {
     <section className="rounded-2xl border border-black/8 bg-white p-4 shadow-[0_12px_34px_rgba(21,23,19,0.06)]">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#276a5b]">Current role</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand">Current role</p>
           <h1 className="mt-2 flex items-center gap-2 text-2xl font-semibold">
-            <Icon className="size-6 text-[#276a5b]" />
+            <Icon className="size-6 text-brand" />
             {role.label} workspace
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-5 text-black/58">{role.description}</p>
@@ -75,7 +75,7 @@ export function RoleWorkspace() {
       </div>
       <div className="mt-4 grid gap-3 md:grid-cols-3">
         {linksByRole[role.id].map((item) => (
-          <Link key={item.href} href={item.href} className="rounded-xl border border-black/8 bg-[#fbfbf6] p-4 hover:bg-white">
+          <Link key={item.href} href={item.href} className="rounded-xl border border-black/8 bg-surface-soft p-4 hover:bg-white">
             <h2 className="text-base font-semibold">{item.title}</h2>
             <p className="mt-2 text-sm leading-5 text-black/58">{item.copy}</p>
           </Link>

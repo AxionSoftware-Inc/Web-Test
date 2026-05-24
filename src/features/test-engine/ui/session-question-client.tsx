@@ -67,11 +67,11 @@ export function SessionQuestionClient({
       <div className="mb-5 rounded-lg border border-black/10 bg-white p-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="inline-flex items-center gap-2 rounded-md bg-[#151713] px-3 py-2 text-sm font-semibold text-white">
+            <span className="inline-flex items-center gap-2 rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white">
               <Timer className="size-4" />
               {timerLabel}
             </span>
-            <span className="rounded-md bg-[#edf7f3] px-3 py-2 text-sm font-semibold text-[#276a5b]">
+            <span className="rounded-md bg-brand-soft px-3 py-2 text-sm font-semibold text-brand">
               {stats.answered}/{stats.total} answered
             </span>
             <span className="rounded-md bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700">
@@ -84,10 +84,10 @@ export function SessionQuestionClient({
               <span>{progress}%</span>
             </div>
             <div className="mt-2 h-2 rounded bg-black/10">
-              <div className="h-2 rounded bg-[#276a5b]" style={{ width: `${progress}%` }} />
+              <div className="h-2 rounded bg-brand" style={{ width: `${progress}%` }} />
             </div>
           </div>
-          <Link href={`/test-session/${sessionId}/submit`} className="rounded-md bg-[#151713] px-4 py-2 text-center text-sm font-semibold text-white">
+          <Link href={`/test-session/${sessionId}/submit`} className="rounded-md bg-ink px-4 py-2 text-center text-sm font-semibold text-white">
             Submit
           </Link>
         </div>
@@ -109,9 +109,9 @@ export function SessionQuestionClient({
                   href={`/test-session/${sessionId}/question/${itemIndex + 1}`}
                   className={cn(
                     "relative rounded-md border px-3 py-2 text-center text-sm font-semibold",
-                    itemIndex === questionIndex && "border-[#151713] bg-[#151713] text-white",
-                    itemIndex !== questionIndex && state?.answer && "border-[#276a5b]/40 bg-[#edf7f3] text-[#276a5b]",
-                    itemIndex !== questionIndex && !state?.answer && "border-black/10 bg-[#fbfbf8]",
+                    itemIndex === questionIndex && "border-ink bg-ink text-white",
+                    itemIndex !== questionIndex && state?.answer && "border-brand/40 bg-brand-soft text-brand",
+                    itemIndex !== questionIndex && !state?.answer && "border-black/10 bg-surface-soft",
                   )}
                 >
                   {itemIndex + 1}
@@ -121,8 +121,8 @@ export function SessionQuestionClient({
             })}
           </div>
           <div className="mt-5 grid gap-2 text-xs text-black/55">
-            <Legend color="bg-[#151713]" label="Current" />
-            <Legend color="bg-[#276a5b]" label="Answered" />
+            <Legend color="bg-ink" label="Current" />
+            <Legend color="bg-brand" label="Answered" />
             <Legend color="bg-amber-500" label="Flagged" />
           </div>
         </nav>
@@ -130,7 +130,7 @@ export function SessionQuestionClient({
         <article className="rounded-lg border border-black/10 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 pb-4">
             <div>
-              <p className="text-sm font-semibold text-[#276a5b]">Question {questionIndex + 1} of {questions.length}</p>
+              <p className="text-sm font-semibold text-brand">Question {questionIndex + 1} of {questions.length}</p>
               <p className="mt-1 text-sm text-black/55">{question.type}</p>
             </div>
           <button
@@ -159,12 +159,12 @@ export function SessionQuestionClient({
                     onClick={() => chooseAnswer(option)}
                     className={cn(
                       "flex items-start gap-3 rounded-lg border px-4 py-4 text-left text-sm leading-6",
-                      selected ? "border-[#276a5b] bg-[#edf7f3]" : "border-black/10 bg-[#fbfbf8] hover:border-black/25",
+                      selected ? "border-brand bg-brand-soft" : "border-black/10 bg-surface-soft hover:border-black/25",
                     )}
                   >
                     <span className={cn(
                       "grid size-7 shrink-0 place-items-center rounded-md border text-xs font-bold",
-                      selected ? "border-[#276a5b] bg-[#276a5b] text-white" : "border-black/10 bg-white text-black/55",
+                      selected ? "border-brand bg-brand text-white" : "border-black/10 bg-white text-black/55",
                     )}>
                       {String.fromCharCode(65 + optionIndex)}
                     </span>
@@ -178,7 +178,7 @@ export function SessionQuestionClient({
               value={current?.answer ?? ""}
               onChange={(event) => chooseAnswer(event.target.value)}
               placeholder="Answer"
-              className="mt-7 w-full rounded-lg border border-black/10 bg-[#fbfbf8] px-4 py-4 text-sm outline-none focus:border-[#276a5b]"
+              className="mt-7 w-full rounded-lg border border-black/10 bg-surface-soft px-4 py-4 text-sm outline-none focus:border-brand"
             />
           )}
 
@@ -187,7 +187,7 @@ export function SessionQuestionClient({
               <ArrowLeft className="size-4" />
               Previous
             </Link>
-            <Link href={questionIndex + 1 === questions.length ? `/test-session/${sessionId}/review` : `/test-session/${sessionId}/question/${next}`} className="inline-flex items-center justify-center gap-2 rounded-md bg-[#151713] px-4 py-3 text-sm font-semibold text-white">
+            <Link href={questionIndex + 1 === questions.length ? `/test-session/${sessionId}/review` : `/test-session/${sessionId}/question/${next}`} className="inline-flex items-center justify-center gap-2 rounded-md bg-ink px-4 py-3 text-sm font-semibold text-white">
               {questionIndex + 1 === questions.length ? "Review answers" : "Next question"}
               <ArrowRight className="size-4" />
             </Link>
@@ -205,11 +205,11 @@ export function SessionQuestionClient({
           </div>
           <div className="rounded-lg border border-black/10 bg-white p-4">
             <h2 className="text-sm font-semibold">Current answer</h2>
-            <p className="mt-3 min-h-10 rounded-md bg-[#fbfbf8] p-3 text-sm leading-6 text-black/60">
+            <p className="mt-3 min-h-10 rounded-md bg-surface-soft p-3 text-sm leading-6 text-black/60">
               {current?.answer || "No answer selected yet."}
             </p>
           </div>
-          <Link href={`/test-session/${sessionId}/review`} className="rounded-md bg-[#276a5b] px-4 py-3 text-center text-sm font-semibold text-white">
+          <Link href={`/test-session/${sessionId}/review`} className="rounded-md bg-brand px-4 py-3 text-center text-sm font-semibold text-white">
             Review answers
           </Link>
           <button

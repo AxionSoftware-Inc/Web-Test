@@ -22,11 +22,11 @@ export function ProfilePage({ summary, profile, onProfileChange }: Props) {
     : [{ topic: "Algebra", slug: "algebra", value: 0, attempts: 0 }];
 
   return (
-    <main className="min-h-screen bg-[#f7f7f2] text-[#151713]">
+    <main className="min-h-screen bg-background text-ink">
       <Container className="py-8">
         <header className="grid gap-5 border-b border-black/10 pb-8 lg:grid-cols-[1fr_380px] lg:items-end">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#276a5b]">Learner profile</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-brand">Learner profile</p>
             <h1 className="mt-3 text-5xl font-semibold leading-tight">{summary.name}</h1>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-black/62">
               Real backend natijalari asosida testlar soni, bilim darajasi, mavzu progressi, recent attempts va keyingi
@@ -60,14 +60,14 @@ export function ProfilePage({ summary, profile, onProfileChange }: Props) {
                 <h2 className="text-xl font-semibold">Weekly activity</h2>
                 <p className="mt-1 text-sm text-black/50">Submitted test questions by day.</p>
               </div>
-              <TrendingUp className="size-5 text-[#276a5b]" />
+              <TrendingUp className="size-5 text-brand" />
             </div>
             <div className="mt-6 flex h-64 items-end gap-3">
               {summary.weekly_activity.map((item) => (
                 <div key={item.day} className="flex flex-1 flex-col items-center gap-2">
                   <div className="flex h-52 w-full items-end rounded-2xl border border-black/8 bg-white/62 p-2">
                     <div
-                      className="w-full rounded-xl bg-gradient-to-t from-[#151713] via-[#276a5b] to-[#8fd6bd] shadow-[0_12px_30px_rgba(39,106,91,0.25)] transition-all"
+                      className="w-full rounded-xl bg-gradient-to-t from-ink via-brand to-accent shadow-[0_12px_30px_rgba(39,106,91,0.25)] transition-all"
                       style={{ height: `${Math.max(6, (item.value / maxWeekly) * 100)}%` }}
                     />
                   </div>
@@ -89,7 +89,7 @@ export function ProfilePage({ summary, profile, onProfileChange }: Props) {
                   </div>
                   <div className="mt-3 h-3 overflow-hidden rounded-full bg-black/8">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-[#151713] to-[#8fd6bd]"
+                      className="h-full rounded-full bg-gradient-to-r from-ink to-accent"
                       style={{ width: `${topic.value}%` }}
                     />
                   </div>
@@ -117,7 +117,7 @@ export function ProfilePage({ summary, profile, onProfileChange }: Props) {
                         {test.topic} / {test.difficulty} / {test.correct}/{test.total} correct
                       </p>
                     </div>
-                    <span className="rounded-xl bg-[#151713] px-3 py-2 text-sm font-semibold text-white">{test.score}%</span>
+                    <span className="rounded-xl bg-ink px-3 py-2 text-sm font-semibold text-white">{test.score}%</span>
                   </Link>
                 ))}
               </div>
@@ -126,7 +126,7 @@ export function ProfilePage({ summary, profile, onProfileChange }: Props) {
             )}
           </GlassCard>
 
-          <aside className="rounded-[28px] border border-black/10 bg-[#151713] p-5 text-white shadow-[0_24px_70px_rgba(0,0,0,0.12)]">
+          <aside className="rounded-[28px] border border-black/10 bg-ink p-5 text-white shadow-[0_24px_70px_rgba(0,0,0,0.12)]">
             <h2 className="text-xl font-semibold">Recommended next</h2>
             <div className="mt-4 grid gap-3">
               {summary.recommendations.map((item) => (
@@ -138,7 +138,7 @@ export function ProfilePage({ summary, profile, onProfileChange }: Props) {
             </div>
             <Link
               href="/subjects/mathematics/topics/algebra"
-              className="mt-5 block rounded-2xl bg-[#8fd6bd] px-4 py-3 text-center text-sm font-semibold text-[#151713]"
+              className="mt-5 block rounded-2xl bg-accent px-4 py-3 text-center text-sm font-semibold text-ink"
             >
               Continue Algebra
             </Link>
@@ -154,10 +154,10 @@ function RadialScore({ value }: { value: number }) {
     <div
       className="grid size-28 place-items-center rounded-full"
       style={{
-        background: `conic-gradient(#276a5b ${value * 3.6}deg, rgba(0,0,0,0.08) 0deg)`,
+        background: `conic-gradient(var(--brand) ${value * 3.6}deg, rgba(0,0,0,0.08) 0deg)`,
       }}
     >
-      <div className="grid size-20 place-items-center rounded-full bg-[#fbfbf6] shadow-inner">
+      <div className="grid size-20 place-items-center rounded-full bg-surface-soft shadow-inner">
         <span className="text-2xl font-semibold">{value}%</span>
       </div>
     </div>
@@ -167,7 +167,7 @@ function RadialScore({ value }: { value: number }) {
 function ProfileMetric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number }) {
   return (
     <GlassCard className="p-4">
-      <div className="text-[#276a5b]">{icon}</div>
+      <div className="text-brand">{icon}</div>
       <p className="mt-4 text-2xl font-semibold">{value}</p>
       <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-black/45">{label}</p>
     </GlassCard>
@@ -230,19 +230,19 @@ function AccountSettings({ profile, onProfileChange }: { profile: ApiRoleProfile
         <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_1fr_260px_auto] lg:items-end">
           <label className="grid gap-2 text-sm font-semibold text-black/60">
             Username
-            <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-[#151713] outline-none" placeholder="Ism yoki username" />
+            <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-ink outline-none" placeholder="Ism yoki username" />
           </label>
           <label className="grid gap-2 text-sm font-semibold text-black/60">
             Phone
-            <input value={phone} onChange={(event) => setPhone(event.target.value)} className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-[#151713] outline-none" placeholder="+998..." />
+            <input value={phone} onChange={(event) => setPhone(event.target.value)} className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-ink outline-none" placeholder="+998..." />
           </label>
           <label className="grid gap-2 text-sm font-semibold text-black/60">
             Role
-            <select value={role} onChange={(event) => setRole(event.target.value as UserRole)} className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-[#151713] outline-none">
+            <select value={role} onChange={(event) => setRole(event.target.value as UserRole)} className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-ink outline-none">
               {roles.filter((item) => canUseAdmin || item.id !== "admin").map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
             </select>
           </label>
-          <button onClick={saveProfile} disabled={saving || !profile} className="rounded-2xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
+          <button onClick={saveProfile} disabled={saving || !profile} className="rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
             {saving ? "Saving..." : "Save"}
           </button>
         </div>
@@ -266,7 +266,7 @@ function EmptyProfileState() {
       </p>
       <Link
         href="/subjects/mathematics/topics/algebra"
-        className="mt-5 inline-block rounded-2xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white"
+        className="mt-5 inline-block rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-white"
       >
         Start Algebra
       </Link>

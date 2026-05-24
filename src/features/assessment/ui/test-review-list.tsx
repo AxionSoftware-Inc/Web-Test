@@ -22,13 +22,13 @@ export function TestReviewList({
         const correct = isAnswerCorrect(question, userAnswer);
 
         return (
-          <article key={question.id} className="rounded-md border border-black/10 bg-[#fbfbf8] p-4">
+          <article key={question.id} className="rounded-md border border-black/10 bg-surface-soft p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="font-semibold">Question {index + 1}</p>
               <span
                 className={cn(
                   "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold",
-                  correct ? "bg-[#dff5eb] text-[#276a5b]" : "bg-[#fde8e8] text-[#9b2c2c]",
+                  correct ? "bg-[#dff5eb] text-brand" : "bg-[#fde8e8] text-[#9b2c2c]",
                 )}
               >
                 <CheckCircle2 className="size-3.5" />

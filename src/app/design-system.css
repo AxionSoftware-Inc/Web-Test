@@ -1,0 +1,243 @@
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-surface: var(--surface);
+  --color-surface-soft: var(--surface-soft);
+  --color-surface-muted: var(--surface-muted);
+
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-ring: var(--brand-ring);
+
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --color-neutral: var(--neutral);
+  --color-neutral-soft: var(--neutral-soft);
+
+  --color-student: var(--student);
+  --color-student-soft: var(--student-soft);
+
+  --color-teacher: var(--teacher);
+  --color-teacher-soft: var(--teacher-soft);
+
+  --color-school: var(--school);
+  --color-school-soft: var(--school-soft);
+
+  --color-creator: var(--creator);
+  --color-creator-soft: var(--creator-soft);
+
+  --color-admin: var(--admin);
+  --color-admin-soft: var(--admin-soft);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --radius-card: var(--radius-card);
+  --radius-panel: var(--radius-panel);
+  --radius-control: var(--radius-control);
+}
+
+/* QuestLab core design tokens */
+:root {
+  /*
+    Brand direction:
+    Professional assessment SaaS.
+    Warm background, clean white cards, deep green brand.
+    Compact, serious, school/teacher/student friendly.
+  */
+
+  /* Base */
+  --background: #f7f7f2;
+  --foreground: #151713;
+  --surface: #ffffff;
+  --surface-soft: #fbfbf6;
+  --surface-muted: #f0f1ea;
+
+  /* Text */
+  --ink: #151713;
+  --muted: rgba(21, 23, 19, 0.62);
+  --subtle: rgba(21, 23, 19, 0.42);
+
+  /* Borders */
+  --line: rgba(21, 23, 19, 0.1);
+  --line-strong: rgba(21, 23, 19, 0.16);
+
+  /* Brand */
+  --brand: #276a5b;
+  --brand-hover: #1f574b;
+  --brand-soft: #edf7f3;
+  --brand-ring: rgba(39, 106, 91, 0.22);
+
+  /* Accent */
+  --accent: #8fd6bd;
+  --accent-soft: #f0fbf7;
+
+  /* Semantic colors */
+  --success: #276a5b;
+  --success-soft: #edf7f3;
+
+  --warning: #b7791f;
+  --warning-soft: #fff7e8;
+
+  --danger: #a85050;
+  --danger-soft: #f8eeee;
+
+  --info: #315f9f;
+  --info-soft: #eef4ff;
+
+  --neutral: rgba(21, 23, 19, 0.62);
+  --neutral-soft: #f0f1ea;
+
+  /* Role accent colors */
+  --student: #276a5b;
+  --student-soft: #edf7f3;
+
+  --teacher: #315f9f;
+  --teacher-soft: #eef4ff;
+
+  --school: #5b4db7;
+  --school-soft: #f1efff;
+
+  --creator: #9a5a20;
+  --creator-soft: #fff4e8;
+
+  --admin: #2f3430;
+  --admin-soft: #f0f1ea;
+
+  /* Selection */
+  --selection: rgba(143, 214, 189, 0.5);
+
+  /* Radius */
+  --radius-card: 18px;
+  --radius-panel: 22px;
+  --radius-control: 12px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 2px rgba(21, 23, 19, 0.04);
+  --shadow-panel: 0 12px 34px rgba(21, 23, 19, 0.06);
+  --shadow-float: 0 18px 44px rgba(21, 23, 19, 0.12);
+
+  /* Layout */
+  --page-max: 1280px;
+  --page-max-wide: 1480px;
+  --sidebar-width: 264px;
+  --topbar-height: 64px;
+
+  /* Spacing scale */
+  --page-x-mobile: 16px;
+  --page-x-tablet: 24px;
+  --page-x-desktop: 32px;
+  --page-y: 24px;
+
+  --card-p-sm: 14px;
+  --card-p: 16px;
+  --card-p-lg: 20px;
+
+  /* Charts */
+  --chart-1: #276a5b;
+  --chart-2: #315f9f;
+  --chart-3: #b7791f;
+  --chart-4: #a85050;
+  --chart-5: #5b4db7;
+  --chart-grid: rgba(21, 23, 19, 0.08);
+  --chart-axis: rgba(21, 23, 19, 0.44);
+}
+
+/* Global app base */
+html {
+  background: var(--background);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Inter, system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--selection);
+}
+
+/* Useful shared utility classes */
+.quest-page {
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.quest-container {
+  width: 100%;
+  max-width: var(--page-max);
+  margin-inline: auto;
+  padding: var(--page-y) var(--page-x-mobile);
+}
+
+@media (min-width: 640px) {
+  .quest-container {
+    padding-inline: var(--page-x-tablet);
+  }
+}
+
+@media (min-width: 1024px) {
+  .quest-container {
+    padding-inline: var(--page-x-desktop);
+  }
+}
+
+.quest-container-wide {
+  max-width: var(--page-max-wide);
+}
+
+.quest-card {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.quest-panel {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-panel);
+}
+
+.quest-soft {
+  background: var(--surface-soft);
+}
+
+.quest-focus {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--brand-ring);
+}
+
+.quest-muted {
+  color: var(--muted);
+}
+
+.quest-subtle {
+  color: var(--subtle);
+}

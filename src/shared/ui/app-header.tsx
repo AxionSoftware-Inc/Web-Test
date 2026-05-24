@@ -97,10 +97,10 @@ export function AppHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-black/8 bg-[#fbfbf6]/96 supports-[backdrop-filter]:bg-[#fbfbf6]/88 supports-[backdrop-filter]:backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-black/8 bg-surface-soft/96 supports-[backdrop-filter]:bg-surface-soft/88 supports-[backdrop-filter]:backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-8 lg:px-10">
         <Link href="/" className="flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-xl bg-[#151713] text-sm font-bold text-white shadow-sm">
+          <span className="grid size-10 place-items-center rounded-xl bg-ink text-sm font-bold text-white shadow-sm">
             Q
           </span>
           <span className="hidden leading-tight sm:block">
@@ -120,7 +120,7 @@ export function AppHeader() {
                 href={item.href}
                 className={cn(
                   "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-black/58 hover:bg-[#f3f3ec]",
-                  active && "bg-[#151713] text-white shadow-sm hover:bg-[#151713]",
+                  active && "bg-ink text-white shadow-sm hover:bg-ink",
                 )}
               >
                 <Icon className="size-4" />
@@ -138,13 +138,13 @@ export function AppHeader() {
               aria-label="Open profile"
               className={cn(
                 "grid size-10 place-items-center rounded-xl border border-black/8 bg-white text-black/65 shadow-[0_10px_30px_rgba(0,0,0,0.04)]",
-                pathname.startsWith("/profile") && "bg-[#151713] text-white",
+                pathname.startsWith("/profile") && "bg-ink text-white",
               )}
             >
               <UserRound className="size-5" />
             </Link>
           ) : (
-            <Link href="/auth/login" className="rounded-xl bg-[#151713] px-4 py-2 text-sm font-semibold text-white">Login</Link>
+            <Link href="/auth/login" className="rounded-xl bg-ink px-4 py-2 text-sm font-semibold text-white">Login</Link>
           )}
         </div>
       </div>

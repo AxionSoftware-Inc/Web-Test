@@ -25,7 +25,7 @@ export function StartTestClient({ testSlug, sessionBase = "/test-session" }: { t
   }, [router, sessionBase, testSlug]);
 
   return (
-    <main className="grid min-h-screen place-items-center bg-[#f7f7ef] px-6">
+    <main className="grid min-h-screen place-items-center bg-background px-6">
       <div className="rounded-[28px] border border-black/8 bg-white/82 p-6 text-center shadow-[0_24px_70px_rgba(0,0,0,0.08)]">
         <p className="text-sm font-semibold text-black/50">{error || "Test session tayyorlanyapti..."}</p>
       </div>

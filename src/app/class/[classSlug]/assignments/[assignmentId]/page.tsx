@@ -20,7 +20,7 @@ export default async function Page({ params }: PageProps) {
   const selected = assignments.filter((item) => String(item.id) === assignmentId);
 
   return (
-    <main className="min-h-screen bg-[#f7f7ef] px-5 py-8 sm:px-8 lg:px-10">
+    <main className="min-h-screen bg-background px-5 py-8 sm:px-8 lg:px-10">
       <div className="mx-auto max-w-7xl">
         <StudentClassClient classroom={classroom} assignments={selected.length ? selected : assignments} />
       </div>

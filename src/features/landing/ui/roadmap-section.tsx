@@ -6,7 +6,7 @@ export function RoadmapSection() {
   return (
     <section id="roadmap">
       <Container className="py-14">
-        <div className="rounded-lg bg-[#151713] p-6 text-white sm:p-8">
+        <div className="rounded-lg bg-ink p-6 text-white sm:p-8">
           <SectionHeading
             eyebrow="Build roadmap"
             title="MVPdan global platformagacha."

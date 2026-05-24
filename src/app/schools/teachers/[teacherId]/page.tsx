@@ -39,7 +39,7 @@ export default async function Page({ params }: PageProps) {
             <h1 className="text-4xl font-semibold">{teacher.name}</h1>
             <p className="mt-3 inline-flex items-center gap-2 text-sm text-black/55"><Mail className="size-4" />{teacher.email || "No email"}</p>
           </div>
-          <span className="rounded-2xl bg-[#edf7f3] px-4 py-3 text-sm font-semibold text-[#276a5b]">{teacher.is_active ? "Active" : "Inactive"}</span>
+          <span className="rounded-2xl bg-brand-soft px-4 py-3 text-sm font-semibold text-brand">{teacher.is_active ? "Active" : "Inactive"}</span>
         </div>
         <div className="mt-6 grid gap-3 md:grid-cols-4">
           <Metric icon={GraduationCap} label="Classes" value={teacherClasses.length} />
@@ -49,7 +49,7 @@ export default async function Page({ params }: PageProps) {
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           {teacherClasses.map((item) => (
-            <Link key={item.id} href={`/schools/classes/${item.slug}`} className="rounded-3xl border border-black/8 bg-white p-5 hover:bg-[#fbfbf8]">
+            <Link key={item.id} href={`/schools/classes/${item.slug}`} className="rounded-3xl border border-black/8 bg-white p-5 hover:bg-surface-soft">
               <p className="text-lg font-semibold">{item.name}</p>
               <p className="mt-2 text-sm text-black/55">{item.description || "No description"}</p>
               <div className="mt-5 flex gap-2 text-xs font-semibold text-black/45"><span>{item.student_count} students</span><span>{item.assignment_count} sessions</span></div>
@@ -63,5 +63,5 @@ export default async function Page({ params }: PageProps) {
 }
 
 function Metric({ icon: Icon, label, value }: { icon: typeof UsersRound; label: string; value: string | number }) {
-  return <div className="rounded-2xl border border-black/8 bg-white p-4"><Icon className="size-4 text-[#276a5b]" /><p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-black/38">{label}</p><p className="mt-1 text-2xl font-semibold">{value}</p></div>;
+  return <div className="rounded-2xl border border-black/8 bg-white p-4"><Icon className="size-4 text-brand" /><p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-black/38">{label}</p><p className="mt-1 text-2xl font-semibold">{value}</p></div>;
 }

@@ -8,7 +8,7 @@ export function LandingHeader() {
     <Container className="py-6">
       <nav className="flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
-          <span className="grid size-9 place-items-center rounded-md bg-[#151713] text-sm font-bold text-white">
+          <span className="grid size-9 place-items-center rounded-md bg-ink text-sm font-bold text-white">
             Q
           </span>
           <span className="text-base font-semibold">{siteConfig.name}</span>
@@ -22,7 +22,7 @@ export function LandingHeader() {
         </div>
         <Link
           href="/tests"
-          className="rounded-md bg-[#151713] px-4 py-2 text-sm font-semibold text-white"
+          className="rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white"
         >
           Start test
         </Link>

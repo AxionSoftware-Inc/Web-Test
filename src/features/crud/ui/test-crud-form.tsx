@@ -165,13 +165,13 @@ export function TestCrudForm({ subjects, topics, tests: initialTests, skills }: 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-black/40">CRUD</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[#151713]">{editingSlug ? "Test edit" : "Test qoshish"}</h1>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-ink">{editingSlug ? "Test edit" : "Test qoshish"}</h1>
           </div>
           <button
             type="button"
             onClick={handleSubmit}
             disabled={saving || !subjectId || !topicId}
-            className="inline-flex items-center gap-2 rounded-2xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Save className="size-4" />
             {saving ? "Saqlanyapti..." : editingSlug ? "Update" : "DBga saqla"}
@@ -289,7 +289,7 @@ export function TestCrudForm({ subjects, topics, tests: initialTests, skills }: 
 
         <div className="mt-8 space-y-5">
           {questions.map((question, index) => (
-            <article key={index} className="rounded-3xl border border-black/8 bg-[#fbfbf6] p-4">
+            <article key={index} className="rounded-3xl border border-black/8 bg-surface-soft p-4">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-lg font-semibold">Savol {index + 1}</h2>
                 <button

@@ -65,7 +65,7 @@ export function PackItemClient({ packSlug, tests }: { packSlug: string; tests: A
           <input type="checkbox" checked={isRequired} onChange={(event) => setIsRequired(event.target.checked)} />
           Required
         </label>
-        <button onClick={save} disabled={saving || !testId} className="rounded-2xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
+        <button onClick={save} disabled={saving || !testId} className="rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
           {saving ? "Saving..." : "Add to pack"}
         </button>
         {error ? <p className="rounded-2xl bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p> : null}

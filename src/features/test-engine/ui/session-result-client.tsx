@@ -38,7 +38,7 @@ export function SessionResultClient({
         <div className="rounded-lg border border-black/10 bg-white p-6">
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="inline-flex items-center gap-2 text-sm font-semibold text-[#276a5b]">
+              <p className="inline-flex items-center gap-2 text-sm font-semibold text-brand">
                 <Award className="size-4" />
                 Final score
               </p>
@@ -47,12 +47,12 @@ export function SessionResultClient({
                 {stats.percent >= 70 ? "Passing score reached. Review mistakes and move to the next level." : "Below passing score. Review weak questions before retaking."}
               </p>
             </div>
-            <div className="grid size-36 place-items-center rounded-full border-[10px] border-[#edf7f3] bg-[#fbfbf8]">
-              <span className="text-3xl font-semibold text-[#276a5b]">{stats.correct}/{stats.total}</span>
+            <div className="grid size-36 place-items-center rounded-full border-[10px] border-brand-soft bg-surface-soft">
+              <span className="text-3xl font-semibold text-brand">{stats.correct}/{stats.total}</span>
             </div>
           </div>
           <div className="mt-6 h-3 rounded bg-black/10">
-            <div className="h-3 rounded bg-[#276a5b]" style={{ width: `${stats.percent}%` }} />
+            <div className="h-3 rounded bg-brand" style={{ width: `${stats.percent}%` }} />
           </div>
         </div>
 
@@ -71,7 +71,7 @@ export function SessionResultClient({
             Use the detailed review to turn wrong answers into targeted practice.
           </p>
           <div className="mt-4 grid gap-3">
-          <Link href={`/results/${getResultId(sessionId)}`} className="rounded-md bg-[#151713] px-4 py-3 text-center text-sm font-semibold text-white">
+          <Link href={`/results/${getResultId(sessionId)}`} className="rounded-md bg-ink px-4 py-3 text-center text-sm font-semibold text-white">
             <span className="inline-flex items-center justify-center gap-2">
               <SearchCheck className="size-4" />
             Full result review
@@ -93,9 +93,9 @@ export function SessionResultClient({
 
 function ResultStat({ label, value, tone = "neutral" }: { label: string; value: string; tone?: "neutral" | "green" | "red" | "amber" }) {
   const toneClass = {
-    neutral: "bg-white text-[#151713]",
-    green: "bg-[#edf7f3] text-[#276a5b]",
-    red: "bg-[#f8eeee] text-[#8d3d3d]",
+    neutral: "bg-white text-ink",
+    green: "bg-brand-soft text-brand",
+    red: "bg-danger-soft text-[#8d3d3d]",
     amber: "bg-amber-50 text-amber-700",
   }[tone];
 

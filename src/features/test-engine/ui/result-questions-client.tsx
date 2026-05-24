@@ -30,14 +30,14 @@ export function ResultQuestionsClient({
         return (
           <Link key={question.id} href={`/results/${resultId}/questions/${question.id}`} className="flex flex-col gap-3 rounded-2xl border border-black/10 bg-white p-4 shadow-sm hover:border-black/20 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex gap-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#fbfbf8] text-sm font-semibold">{index + 1}</span>
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-surface-soft text-sm font-semibold">{index + 1}</span>
               <div>
               <p className="font-semibold">Question {index + 1}</p>
               <p className="mt-2 line-clamp-2 text-sm text-black/60">{question.prompt}</p>
               </div>
             </div>
             <div>
-              <span className={correct ? "rounded-md bg-[#edf7f3] px-3 py-1 text-sm font-semibold text-[#276a5b]" : "rounded-md bg-[#f8eeee] px-3 py-1 text-sm font-semibold text-[#8d3d3d]"}>
+              <span className={correct ? "rounded-md bg-brand-soft px-3 py-1 text-sm font-semibold text-brand" : "rounded-md bg-danger-soft px-3 py-1 text-sm font-semibold text-[#8d3d3d]"}>
                 {answered ? (correct ? "Correct" : "Wrong") : "Skipped"}
               </span>
             </div>

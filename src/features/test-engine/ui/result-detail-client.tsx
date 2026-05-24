@@ -32,7 +32,7 @@ export function ResultDetailClient({
       <section className="grid gap-5 py-8 lg:grid-cols-[1fr_340px]">
         <div className="grid gap-5">
           <div className="rounded-2xl border border-black/10 bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold text-[#276a5b]">Result breakdown</p>
+            <p className="text-sm font-semibold text-brand">Result breakdown</p>
             <div className="mt-3 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div>
                 <h2 className="text-6xl font-semibold">{stats.percent}%</h2>
@@ -40,13 +40,13 @@ export function ResultDetailClient({
                   {stats.correct} correct out of {stats.total}. Review wrong or skipped questions before retaking.
                 </p>
               </div>
-              <Link href={`/results/${resultId}/analysis`} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white">
+              <Link href={`/results/${resultId}/analysis`} className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-white">
                 <SearchCheck className="size-4" />
                 Mistake analysis
               </Link>
             </div>
             <div className="mt-6 h-3 overflow-hidden rounded bg-black/10">
-            <div className="h-3 rounded bg-[#276a5b]" style={{ width: `${stats.percent}%` }} />
+            <div className="h-3 rounded bg-brand" style={{ width: `${stats.percent}%` }} />
             </div>
           </div>
 
@@ -61,7 +61,7 @@ export function ResultDetailClient({
         <aside className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm lg:sticky lg:top-24 lg:self-start">
           <h2 className="text-xl font-semibold">Next steps</h2>
           <div className="mt-4 grid gap-3">
-            <Link href={`/results/${resultId}/analysis`} className="rounded-xl bg-[#151713] px-4 py-3 text-center text-sm font-semibold text-white">
+            <Link href={`/results/${resultId}/analysis`} className="rounded-xl bg-ink px-4 py-3 text-center text-sm font-semibold text-white">
               Mistake analysis
             </Link>
             <Link href={`/results/${resultId}/questions`} className="rounded-xl border border-black/10 px-4 py-3 text-center text-sm font-semibold">

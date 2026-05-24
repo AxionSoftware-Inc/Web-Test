@@ -479,7 +479,7 @@ export async function StudentTestDetailPage({ testId }: { testId: string }) {
         { label: "Attempts allowed", value: "1+" },
       ]} />
       <div className="mt-6 flex flex-wrap gap-3">
-        <Link href={`/tests/${test.slug}/start`} className="rounded-2xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white">Start test</Link>
+        <Link href={`/tests/${test.slug}/start`} className="rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-white">Start test</Link>
         <Link href={`/tests/${test.slug}`} className="rounded-2xl border border-black/10 bg-white px-5 py-3 text-sm font-semibold">Instructions</Link>
       </div>
     </PanelShell>
@@ -577,7 +577,7 @@ function PanelShell({ eyebrow, title, copy, children }: { eyebrow: string; title
   return (
     <PremiumPage>
       <PremiumPanel>
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#276a5b]">{eyebrow}</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">{eyebrow}</p>
         <h1 className="mt-3 text-4xl font-semibold">{title}</h1>
         {copy ? <p className="mt-3 max-w-3xl text-sm leading-6 text-black/58">{copy}</p> : null}
       </PremiumPanel>
@@ -594,7 +594,7 @@ function StatsGrid({ stats }: { stats: Stat[] }) {
         const Icon = icons[index % icons.length];
         return (
           <div key={stat.label} className="rounded-2xl border border-black/8 bg-white p-4 shadow-[0_12px_34px_rgba(21,23,19,0.04)]">
-            <Icon className="size-5 text-[#276a5b]" />
+            <Icon className="size-5 text-brand" />
             <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-black/38">{stat.label}</p>
             <p className="mt-1 text-2xl font-semibold">{stat.value}</p>
           </div>
@@ -627,19 +627,19 @@ function CardGrid({ cards }: { cards: Card[] }) {
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {cards.map((card) => (
-        <Link key={`${card.href}-${card.title}`} href={card.href} className="rounded-3xl border border-black/8 bg-white p-5 shadow-[0_14px_42px_rgba(21,23,19,0.04)] hover:bg-[#fbfbf6]">
+        <Link key={`${card.href}-${card.title}`} href={card.href} className="rounded-3xl border border-black/8 bg-white p-5 shadow-[0_14px_42px_rgba(21,23,19,0.04)] hover:bg-surface-soft">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h3 className="text-lg font-semibold"><LatexText text={card.title} /></h3>
               {card.meta ? <p className="mt-1 text-sm text-black/50"><LatexText text={card.meta} /></p> : null}
             </div>
-            {card.status ? <span className="rounded-full bg-[#edf7f3] px-3 py-1 text-xs font-semibold text-[#276a5b]">{card.status}</span> : null}
+            {card.status ? <span className="rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand">{card.status}</span> : null}
           </div>
            {card.copy ? <p className="mt-3 line-clamp-3 text-sm leading-6 text-black/55"><LatexText text={card.copy} /></p> : null}
           {card.stats?.length ? (
             <div className="mt-5 grid grid-cols-2 gap-2">
               {card.stats.slice(0, 4).map((stat) => (
-                <div key={stat.label} className="rounded-2xl bg-[#fbfbf6] px-3 py-3">
+                <div key={stat.label} className="rounded-2xl bg-surface-soft px-3 py-3">
                   <p className="truncate text-sm font-semibold"><LatexText text={String(stat.value)} /></p>
                   <p className="mt-1 truncate text-[11px] font-semibold uppercase tracking-[0.12em] text-black/35">{stat.label}</p>
                 </div>

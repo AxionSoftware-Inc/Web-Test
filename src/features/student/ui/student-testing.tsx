@@ -61,7 +61,7 @@ export function StudentDashboard({ summary, tests, packs, sessions }: { summary:
           {inProgress ? <CompactCard title={inProgress.test_title} meta="In progress" href={`/student/test-session/${inProgress.id}`} action="Continue" stats={[`${inProgress.answers.length} answered`]} /> : <Empty text="Davom ettiriladigan test yo'q." />}
         </Section>
         <Section title="Recommended next action">
-          <CompactCard title={weakTopics[0]?.topic ?? "Available tests"} meta={weakTopics[0] ? `${weakTopics[0].value}% mastery` : "Start practice"} href={weakTopics[0] ? "/student/mistakes" : "/student/tests"} action={weakTopics[0] ? "Review" : "Open"} stats={weakTopics[0] ? [`${weakTopics[0].attempts} attempts`] : [`${tests.length} tests`]} />
+          <CompactCard title={weakTopics[0]?.topic ?? "Available tests"} meta={weakTopics[0] ? `${weakTopics[0].value}% mastery` : "Start practice"} href={weakTopics[0] ? "/student/mistakes" : "/student/tests"} action={weakTopics[0] ? "Review mistakes" : "Practice"} stats={weakTopics[0] ? [`${weakTopics[0].attempts} attempts`] : [`${tests.length} tests`]} />
         </Section>
       </div>
       <Section title="Assigned packs">
@@ -97,24 +97,24 @@ export function StudentTestsWorkspace({ tests, packs, sessions }: { tests: ApiTe
   });
   return (
     <StudentShell eyebrow="Student" title="Tests" copy="Fan, topic, difficulty va packlar bo'yicha test katalogi.">
-      <div className="rounded-xl border border-black/8 bg-white p-3 shadow-[0_10px_30px_rgba(21,23,19,0.04)]">
-        <div className="flex items-center gap-3 rounded-xl border border-black/8 bg-[#fbfbf6] px-4 py-3">
-          <Search className="size-5 shrink-0 text-black/35" />
+      <div className="quest-card p-4">
+        <div className="flex items-center gap-3 rounded-[var(--radius-control)] border border-line bg-surface-soft px-4 py-3">
+          <Search className="size-5 shrink-0 text-subtle" />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Test, pack, fan, topic yoki skill qidirish..."
-            className="min-h-10 w-full bg-transparent text-base font-medium outline-none placeholder:text-black/35"
+            className="min-h-10 w-full bg-transparent text-base font-medium outline-none placeholder:text-subtle"
           />
         </div>
       </div>
       <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
-        <aside className="h-fit rounded-xl border border-black/8 bg-white p-4 lg:sticky lg:top-24">
+        <aside className="h-fit quest-card p-4 lg:sticky lg:top-24">
           <div className="grid gap-4">
             <FilterSelect label="Subject" value={subject} onChange={setSubject} options={subjects} />
             <FilterSelect label="Topic" value={topic} onChange={setTopic} options={topics} />
             <FilterSelect label="Difficulty" value={difficulty} onChange={setDifficulty} options={["beginner", "intermediate", "advanced"]} />
-            <button onClick={() => { setQuery(""); setSubject("all"); setTopic("all"); setDifficulty("all"); }} className="rounded-xl border border-black/10 px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]">Clear filters</button>
+            <button onClick={() => { setQuery(""); setSubject("all"); setTopic("all"); setDifficulty("all"); }} className="rounded-[var(--radius-control)] border border-line px-4 py-3 text-sm font-semibold hover:bg-surface-soft">Clear filters</button>
           </div>
         </aside>
         <div className="grid gap-4">
@@ -153,17 +153,17 @@ export function StudentPackDetail({ pack, items, results }: { pack: ApiExamPack;
           {items.map((item) => {
             const stat = results?.item_stats.find((row) => row.item_id === item.id);
             return (
-              <div key={item.id} className="grid gap-3 rounded-xl border border-black/8 bg-white p-4 md:grid-cols-[1fr_auto] md:items-center">
+              <div key={item.id} className="grid gap-3 quest-card p-4 md:grid-cols-[1fr_auto] md:items-center">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-semibold">{item.title}</h3>
                     <Badge>{stat?.attempts ? "completed" : "available"}</Badge>
                   </div>
-                  <p className="mt-1 line-clamp-2 text-sm text-black/55">{item.difficulty} / {item.question_count} questions / skills-based test</p>
+                  <p className="mt-1 line-clamp-2 text-sm text-muted">{item.difficulty} / {item.question_count} questions / skills-based test</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {stat?.attempts ? <span className="text-sm font-semibold text-black/55">{stat.average_score}%</span> : null}
-                  <Link href={`/student/tests/${item.test_slug}`} className="rounded-xl bg-[#151713] px-4 py-2 text-sm font-semibold text-white">{stat?.attempts ? "View result" : "Start"}</Link>
+                  {stat?.attempts ? <span className="text-sm font-semibold text-muted">{stat.average_score}%</span> : null}
+                  <Link href={`/student/tests/${item.test_slug}`} className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover">{stat?.attempts ? "View result" : "Start"}</Link>
                 </div>
               </div>
             );
@@ -193,11 +193,11 @@ export function StudentTestInstructions({ test, session }: { test: ApiTest; sess
       ]} />
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         <Section title="Bo'lim haqida">
-          <div className="rounded-xl border border-black/8 bg-white p-4">
-            <p className="line-clamp-2 text-sm leading-6 text-black/60">Bu bo&apos;lim quyidagi skilllarni tekshiradi: {skills.length ? skills.join(", ") : "asosiy mavzu tushunchalari"}.</p>
-            <p className="mt-3 text-sm text-black/52">Savollar va to&apos;g&apos;ri javoblar submit qilinmaguncha ko&apos;rsatilmaydi.</p>
+          <div className="quest-card p-4">
+            <p className="line-clamp-2 text-sm leading-6 text-muted">Bu bo&apos;lim quyidagi skilllarni tekshiradi: {skills.length ? skills.join(", ") : "asosiy mavzu tushunchalari"}.</p>
+            <p className="mt-3 text-sm text-muted">Savollar va to&apos;g&apos;ri javoblar submit qilinmaguncha ko&apos;rsatilmaydi.</p>
             <div className="mt-4 grid gap-2">
-              {skills.map((skill) => <span key={skill} className="rounded-xl bg-[#fbfbf6] px-3 py-2 text-sm font-semibold text-black/62">{skill}</span>)}
+              {skills.map((skill) => <span key={skill} className="rounded-xl bg-surface-soft px-3 py-2 text-sm font-semibold text-muted">{skill}</span>)}
             </div>
           </div>
         </Section>
@@ -205,9 +205,9 @@ export function StudentTestInstructions({ test, session }: { test: ApiTest; sess
           <div className="grid gap-4">
             <NumberField label="Nechta test ishlamoqchisiz?" value={questionCount} min={1} max={Math.max(1, test.test_questions.length)} onChange={setQuestionCount} />
             <NumberField label="Timer, daqiqa" value={minutes} min={1} max={240} onChange={setMinutes} />
-            {status === "in_progress" && session ? <Link href={`/student/test-session/${session.id}`} className="rounded-xl bg-[#151713] px-4 py-3 text-center text-sm font-semibold text-white">Continue</Link> : null}
-            <Link href={`/student/tests/${test.slug}/start?count=${questionCount}&minutes=${minutes}`} className="rounded-xl bg-[#151713] px-4 py-3 text-center text-sm font-semibold text-white">{status === "submitted" ? "Start again" : "Start test"}</Link>
-            {status === "submitted" && session ? <Link href={`/student/results/${session.id}`} className="rounded-xl border border-black/10 bg-white px-4 py-3 text-center text-sm font-semibold">View result</Link> : null}
+            {status === "in_progress" && session ? <Link href={`/student/test-session/${session.id}`} className="rounded-xl bg-brand px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand-hover">Continue</Link> : null}
+            <Link href={`/student/tests/${test.slug}/start?count=${questionCount}&minutes=${minutes}`} className="rounded-xl bg-brand px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand-hover">Start</Link>
+            {status === "submitted" && session ? <Link href={`/student/results/${session.id}`} className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3 text-center text-sm font-semibold">View result</Link> : null}
           </div>
         </Section>
       </div>
@@ -266,27 +266,27 @@ export function StudentActiveSession({ initialSession, test }: { initialSession:
   }
 
   return (
-    <StudentShell eyebrow="Active test" title={test.title} copy="Javobni tanlang, flag qiling va submit qiling. To'g'ri javoblar submitdan oldin ko'rsatilmaydi.">
-      <div className="rounded-xl border border-black/8 bg-white p-4">
+    <StudentShell eyebrow="Active test" title={test.title} copy="Javobni tanlang, flag qiling va submit qiling. To'g'ri javoblar submitdan oldin ko'rsatilmaydi." wide>
+      <div className="quest-card p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-xl bg-[#151713] px-3 py-2 text-sm font-semibold text-white"><Timer className="size-4" />{timer}</span>
-            <span className="rounded-xl bg-[#edf7f3] px-3 py-2 text-sm font-semibold text-[#276a5b]">{answered}/{questions.length} answered</span>
-            <span className="rounded-xl bg-[#fbfbf6] px-3 py-2 text-sm font-semibold text-black/55">Question {index + 1}</span>
+            <span className="inline-flex items-center gap-2 rounded-[var(--radius-control)] bg-brand px-3 py-2 text-sm font-semibold text-white"><Timer className="size-4" />{timer}</span>
+            <span className="rounded-[var(--radius-control)] bg-info-soft px-3 py-2 text-sm font-semibold text-info">{answered}/{questions.length} answered</span>
+            <span className="rounded-[var(--radius-control)] bg-neutral-soft px-3 py-2 text-sm font-semibold text-neutral">Question {index + 1}</span>
           </div>
-          <button onClick={submit} disabled={submitting} className="rounded-xl bg-[#276a5b] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{submitting ? "Finishing..." : "Submit test"}</button>
+          <button onClick={submit} disabled={submitting} className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover disabled:opacity-60">{submitting ? "Finishing..." : "Submit test"}</button>
         </div>
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-black/8">
-          <div className="h-full rounded-full bg-[#276a5b]" style={{ width: `${progress}%` }} />
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-neutral-soft">
+          <div className="h-full rounded-full bg-brand" style={{ width: `${progress}%` }} />
         </div>
-        {submitError ? <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{submitError}</p> : null}
+        {submitError ? <p className="mt-3 rounded-xl bg-danger-soft px-3 py-2 text-sm font-semibold text-danger">{submitError}</p> : null}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
-        <aside className="rounded-xl border border-black/8 bg-white p-4 lg:sticky lg:top-24 lg:self-start">
+        <aside className="quest-card p-4 lg:sticky lg:top-24 lg:self-start">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-semibold">Questions</h2>
-            <span className="text-sm font-semibold text-black/40">{progress}%</span>
+            <span className="text-sm font-semibold text-subtle">{progress}%</span>
           </div>
           <div className="mt-4 grid grid-cols-5 gap-2">
             {questions.map((item, itemIndex) => (
@@ -296,32 +296,32 @@ export function StudentActiveSession({ initialSession, test }: { initialSession:
                 onClick={() => setIndex(itemIndex)}
                 className={cn(
                   "relative rounded-lg border px-2 py-2 text-sm font-semibold transition",
-                  itemIndex === index ? "border-[#151713] bg-[#151713] text-white shadow-sm" : (draftAnswers[item.id] ?? answerMap.get(item.id)?.value) ? "border-[#276a5b]/30 bg-[#edf7f3] text-[#276a5b]" : "border-black/10 bg-[#fbfbf6] text-black/55 hover:border-black/20",
+                  itemIndex === index ? "border-brand bg-brand text-white shadow-sm" : (draftAnswers[item.id] ?? answerMap.get(item.id)?.value) ? "border-brand/30 bg-success-soft text-success" : "border-line bg-surface-soft text-muted hover:border-line-strong",
                 )}
               >
                 {itemIndex + 1}
-                {answerMap.get(item.id)?.is_flagged ? <span className="absolute right-1 top-1 size-1.5 rounded-full bg-amber-500" /> : null}
+                {answerMap.get(item.id)?.is_flagged ? <span className="absolute right-1 top-1 size-1.5 rounded-full bg-warning" /> : null}
               </button>
             ))}
           </div>
         </aside>
 
-        <article className="rounded-xl border border-black/8 bg-white p-4 shadow-[0_14px_44px_rgba(21,23,19,0.05)]">
-          <div className="flex items-center justify-between gap-3 border-b border-black/8 pb-4">
+        <article className="quest-card p-4">
+          <div className="flex items-center justify-between gap-3 border-b border-line pb-4">
             <div>
-              <p className="text-sm font-semibold text-[#276a5b]">Question {index + 1} of {questions.length}</p>
-              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-black/35">{question.type.replace("_", " ")}</p>
+              <p className="text-sm font-semibold text-brand">Question {index + 1} of {questions.length}</p>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-subtle">{question.type.replace("_", " ")}</p>
             </div>
             <button
               type="button"
               onClick={() => save(currentValue, !(current?.is_flagged ?? false))}
-              className={cn("inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition", current?.is_flagged ? "border-amber-200 bg-amber-50 text-amber-700" : "border-black/10 bg-white hover:bg-[#fbfbf6]")}
+              className={cn("inline-flex items-center gap-2 rounded-[var(--radius-control)] border px-3 py-2 text-sm font-semibold transition", current?.is_flagged ? "border-warning-soft bg-warning-soft text-warning" : "border-line bg-surface hover:bg-surface-soft")}
             >
               <Flag className="size-4" />
               {current?.is_flagged ? "Flagged" : "Flag"}
             </button>
           </div>
-          <div className="mt-5 rounded-xl bg-[#fbfbf6] p-4 text-lg leading-8"><LatexText text={question.prompt} /></div>
+          <div className="mt-5 rounded-xl bg-surface-soft p-4 text-lg leading-8"><LatexText text={question.prompt} /></div>
           {question.options.length ? (
             <div className="mt-5 grid gap-3">
               {question.options.map((option, optionIndex) => {
@@ -333,12 +333,12 @@ export function StudentActiveSession({ initialSession, test }: { initialSession:
                     onClick={() => save(option)}
                     className={cn(
                       "flex min-h-14 items-start gap-3 rounded-xl border p-4 text-left text-sm leading-6 transition",
-                      selected ? "border-[#276a5b] bg-[#edf7f3] shadow-[0_0_0_3px_rgba(39,106,91,0.12)]" : "border-black/10 bg-white hover:border-black/20 hover:bg-[#fbfbf6]",
+                      selected ? "border-brand bg-brand-soft ring-4 ring-brand-ring" : "border-line bg-surface hover:border-line-strong hover:bg-surface-soft",
                     )}
                   >
-                    <span className={cn("grid size-8 shrink-0 place-items-center rounded-lg border text-xs font-bold", selected ? "border-[#276a5b] bg-[#276a5b] text-white" : "border-black/10 bg-[#fbfbf6] text-black/55")}>{String.fromCharCode(65 + optionIndex)}</span>
+                    <span className={cn("grid size-8 shrink-0 place-items-center rounded-lg border text-xs font-bold", selected ? "border-brand bg-brand text-white" : "border-line bg-surface-soft text-muted")}>{String.fromCharCode(65 + optionIndex)}</span>
                     <span className="min-w-0 flex-1"><LatexText text={option} /></span>
-                    {selected ? <span className="shrink-0 rounded-lg bg-white/75 px-2 py-1 text-xs font-semibold text-[#276a5b]">{savingQuestionId === question.id ? "Saving" : "Selected"}</span> : null}
+                    {selected ? <span className="shrink-0 rounded-lg bg-surface px-2 py-1 text-xs font-semibold text-brand">{savingQuestionId === question.id ? "Saving" : "Selected"}</span> : null}
                   </button>
                 );
               })}
@@ -349,12 +349,12 @@ export function StudentActiveSession({ initialSession, test }: { initialSession:
               onChange={(event) => setDraftAnswers((answers) => ({ ...answers, [question.id]: event.target.value }))}
               onBlur={(event) => save(event.target.value)}
               rows={4}
-              className="mt-5 w-full resize-none rounded-xl border border-black/10 bg-[#fbfbf6] px-4 py-3 text-sm outline-none focus:border-[#276a5b] focus:bg-white"
+              className="mt-5 w-full resize-none rounded-[var(--radius-control)] border border-line bg-surface-soft px-4 py-3 text-sm outline-none focus:border-brand focus:bg-surface"
               placeholder="Answer"
             />
           )}
           <div className="mt-5 flex justify-between gap-3">
-            <button type="button" onClick={() => setIndex((value) => Math.max(0, value - 1))} className="inline-flex items-center gap-2 rounded-xl border border-black/10 px-4 py-2 text-sm font-semibold hover:bg-[#fbfbf6]"><ArrowLeft className="size-4" />Previous</button>
+            <button type="button" onClick={() => setIndex((value) => Math.max(0, value - 1))} className="inline-flex items-center gap-2 rounded-[var(--radius-control)] border border-line px-4 py-2 text-sm font-semibold hover:bg-surface-soft"><ArrowLeft className="size-4" />Previous</button>
             <button
               type="button"
               onClick={() => {
@@ -362,7 +362,7 @@ export function StudentActiveSession({ initialSession, test }: { initialSession:
                 else setIndex((value) => Math.min(questions.length - 1, value + 1));
               }}
               disabled={submitting}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#151713] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover disabled:opacity-60"
             >
               {shouldFinish ? (submitting ? "Finishing..." : "Finish") : "Next"}{!shouldFinish ? <ArrowRight className="size-4" /> : null}
             </button>
@@ -390,12 +390,12 @@ export function StudentResult({ session, test }: { session: ApiSession; test: Ap
   return (
     <StudentShell eyebrow="Result" title={test.title} copy="Score, breakdown, weak skills va keyingi qadamlar.">
       <section className="grid gap-4 lg:grid-cols-[1fr_340px]">
-        <div className="rounded-xl border border-black/8 bg-white p-4 shadow-[0_14px_44px_rgba(21,23,19,0.05)]">
+        <div className="quest-card p-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#276a5b]">Final score</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand">Final score</p>
               <h1 className="mt-2 text-6xl font-semibold tracking-tight">{stats.score}%</h1>
-              <p className="mt-2 text-sm text-black/55">{resultTone} / passing score {test.passing_score}%</p>
+              <p className="mt-2 text-sm text-muted">{resultTone} / passing score {test.passing_score}%</p>
             </div>
             <ProgressRing label="Result quality" value={stats.score} />
           </div>
@@ -405,16 +405,16 @@ export function StudentResult({ session, test }: { session: ApiSession; test: Ap
             <MetricTile label="Skipped" value={stats.skipped} sub="No answer" tone="neutral" />
           </div>
         </div>
-        <aside className="rounded-xl border border-black/8 bg-[#151713] p-4 text-white">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">Next actions</p>
+        <aside className="quest-card p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-subtle">Next actions</p>
           <h2 className="mt-2 text-xl font-semibold">{skills[0] ?? (stats.score >= test.passing_score ? "Keep momentum" : "Review mistakes")}</h2>
-          <p className="mt-2 text-sm leading-6 text-white/65">
+          <p className="mt-2 text-sm leading-6 text-muted">
             {skills[0] ? `${skills[0]} bo'yicha xatolar bor. Avval mistake review, keyin shu topicdagi testni qayta ishlang.` : "Natija yaxshi. Keyingi topic yoki packga o'ting."}
           </p>
           <div className="mt-4 grid gap-2">
-            <Link href="/student/mistakes" className="rounded-xl bg-white px-4 py-2 text-center text-sm font-semibold text-[#151713]">Review mistakes</Link>
-            <Link href={`/student/tests/${test.slug}/start`} className="rounded-xl bg-[#8fd6bd] px-4 py-2 text-center text-sm font-semibold text-[#151713]">Retake test</Link>
-            <Link href="/student/tests" className="rounded-xl border border-white/15 px-4 py-2 text-center text-sm font-semibold text-white">Back to tests</Link>
+            <Link href="/student/mistakes" className="rounded-[var(--radius-control)] bg-brand px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-brand-hover">Review mistakes</Link>
+            <Link href={`/student/tests/${test.slug}/start`} className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-2 text-center text-sm font-semibold">Start</Link>
+            <Link href="/student/tests" className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-2 text-center text-sm font-semibold">Practice</Link>
           </div>
         </aside>
       </section>
@@ -435,11 +435,11 @@ export function StudentResult({ session, test }: { session: ApiSession; test: Ap
             const isCorrect = normalize(question.answer) === normalize(userAnswer);
             const isSkipped = !userAnswer;
             return (
-              <Link key={question.id} href={`/student/mistakes/${session.id}-${question.id}`} className="grid gap-3 rounded-xl border border-black/8 bg-white p-4 hover:bg-[#fbfbf6] md:grid-cols-[40px_1fr_auto] md:items-center">
-                <span className={cn("grid size-9 place-items-center rounded-lg text-sm font-semibold", isCorrect ? "bg-[#edf7f3] text-[#276a5b]" : isSkipped ? "bg-[#fbfbf6] text-black/45" : "bg-[#f8eeee] text-[#a85050]")}>{index + 1}</span>
+              <Link key={question.id} href={`/student/mistakes/${session.id}-${question.id}`} className="grid gap-3 quest-card p-4 hover:bg-surface-soft md:grid-cols-[40px_1fr_auto] md:items-center">
+                <span className={cn("grid size-9 place-items-center rounded-lg text-sm font-semibold", isCorrect ? "bg-brand-soft text-brand" : isSkipped ? "bg-surface-soft text-subtle" : "bg-danger-soft text-danger")}>{index + 1}</span>
                 <div className="min-w-0">
                   <p className="line-clamp-1 font-semibold"><LatexText text={question.prompt} /></p>
-                  <p className="mt-1 line-clamp-1 text-sm text-black/50">{question.skill_titles.join(", ") || test.topic_slug}</p>
+                  <p className="mt-1 line-clamp-1 text-sm text-muted">{question.skill_titles.join(", ") || test.topic_slug}</p>
                 </div>
                 <Badge>{isCorrect ? "correct" : isSkipped ? "skipped" : "wrong"}</Badge>
               </Link>
@@ -490,13 +490,13 @@ export function StudentMistakes({ initialSummary }: { initialSummary: ApiMistake
           <AnalyticsBars rows={skillRows} tone="critical" empty="Skill data hali yo'q." />
         </Section>
         <Section title="Recommended next action">
-          <div className="rounded-xl border border-black/8 bg-white p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-black/38">Priority</p>
+          <div className="quest-card p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-subtle">Priority</p>
             <h3 className="mt-2 text-xl font-semibold">{focus?.skill ?? "Avval test ishlang"}</h3>
-            <p className="mt-2 text-sm leading-6 text-black/58">
+            <p className="mt-2 text-sm leading-6 text-muted">
               {focus ? `${focus.skill} bo'yicha mastery ${focus.percent}%. Avval xato savollarni ko'rib chiqing, keyin shu skillga yaqin testni qayta ishlang.` : "Mistake analytics uchun kamida bitta test submit qiling."}
             </p>
-            <Link href="/student/tests" className="mt-4 inline-flex rounded-xl bg-[#151713] px-4 py-2 text-sm font-semibold text-white">Practice topic</Link>
+            <Link href="/student/tests" className="mt-4 inline-flex rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover">Practice topic</Link>
           </div>
         </Section>
       </div>
@@ -509,8 +509,8 @@ export function StudentMistakes({ initialSummary }: { initialSummary: ApiMistake
         </Section>
       </div>
       <Section title="Mistake review queue">
-        <div className="mb-4 flex items-center gap-2 rounded-xl border border-black/8 bg-white px-3 py-2">
-          <Search className="size-4 text-black/35" />
+        <div className="mb-4 flex items-center gap-2 quest-card px-3 py-2">
+          <Search className="size-4 text-subtle" />
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Subject, topic, test, status..." className="w-full bg-transparent text-sm outline-none" />
         </div>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -532,21 +532,19 @@ export function StudentMistakeDetail({ initialSummary, mistakeId }: { initialSum
   return (
     <StudentShell eyebrow="Mistake detail" title={mistake.test_title} copy={mistake.topic}>
       <Section title="Question">
-        <div className="rounded-xl border border-black/8 bg-white p-4">
+        <div className="quest-card p-4">
           <LatexText text={mistake.prompt} />
-          <div className="mt-4 grid gap-2 text-sm text-black/60">
+          <div className="mt-4 grid gap-2 text-sm text-muted">
             <p><strong>Your answer:</strong> {mistake.user_answer || "Skipped"}</p>
             <p><strong>Correct answer:</strong> {mistake.correct_answer}</p>
             <p><strong>Related topic:</strong> {mistake.topic}</p>
             <p><strong>Common mistake:</strong> {mistake.skills.length ? `${mistake.skills.join(", ")} skillini qayta ko'rib chiqish kerak.` : "Asosiy tushunchani qayta tekshiring."}</p>
           </div>
-          {mistake.explanation ? <div className="mt-4 rounded-xl bg-[#fbfbf6] p-4 text-sm leading-6 text-black/62"><LatexText text={mistake.explanation} /></div> : null}
+          {mistake.explanation ? <div className="mt-4 rounded-xl bg-surface-soft p-4 text-sm leading-6 text-muted"><LatexText text={mistake.explanation} /></div> : null}
         </div>
       </Section>
       <div className="flex flex-wrap gap-3">
-        <Link href="/student/mistakes" className="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm font-semibold">Back</Link>
-        <Link href="/student/tests" className="rounded-xl bg-[#151713] px-4 py-2 text-sm font-semibold text-white">Practice topic</Link>
-        <button className="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm font-semibold">Mark as reviewed</button>
+        <Link href="/student/tests" className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover">Practice topic</Link>
       </div>
     </StudentShell>
   );
@@ -610,25 +608,25 @@ function TestCatalogCard({ test, status, session, relatedCount }: { test: ApiTes
   const router = useRouter();
   const startHref = status === "in_progress" && session ? `/student/test-session/${session.id}` : `/student/tests/${test.slug}/start`;
   return (
-    <article onClick={() => router.push(`/student/tests/${test.slug}`)} className="flex min-h-[158px] cursor-pointer flex-col rounded-xl border border-black/8 bg-white p-4 hover:bg-[#fbfbf6]">
+    <article onClick={() => router.push(`/student/tests/${test.slug}`)} className="flex min-h-[158px] cursor-pointer flex-col quest-card p-4 hover:bg-surface-soft">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="line-clamp-2 font-semibold leading-5">{test.title}</h3>
-          <p className="mt-1 line-clamp-1 text-sm text-black/50">{test.subject_slug} / {test.topic_slug}</p>
+          <p className="mt-1 line-clamp-1 text-sm text-muted">{test.subject_slug} / {test.topic_slug}</p>
         </div>
         <Badge>{status === "completed" ? "done" : status === "in_progress" ? "active" : test.difficulty}</Badge>
       </div>
-      <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-black/45">
-        <span className="rounded-lg bg-[#fbfbf6] px-2 py-1">{relatedCount} tests</span>
-        <span className="rounded-lg bg-[#fbfbf6] px-2 py-1">{test.test_questions.length} questions</span>
-        <span className="rounded-lg bg-[#fbfbf6] px-2 py-1">{test.estimated_minutes} min</span>
+      <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-subtle">
+        <span className="rounded-lg bg-surface-soft px-2 py-1">{relatedCount} tests</span>
+        <span className="rounded-lg bg-surface-soft px-2 py-1">{test.test_questions.length} questions</span>
+        <span className="rounded-lg bg-surface-soft px-2 py-1">{test.estimated_minutes} min</span>
       </div>
       <button
         onClick={(event) => {
           event.stopPropagation();
           router.push(startHref);
         }}
-        className="mt-auto w-fit rounded-xl bg-[#151713] px-4 py-2 text-sm font-semibold text-white"
+        className="mt-auto w-fit rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover"
       >
         {status === "in_progress" ? "Continue" : "Start"}
       </button>
@@ -637,5 +635,5 @@ function TestCatalogCard({ test, status, session, relatedCount }: { test: ApiTes
 }
 
 function PackCard({ pack }: { pack: ApiExamPack }) {
-  return <CompactCard title={pack.title} meta={pack.exam_type || "Pack"} href={`/student/packs/${pack.slug}`} action="Open" status={pack.visibility} stats={[`${pack.item_count} tests`, pack.price_label || "Free"]} />;
+  return <CompactCard title={pack.title} meta={pack.exam_type || "Pack"} href={`/student/packs/${pack.slug}`} action="Start" status={pack.visibility} stats={[`${pack.item_count} tests`, pack.price_label || "Free"]} />;
 }

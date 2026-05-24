@@ -1,21 +1,5 @@
 @import "tailwindcss";
-
-:root {
-  --background: #f7f7f2;
-  --foreground: #151713;
-  --surface: #ffffff;
-  --surface-soft: #fbfbf6;
-  --brand: #276a5b;
-  --ink: #151713;
-  --line: rgba(21, 23, 19, 0.1);
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@import "./design-system.css";
 
 body {
   background: var(--background);
@@ -41,5 +25,5 @@ a:hover {
 }
 
 ::selection {
-  background: rgba(143, 214, 189, 0.5);
+  background: var(--selection);
 }

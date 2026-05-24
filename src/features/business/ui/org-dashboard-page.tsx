@@ -17,10 +17,10 @@ export function OrgDashboardPage({
   panels: string[][];
 }) {
   return (
-    <main className="min-h-screen bg-[#f7f7f2] text-[#151713]">
+    <main className="min-h-screen bg-background text-ink">
       <Container className="py-10">
         <GlassCard className="p-6 md:p-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#276a5b]">{eyebrow}</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-brand">{eyebrow}</p>
           <h1 className="mt-3 text-5xl font-semibold leading-tight">{title}</h1>
           <p className="mt-5 max-w-2xl text-sm leading-6 text-black/62">{copy}</p>
         </GlassCard>
@@ -55,7 +55,7 @@ export function OrgDashboardPage({
           <GlassCard className="p-5">
             <h2 className="text-xl font-semibold">Actions</h2>
             <div className="mt-4 grid gap-3">
-              <Link href="/tests" className="rounded-xl bg-[#151713] px-4 py-3 text-center text-sm font-semibold text-white">Assign test</Link>
+              <Link href="/tests" className="rounded-xl bg-ink px-4 py-3 text-center text-sm font-semibold text-white">Assign test</Link>
               <Link href="/diagnosis" className="rounded-xl border border-black/10 bg-white/70 px-4 py-3 text-center text-sm font-semibold">View diagnosis model</Link>
               <Link href="/exam-packs" className="rounded-xl border border-black/10 bg-white/70 px-4 py-3 text-center text-sm font-semibold">Use exam pack</Link>
             </div>

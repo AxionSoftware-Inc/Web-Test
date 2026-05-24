@@ -52,7 +52,7 @@ export function ProfileDashboardClient() {
           <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-black/60">
             Birinchi algebra testini ishlang. Natija, progress, weak topics va tavsiyalar shu yerda avtomatik chiqadi.
           </p>
-          <Link href="/subjects/mathematics/topics/algebra" className="mt-6 inline-block rounded-xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white">
+          <Link href="/subjects/mathematics/topics/algebra" className="mt-6 inline-block rounded-xl bg-ink px-5 py-3 text-sm font-semibold text-white">
             Start Algebra
           </Link>
         </GlassCard>
@@ -76,7 +76,7 @@ export function ProfileDashboardClient() {
             {fallbackWeekly.map((item) => (
               <div key={item.day} className="flex flex-1 flex-col items-center gap-2">
                 <div className="flex h-44 w-full items-end rounded-xl bg-white/50 px-2">
-                  <div className="w-full rounded-t-lg bg-[#276a5b]" style={{ height: `${Math.max(12, (item.value / maxWeekly) * 100)}%` }} />
+                  <div className="w-full rounded-t-lg bg-brand" style={{ height: `${Math.max(12, (item.value / maxWeekly) * 100)}%` }} />
                 </div>
                 <span className="text-xs font-semibold text-black/50">{item.day}</span>
               </div>
@@ -87,7 +87,7 @@ export function ProfileDashboardClient() {
         <GlassCard className="p-5">
           <h2 className="text-xl font-semibold">Math mastery</h2>
           <div className="mt-5 h-3 rounded bg-black/10">
-            <div className="h-3 rounded bg-[#276a5b]" style={{ width: `${mastery}%` }} />
+            <div className="h-3 rounded bg-brand" style={{ width: `${mastery}%` }} />
           </div>
           <p className="mt-3 text-sm leading-6 text-black/60">
             Calculated from fake local test sessions. Backend later replaces this with real result analytics.
@@ -102,7 +102,7 @@ export function ProfileDashboardClient() {
                     <span>{value}%</span>
                   </div>
                   <div className="mt-2 h-2 rounded bg-black/10">
-                    <div className="h-2 rounded bg-[#276a5b]" style={{ width: `${value}%` }} />
+                    <div className="h-2 rounded bg-brand" style={{ width: `${value}%` }} />
                   </div>
                 </div>
               );
@@ -127,14 +127,14 @@ export function ProfileDashboardClient() {
           </div>
         </GlassCard>
 
-        <aside className="rounded-2xl border border-black/10 bg-[#151713] p-5 text-white">
+        <aside className="rounded-2xl border border-black/10 bg-ink p-5 text-white">
           <h2 className="text-xl font-semibold">Recommended next</h2>
           <div className="mt-4 grid gap-3">
             <p className="rounded-xl bg-white/8 p-3 text-sm leading-6 text-white/70">Mistake analysis orqali zaif skillni aniqlang.</p>
             <p className="rounded-xl bg-white/8 p-3 text-sm leading-6 text-white/70">Recommended lessonni tugating.</p>
             <p className="rounded-xl bg-white/8 p-3 text-sm leading-6 text-white/70">Targeted practicedan keyin retake qiling.</p>
           </div>
-          <Link href="/subjects/mathematics/topics/algebra" className="mt-5 block rounded-xl bg-[#8fd6bd] px-4 py-3 text-center text-sm font-semibold text-[#151713]">
+          <Link href="/subjects/mathematics/topics/algebra" className="mt-5 block rounded-xl bg-accent px-4 py-3 text-center text-sm font-semibold text-ink">
             Continue Algebra
           </Link>
         </aside>
@@ -154,7 +154,7 @@ function ProfileMetric({
 }) {
   return (
     <GlassCard className="p-4">
-      <div className="text-[#276a5b]">{icon}</div>
+      <div className="text-brand">{icon}</div>
       <p className="mt-4 text-2xl font-semibold">{value}</p>
       <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-black/45">{label}</p>
     </GlassCard>

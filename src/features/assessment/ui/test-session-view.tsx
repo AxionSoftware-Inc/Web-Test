@@ -34,7 +34,7 @@ export function TestSessionView({
       <div className="rounded-lg border border-black/10 bg-white p-5">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 pb-4">
           <div>
-            <p className="text-sm font-semibold text-[#276a5b]">
+            <p className="text-sm font-semibold text-brand">
               Question {currentIndex + 1} of {questionCount}
             </p>
             <p className="mt-1 text-sm text-black/55">{question.type}</p>
@@ -60,7 +60,7 @@ export function TestSessionView({
                 onClick={() => onAnswer(question.id, option)}
                 className={cn(
                   "rounded-md border px-4 py-3 text-left text-sm",
-                  answer === option ? "border-[#276a5b] bg-[#edf7f3]" : "border-black/10 bg-[#fbfbf8]",
+                  answer === option ? "border-brand bg-brand-soft" : "border-black/10 bg-surface-soft",
                 )}
               >
                 {String.fromCharCode(65 + index)}. <LatexText text={option} />
@@ -72,7 +72,7 @@ export function TestSessionView({
             value={answer}
             onChange={(event) => onAnswer(question.id, event.target.value)}
             placeholder="Javobni kiriting"
-            className="mt-6 w-full rounded-md border border-black/10 bg-[#fbfbf8] px-4 py-3 text-sm outline-none focus:border-[#276a5b]"
+            className="mt-6 w-full rounded-md border border-black/10 bg-surface-soft px-4 py-3 text-sm outline-none focus:border-brand"
           />
         )}
 
@@ -89,7 +89,7 @@ export function TestSessionView({
           <button
             type="button"
             onClick={isLast ? onFinish : onNext}
-            className="inline-flex items-center gap-2 rounded-md bg-[#151713] px-4 py-2 text-sm font-semibold text-white"
+            className="inline-flex items-center gap-2 rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white"
           >
             {isLast ? "Finish" : "Next"}
             <ArrowRight className="size-4" />

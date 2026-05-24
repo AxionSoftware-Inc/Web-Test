@@ -16,10 +16,10 @@ export default async function Page() {
   const questions = await questApi.questions();
 
   return (
-    <main className="min-h-screen bg-[#f7f7f2] text-[#151713]">
+    <main className="min-h-screen bg-background text-ink">
       <Container className="py-10">
         <GlassCard className="p-6 md:p-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#276a5b]">Question bank</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-brand">Question bank</p>
           <h1 className="mt-3 text-5xl font-semibold leading-tight">Savollar banki</h1>
           <p className="mt-5 max-w-2xl text-sm leading-6 text-black/62">
             MVP bank existing testlardan savollarni ajratib ko&apos;rsatadi. Har savol solve, solution va discussion flowga ega.
@@ -31,13 +31,13 @@ export default async function Page() {
             <Link key={question.id} href={`/questions/${question.id}`}>
               <GlassCard className="h-full p-5">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="rounded-xl bg-[#edf7f3] px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-[#276a5b]">
+                  <span className="rounded-xl bg-brand-soft px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-brand">
                     {question.difficulty}
                   </span>
                   <span className="text-xs font-semibold uppercase tracking-[0.1em] text-black/45">{question.type}</span>
                 </div>
                 <p className="mt-5 line-clamp-3 text-sm leading-6 text-black/70"><LatexText text={question.prompt} /></p>
-                <p className="mt-5 text-sm font-semibold text-[#276a5b]">Open question</p>
+                <p className="mt-5 text-sm font-semibold text-brand">Open question</p>
               </GlassCard>
             </Link>
           ))}

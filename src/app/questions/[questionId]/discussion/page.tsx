@@ -17,10 +17,10 @@ export default async function Page({ params }: PageProps) {
   await questApi.question(questionId);
 
   return (
-    <main className="min-h-screen bg-[#f7f7f2] text-[#151713]">
+    <main className="min-h-screen bg-background text-ink">
       <Container className="py-10">
         <GlassCard className="p-6 md:p-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#276a5b]">Discussion</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-brand">Discussion</p>
           <h1 className="mt-3 text-4xl font-semibold">Community explanation thread</h1>
           <div className="mt-6 grid gap-3">
             {["Nega bu formula ishlaydi?", "Qaysi skill zaif bo'lsa shu savolda xato bo'ladi?", "Similar problem tavsiyasi kerak."].map((item) => (

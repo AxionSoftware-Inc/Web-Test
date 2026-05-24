@@ -10,10 +10,10 @@ export function QuestionPreviewCard({
   compact?: boolean;
 }) {
   return (
-    <article className="rounded-md border border-black/10 bg-[#fbfbf8] p-4">
+    <article className="rounded-md border border-black/10 bg-surface-soft p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <span className="text-sm font-semibold">Question {index + 1}</span>
-        <span className="rounded-md bg-[#151713] px-2.5 py-1 text-xs font-semibold text-white">
+        <span className="rounded-md bg-ink px-2.5 py-1 text-xs font-semibold text-white">
           {question.type}
         </span>
       </div>

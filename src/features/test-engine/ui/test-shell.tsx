@@ -17,11 +17,11 @@ export function TestShell({
   actions?: ReactNode;
 }) {
   return (
-    <main className="min-h-screen bg-[#f7f7f2] text-[#151713]">
+    <main className="min-h-screen bg-background text-ink">
       <Container className="py-8">
         <header className="border-b border-black/10 pb-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <Link href="/" className="text-sm font-semibold text-[#276a5b]">
+            <Link href="/" className="text-sm font-semibold text-brand">
               QuestLab
             </Link>
             <nav className="flex flex-wrap items-center gap-3 text-sm font-semibold text-black/55">
@@ -31,7 +31,7 @@ export function TestShell({
               <Link href="/results">Results</Link>
             </nav>
           </div>
-          <p className="mt-8 text-sm font-semibold uppercase tracking-[0.14em] text-[#276a5b]">
+          <p className="mt-8 text-sm font-semibold uppercase tracking-[0.14em] text-brand">
             {eyebrow}
           </p>
           <div className="mt-3 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
@@ -56,7 +56,7 @@ export function TestShell({
 
 export function PrimaryLink({ href, children }: { href: string; children: ReactNode }) {
   return (
-    <Link href={href} className="rounded-md bg-[#151713] px-4 py-2 text-sm font-semibold text-white">
+    <Link href={href} className="rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white">
       {children}
     </Link>
   );

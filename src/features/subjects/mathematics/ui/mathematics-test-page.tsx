@@ -40,11 +40,11 @@ export function MathematicsTestPage({ test }: MathematicsTestPageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f7f2] text-[#151713]">
+    <main className="min-h-screen bg-background text-ink">
       <Container className="py-8">
         <header className="border-b border-black/10 pb-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <Link href="/subjects/mathematics" className="inline-flex items-center gap-2 text-sm font-semibold text-[#276a5b]">
+            <Link href="/subjects/mathematics" className="inline-flex items-center gap-2 text-sm font-semibold text-brand">
               <ArrowLeft className="size-4" />
               Mathematics
             </Link>
@@ -102,7 +102,7 @@ function IntroView({
   return (
     <section className="grid gap-5 py-8 lg:grid-cols-[0.85fr_1.15fr]">
       <div className="rounded-lg border border-black/10 bg-white p-5">
-        <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#276a5b]">
+        <p className="text-sm font-semibold uppercase tracking-[0.14em] text-brand">
           Test overview
         </p>
         <h2 className="mt-3 text-2xl font-semibold">Boshlashga tayyor</h2>
@@ -113,7 +113,7 @@ function IntroView({
         <button
           type="button"
           onClick={onStart}
-          className="mt-6 rounded-md bg-[#151713] px-5 py-3 text-sm font-semibold text-white"
+          className="mt-6 rounded-md bg-ink px-5 py-3 text-sm font-semibold text-white"
         >
           Start test
         </button>
@@ -152,7 +152,7 @@ function ResultView({
       <div className="rounded-lg border border-black/10 bg-white p-5">
         <div className="flex flex-col justify-between gap-4 border-b border-black/10 pb-5 md:flex-row md:items-center">
           <div>
-            <p className="text-sm font-semibold text-[#276a5b]">{test.title}</p>
+            <p className="text-sm font-semibold text-brand">{test.title}</p>
             <h2 className="mt-2 text-3xl font-semibold">
               Result: {result.correct}/{result.total} ({result.percent}%)
             </h2>
@@ -160,7 +160,7 @@ function ResultView({
           <button
             type="button"
             onClick={onRetry}
-            className="rounded-md bg-[#151713] px-4 py-2 text-sm font-semibold text-white"
+            className="rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white"
           >
             Retry
           </button>
@@ -178,7 +178,7 @@ function ResultView({
             <Link
               key={item.id}
               href={`/subjects/mathematics/tests/${item.id}`}
-              className="rounded-md border border-black/10 bg-[#fbfbf8] p-3 text-sm"
+              className="rounded-md border border-black/10 bg-surface-soft p-3 text-sm"
             >
               <span className="font-semibold">{item.title}</span>
               <span className="mt-1 block text-black/55">{item.difficulty}</span>

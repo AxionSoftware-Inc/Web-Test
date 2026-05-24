@@ -35,12 +35,12 @@ export function SessionReviewClient({
                 Check unanswered and flagged questions before final submission.
               </p>
             </div>
-            <div className="rounded-md bg-[#edf7f3] px-4 py-3 text-sm font-semibold text-[#276a5b]">
+            <div className="rounded-md bg-brand-soft px-4 py-3 text-sm font-semibold text-brand">
               {progress}% complete
             </div>
           </div>
           <div className="mt-5 h-2 rounded bg-black/10">
-            <div className="h-2 rounded bg-[#276a5b]" style={{ width: `${progress}%` }} />
+            <div className="h-2 rounded bg-brand" style={{ width: `${progress}%` }} />
           </div>
         </div>
 
@@ -52,7 +52,7 @@ export function SessionReviewClient({
           return (
             <Link key={question.id} href={`/test-session/${sessionId}/question/${index + 1}`} className="flex flex-col gap-3 rounded-lg border border-black/10 bg-white p-4 hover:border-black/20 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex gap-3">
-                <span className="grid size-9 shrink-0 place-items-center rounded-md bg-[#fbfbf8] text-sm font-semibold">
+                <span className="grid size-9 shrink-0 place-items-center rounded-md bg-surface-soft text-sm font-semibold">
                   {index + 1}
                 </span>
                 <div>
@@ -62,7 +62,7 @@ export function SessionReviewClient({
               </div>
               <div className="flex flex-wrap gap-2 text-sm font-semibold">
                 {state?.flagged ? <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-3 py-1 text-amber-700"><Flag className="size-3" /> Flagged</span> : null}
-                <span className={status === "Answered" ? "rounded-md bg-[#edf7f3] px-3 py-1 text-[#276a5b]" : "rounded-md bg-[#f8eeee] px-3 py-1 text-[#8d3d3d]"}>
+                <span className={status === "Answered" ? "rounded-md bg-brand-soft px-3 py-1 text-brand" : "rounded-md bg-danger-soft px-3 py-1 text-[#8d3d3d]"}>
                   {status}
                 </span>
               </div>
@@ -81,15 +81,15 @@ export function SessionReviewClient({
             <SummaryLine label="Flagged" value={stats.flagged} warning={stats.flagged > 0} />
           </div>
           {stats.unanswered > 0 ? (
-            <div className="mt-5 rounded-md bg-[#f8eeee] p-3 text-sm leading-6 text-[#8d3d3d]">
+            <div className="mt-5 rounded-md bg-danger-soft p-3 text-sm leading-6 text-[#8d3d3d]">
               {stats.unanswered} question still has no answer. You can submit, but review is recommended.
             </div>
           ) : (
-            <div className="mt-5 rounded-md bg-[#edf7f3] p-3 text-sm leading-6 text-[#276a5b]">
+            <div className="mt-5 rounded-md bg-brand-soft p-3 text-sm leading-6 text-brand">
               Every question has an answer. You can submit now.
             </div>
           )}
-          <Link href={`/test-session/${sessionId}/submit`} className="mt-5 block rounded-md bg-[#151713] px-4 py-3 text-center text-sm font-semibold text-white">
+          <Link href={`/test-session/${sessionId}/submit`} className="mt-5 block rounded-md bg-ink px-4 py-3 text-center text-sm font-semibold text-white">
             Submit test
           </Link>
         </div>
@@ -112,7 +112,7 @@ function SummaryLine({
   return (
     <div className="flex items-center justify-between border-b border-black/10 pb-2 last:border-b-0">
       <span className="flex items-center gap-2 text-black/60">
-        {positive ? <CheckCircle2 className="size-4 text-[#276a5b]" /> : null}
+        {positive ? <CheckCircle2 className="size-4 text-brand" /> : null}
         {warning ? <AlertTriangle className="size-4 text-amber-600" /> : null}
         {label}
       </span>

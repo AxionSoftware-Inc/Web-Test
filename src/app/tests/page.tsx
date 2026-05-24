@@ -32,7 +32,7 @@ export default async function Page() {
   return (
     <PremiumPage>
       <PremiumPanel>
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#276a5b]">Test katalogi</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">Test katalogi</p>
         <h1 className="mt-3 text-4xl font-semibold">Fanlar, yo&apos;nalishlar va packlar</h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-black/58">
           Eski sintetik ro&apos;yxatlar olib tashlandi. Bu yerda backenddagi published testlar va yaratilgan packlar ko&apos;rinadi.
@@ -48,14 +48,14 @@ export default async function Page() {
         <PremiumPanel>
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#276a5b]">Packlar</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">Packlar</p>
               <h2 className="mt-2 text-2xl font-semibold">Pack bo&apos;yicha ishlash</h2>
             </div>
           </div>
           <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {activePacks.map((pack) => (
-              <Link key={pack.id} href={`/exam-packs/${pack.slug}`} className="rounded-3xl border border-black/8 bg-white p-5 hover:bg-[#fbfbf6]">
-                <PackageCheck className="size-5 text-[#276a5b]" />
+              <Link key={pack.id} href={`/exam-packs/${pack.slug}`} className="rounded-3xl border border-black/8 bg-white p-5 hover:bg-surface-soft">
+                <PackageCheck className="size-5 text-brand" />
                 <h3 className="mt-3 text-xl font-semibold">{pack.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-black/55">{pack.description || pack.exam_type}</p>
                 <p className="mt-5 text-xs font-semibold uppercase tracking-[0.12em] text-black/38">{pack.item_count} test / {pack.visibility === "public" ? "ochiq" : "kod bilan"}</p>
@@ -71,10 +71,10 @@ export default async function Page() {
           <PremiumPanel key={`${module.subject}-${module.topic}`}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#276a5b]">{module.subject}</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">{module.subject}</p>
                 <h2 className="mt-2 text-2xl font-semibold">{module.topic}</h2>
               </div>
-              <span className="rounded-full bg-[#edf7f3] px-3 py-1 text-xs font-semibold text-[#276a5b]">{module.tests.length} test</span>
+              <span className="rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand">{module.tests.length} test</span>
             </div>
             <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {module.tests.map((test) => (
@@ -83,7 +83,7 @@ export default async function Page() {
                   <h3 className="mt-3 text-lg font-semibold">{test.title}</h3>
                   <p className="mt-2 text-sm text-black/52">{test.test_questions.length} savol / o&apos;tish bali {test.passing_score}%</p>
                   <div className="mt-5 flex flex-wrap gap-2">
-                    <Link href={`/tests/${test.slug}/start`} className="rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white">Boshlash</Link>
+                    <Link href={`/tests/${test.slug}/start`} className="rounded-2xl bg-ink px-4 py-3 text-sm font-semibold text-white">Boshlash</Link>
                     <Link href={`/tests/${test.slug}`} className="rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold">Batafsil</Link>
                   </div>
                 </article>
@@ -100,7 +100,7 @@ export default async function Page() {
 function Metric({ icon: Icon, label, value }: { icon: typeof BookOpenCheck; label: string; value: number }) {
   return (
     <div className="rounded-2xl border border-black/8 bg-white p-4">
-      <Icon className="size-5 text-[#276a5b]" />
+      <Icon className="size-5 text-brand" />
       <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-black/38">{label}</p>
       <p className="mt-1 text-2xl font-semibold">{value}</p>
     </div>

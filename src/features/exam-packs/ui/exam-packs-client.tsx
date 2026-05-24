@@ -756,7 +756,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
   return (
     <div className="grid gap-4">
       {error || notice ? (
-        <div className={cn("rounded-3xl border px-5 py-4 text-sm font-semibold", error ? "border-red-200 bg-red-50 text-red-700" : "border-[#bfe8d8] bg-[#edf7f3] text-[#276a5b]")}>
+        <div className={cn("rounded-3xl border px-5 py-4 text-sm font-semibold", error ? "border-red-200 bg-red-50 text-red-700" : "border-[#bfe8d8] bg-brand-soft text-brand")}>
           {error || notice}
         </div>
       ) : null}
@@ -779,7 +779,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
           <FieldShell label="Description">
             <textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={4} className={premiumInputClass} />
           </FieldShell>
-          <button onClick={createPack} disabled={saving} className="rounded-2xl bg-[#151713] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
+          <button onClick={createPack} disabled={saving} className="rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
             {createLabel}
           </button>
           <input ref={fileRef} type="file" accept=".json,application/json" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void loadJsonFile(file); }} />
@@ -801,7 +801,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
         </div>
 
         {importMode === "json" ? (
-        <section className="mt-4 rounded-2xl border border-black/8 bg-[#fbfbf6] p-3">
+        <section className="mt-4 rounded-2xl border border-black/8 bg-surface-soft p-3">
           <FieldShell label="Strict JSON yoki { items: [...] }">
             <textarea value={pasteValue} onChange={(event) => handleJsonPasteChange(event.target.value)} onBlur={previewJsonPackInfo} rows={10} className={premiumInputClass} placeholder="{\n  &quot;version&quot;: &quot;1.0&quot;,\n  &quot;pack&quot;: { &quot;title&quot;: &quot;Linear Algebra Foundations&quot;, &quot;subject&quot;: &quot;math&quot;, &quot;branch&quot;: &quot;linear-algebra&quot;, &quot;level&quot;: &quot;foundations&quot;, &quot;language&quot;: &quot;uz&quot; },\n  &quot;tests&quot;: [{\n    &quot;title&quot;: &quot;Vectors Basics&quot;,\n    &quot;topic&quot;: &quot;vectors&quot;,\n    &quot;difficulty&quot;: &quot;beginner&quot;,\n    &quot;time_limit_minutes&quot;: 15,\n    &quot;questions&quot;: [{ &quot;type&quot;: &quot;single_choice&quot;, &quot;body&quot;: &quot;Question text&quot;, &quot;options&quot;: [{ &quot;id&quot;: &quot;A&quot;, &quot;text&quot;: &quot;Option A&quot; }], &quot;answer&quot;: { &quot;correct&quot;: &quot;A&quot; }, &quot;skills&quot;: [&quot;general&quot;] }]\n  }]\n}" />
           </FieldShell>
@@ -816,7 +816,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
         ) : null}
 
         {importMode === "csv" ? (
-          <section className="mt-4 rounded-2xl border border-black/8 bg-[#fbfbf6] p-3">
+          <section className="mt-4 rounded-2xl border border-black/8 bg-surface-soft p-3">
             <FieldShell label="CSV: test_slug,title,order,is_required">
               <textarea value={csvValue} onChange={(event) => { setCsvValue(event.target.value); setDraftItems(parseCsv(event.target.value)); setMode("draft"); setError(""); setNotice(event.target.value.trim() ? "CSV tayyor. Saqlash uchun chapdagi Create pack bosing." : ""); }} rows={10} className={premiumInputClass} placeholder={templateCsv} />
             </FieldShell>
@@ -834,7 +834,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
         ) : null}
 
         {importMode === "md" ? (
-          <section className="mt-4 rounded-2xl border border-black/8 bg-[#fbfbf6] p-3">
+          <section className="mt-4 rounded-2xl border border-black/8 bg-surface-soft p-3">
             <FieldShell label="Markdown ichidagi ```json ... ``` yoki slug qatorlari">
               <textarea value={mdValue} onChange={(event) => { setMdValue(event.target.value); setError(""); setNotice(event.target.value.trim() ? "MD tayyor. Saqlash uchun chapdagi Create pack bosing." : ""); }} rows={12} className={premiumInputClass} placeholder={"```json\n{ \"version\": \"1.0\", \"pack\": { \"title\": \"Pack title\", \"subject\": \"math\", \"branch\": \"algebra\", \"level\": \"beginner\", \"language\": \"uz\" }, \"tests\": [] }\n```"} />
             </FieldShell>
@@ -842,7 +842,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
         ) : null}
 
         {importMode === "existing" && mode === "select" ? (
-          <section className="mt-4 rounded-2xl border border-black/8 bg-[#fbfbf6] p-3">
+          <section className="mt-4 rounded-2xl border border-black/8 bg-surface-soft p-3">
             <div className="flex items-center gap-3 rounded-2xl border border-black/8 bg-white px-4 py-3">
               <Search className="size-4 text-black/35" />
               <input value={testQuery} onChange={(event) => setTestQuery(event.target.value)} placeholder="Test title, slug, topic..." className="w-full bg-transparent text-sm outline-none" />
@@ -851,13 +851,13 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
               {filteredTests.map((test) => {
                 const active = selectedTestIds.includes(test.id);
                 return (
-                  <button key={test.id} type="button" onClick={() => toggleTest(test.id)} className={cn("rounded-2xl border bg-white p-4 text-left hover:bg-[#f4f2ea]", active ? "border-[#276a5b] ring-2 ring-[#8fd6bd]/40" : "border-black/8")}>
+                  <button key={test.id} type="button" onClick={() => toggleTest(test.id)} className={cn("rounded-2xl border bg-white p-4 text-left hover:bg-background", active ? "border-brand ring-2 ring-accent/40" : "border-black/8")}>
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-semibold">{test.title}</p>
                         <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-black/35">{test.slug}</p>
                       </div>
-                      {active ? <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-[#edf7f3] text-[#276a5b]"><Check className="size-4" /></span> : null}
+                      {active ? <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand"><Check className="size-4" /></span> : null}
                     </div>
                     <p className="mt-3 text-sm text-black/52">{test.difficulty} / {test.test_questions.length} questions / {test.estimated_minutes} min</p>
                   </button>
@@ -875,7 +875,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
             </div>
             <div className="mt-3 grid gap-2">
               {itemsToCreate.slice(0, 8).map((item, index) => (
-                <div key={`${item.test ?? item.test_slug}-${index}`} className="flex items-center justify-between gap-3 rounded-2xl bg-[#fbfbf6] px-4 py-3 text-sm">
+                <div key={`${item.test ?? item.test_slug}-${index}`} className="flex items-center justify-between gap-3 rounded-2xl bg-surface-soft px-4 py-3 text-sm">
                   <span className="font-semibold">{item.title || item.test_slug || item.test}</span>
                   <span className="text-black/42">#{item.order ?? index + 1}</span>
                 </div>
@@ -890,19 +890,19 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
             <h2 className="text-2xl font-semibold">My packs</h2>
             <p className="mt-1 text-sm text-black/50">O&apos;zingiz yaratgan packlar, ishlatilishi va ichiga kirib edit qilish.</p>
           </div>
-          <span className="rounded-full bg-[#edf7f3] px-3 py-1 text-xs font-semibold text-[#276a5b]">{packs.length} packs</span>
+          <span className="rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand">{packs.length} packs</span>
         </div>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           {packs.map((pack) => {
             const usage = usageBySlug[pack.slug];
             return (
-              <Link key={pack.id} href={`/exam-packs/${pack.slug}`} className="rounded-3xl border border-black/8 bg-white p-5 hover:bg-[#fbfbf8]">
+              <Link key={pack.id} href={`/exam-packs/${pack.slug}`} className="rounded-3xl border border-black/8 bg-white p-5 hover:bg-surface-soft">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-lg font-semibold">{pack.title}</p>
                     <p className="mt-1 text-sm text-black/52">{pack.exam_type}</p>
                   </div>
-                  <span className="rounded-xl bg-[#edf7f3] px-3 py-2 text-xs font-semibold text-[#276a5b]">{pack.price_label || "Free"}</span>
+                  <span className="rounded-xl bg-brand-soft px-3 py-2 text-xs font-semibold text-brand">{pack.price_label || "Free"}</span>
                 </div>
                 <p className="mt-4 text-sm leading-6 text-black/58">{pack.description}</p>
                 <div className="mt-5 grid grid-cols-3 gap-2 text-center">
@@ -926,7 +926,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
 
 function MiniStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl bg-[#fbfbf6] px-3 py-3">
+    <div className="rounded-2xl bg-surface-soft px-3 py-3">
       <p className="text-base font-semibold">{value}</p>
       <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-black/35">{label}</p>
     </div>
@@ -940,7 +940,7 @@ function ImportTab({ active, icon: Icon, label, onClick }: { active: boolean; ic
       onClick={onClick}
       className={cn(
         "inline-flex items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-sm font-semibold",
-        active ? "border-[#276a5b] bg-[#151713] text-white" : "border-black/10 bg-white text-black/60 hover:bg-[#fbfbf6]",
+        active ? "border-brand bg-ink text-white" : "border-black/10 bg-white text-black/60 hover:bg-surface-soft",
       )}
     >
       <Icon className="size-4" />

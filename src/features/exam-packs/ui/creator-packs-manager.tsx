@@ -40,7 +40,7 @@ export function CreatorPacksManager({ initialPacks, usageBySlug }: { initialPack
 
   return (
     <div className="grid gap-4">
-      {notice ? <p className="rounded-2xl border border-[#bfe8d8] bg-[#edf7f3] px-4 py-3 text-sm font-semibold text-[#276a5b]">{notice}</p> : null}
+      {notice ? <p className="rounded-2xl border border-[#bfe8d8] bg-brand-soft px-4 py-3 text-sm font-semibold text-brand">{notice}</p> : null}
       {error ? <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</p> : null}
       {packs.length ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -53,7 +53,7 @@ export function CreatorPacksManager({ initialPacks, usageBySlug }: { initialPack
                     <h3 className="text-lg font-semibold">{pack.title}</h3>
                     <p className="mt-1 text-sm text-black/50">{pack.exam_type || "Pack"}</p>
                   </div>
-                  <span className="rounded-full bg-[#edf7f3] px-3 py-1 text-xs font-semibold text-[#276a5b]">{pack.is_active ? "published" : "inactive"}</span>
+                  <span className="rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand">{pack.is_active ? "published" : "inactive"}</span>
                 </div>
                 {pack.description ? <p className="mt-3 line-clamp-3 text-sm leading-6 text-black/55">{pack.description}</p> : null}
                 <div className="mt-5 grid grid-cols-3 gap-2 text-center">
@@ -62,11 +62,11 @@ export function CreatorPacksManager({ initialPacks, usageBySlug }: { initialPack
                   <MiniStat label="Avg" value={`${usage?.average_score ?? 0}%`} />
                 </div>
                 <div className="mt-5 grid grid-cols-3 gap-2">
-                  <Link href={`/exam-packs/${pack.slug}`} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-3 py-3 text-sm font-semibold hover:bg-[#fbfbf6]">
+                  <Link href={`/exam-packs/${pack.slug}`} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-3 py-3 text-sm font-semibold hover:bg-surface-soft">
                     <Pencil className="size-4" />
                     Edit
                   </Link>
-                  <Link href={`/creator/packs/${pack.slug}`} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-3 py-3 text-sm font-semibold hover:bg-[#fbfbf6]">
+                  <Link href={`/creator/packs/${pack.slug}`} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-3 py-3 text-sm font-semibold hover:bg-surface-soft">
                     <ExternalLink className="size-4" />
                     Open
                   </Link>
@@ -93,7 +93,7 @@ export function CreatorPacksManager({ initialPacks, usageBySlug }: { initialPack
 
 function MiniStat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-2xl bg-[#fbfbf6] px-3 py-3">
+    <div className="rounded-2xl bg-surface-soft px-3 py-3">
       <p className="text-base font-semibold">{value}</p>
       <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-black/35">{label}</p>
     </div>

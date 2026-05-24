@@ -16,7 +16,7 @@ export default async function Page({ params }: PageProps) {
   const tests = await questApi.topicTests("algebra");
 
   return (
-    <main className="min-h-screen bg-[#f7f7ef] px-5 py-8 sm:px-8 lg:px-10">
+    <main className="min-h-screen bg-background px-5 py-8 sm:px-8 lg:px-10">
       <AssignTestClient classSlug={classSlug} tests={tests} />
     </main>
   );

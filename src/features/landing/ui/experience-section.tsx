@@ -16,7 +16,7 @@ export function ExperienceSection() {
             <article key={panel.title} className="rounded-lg border border-black/10 bg-white p-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <h3 className="text-xl font-semibold">{panel.title}</h3>
-                <span className="w-fit rounded-md bg-[#151713] px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white">
+                <span className="w-fit rounded-md bg-ink px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white">
                   Module
                 </span>
               </div>
