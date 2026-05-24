@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, FileSpreadsheet, Layers3, Plus, Search, Upload } from "lucide-react";
+import { Check, FileJson, FileSpreadsheet, FileText, Layers3, Plus, Search, Upload } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 
@@ -71,6 +71,7 @@ function parseLines(text: string): DraftItem[] {
 
 type PackUsage = { attempts: number; students_submitted: number; average_score: number };
 type ImportLayer = "client_parse" | "client_schema" | "api_transport" | "backend_schema" | "backend_db";
+type ImportMode = "json" | "csv" | "md" | "existing";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
@@ -222,9 +223,12 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
   const [accessCode, setAccessCode] = useState("2026");
   const [priceLabel, setPriceLabel] = useState("99 000 so'm");
   const [mode, setMode] = useState<"select" | "draft">("draft");
+  const [importMode, setImportMode] = useState<ImportMode>("json");
   const [selectedTestIds, setSelectedTestIds] = useState<number[]>([]);
   const [draftItems, setDraftItems] = useState<DraftItem[]>([]);
   const [pasteValue, setPasteValue] = useState("");
+  const [csvValue, setCsvValue] = useState("");
+  const [mdValue, setMdValue] = useState("");
   const [jsonSource, setJsonSource] = useState<StrictPackImportSource | null>(null);
   const [loadedFileName, setLoadedFileName] = useState("");
   const [testQuery, setTestQuery] = useState("");
@@ -253,6 +257,33 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
 
   function setImportError(layer: ImportLayer, code: string, message: string) {
     setWarning(`[${layer}/${code}] ${message}`);
+  }
+
+  function duplicateTitle(candidate: string) {
+    const normalized = candidate.trim().toLowerCase();
+    return Boolean(normalized && packs.some((pack) => pack.title.trim().toLowerCase() === normalized));
+  }
+
+  function requireUniqueTitle(candidate = title) {
+    if (!candidate.trim()) {
+      setImportError("client_schema", "pack_title_missing", "Pack title bo'sh bo'lmasligi kerak.");
+      return false;
+    }
+    if (duplicateTitle(candidate)) {
+      setImportError("client_schema", "pack_title_duplicate", `"${candidate}" nomli pack allaqachon bor. Nomini o'zgartiring.`);
+      return false;
+    }
+    return true;
+  }
+
+  function applyPackInfoFromSource(source: StrictPackImportSource) {
+    const nextTitle = source.pack.title?.trim();
+    if (nextTitle) setTitle(nextTitle);
+    const subject = source.pack.subject?.trim();
+    const branch = source.pack.branch?.trim();
+    const level = source.pack.level?.trim();
+    setExamType([subject, branch, level].filter(Boolean).join(" / ") || examType);
+    setDescription([branch, level, source.pack.language].filter(Boolean).join(" / "));
   }
 
   function normalizeImportSource(raw: unknown): StrictPackImportSource | null {
@@ -383,6 +414,8 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
       setImportError("client_schema", "tests_empty", "JSON ichida tests bo'sh. Kamida bitta test bo'lmasa pack yaratilmaydi.");
       return;
     }
+    applyPackInfoFromSource(source);
+    if (!requireUniqueTitle(source.pack.title)) return;
     setSaving(true);
     setError("");
     setNotice("");
@@ -418,6 +451,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
       setImportError("client_schema", "items_empty", "JSON yoki paste ichida testlar topilmadi. `tests` orqali savollar bilan import qiling yoki `items` ichida `test_slug` bering.");
       return;
     }
+    if (!requireUniqueTitle()) return;
     setSaving(true);
     setError("");
     setNotice("");
@@ -468,6 +502,29 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
   }
 
   async function createPack() {
+    if (importMode === "csv" && csvValue.trim()) {
+      const items = parseCsv(csvValue);
+      setDraftItems(items);
+      setMode("draft");
+      await createPackFromDraftItems(items, csvValue);
+      return;
+    }
+    if (importMode === "md" && mdValue.trim()) {
+      try {
+        const parsed = parsePastedValue(mdValue);
+        const source = normalizeImportSource(parsed);
+        if (source) {
+          await importStrictSource(source);
+          return;
+        }
+        const items = normalizeDraftItems(parsed);
+        await createPackFromDraftItems(items, parsed);
+        return;
+      } catch (err) {
+        setImportError("client_parse", "md_parse_failed", err instanceof Error ? `MD ichidan import parse bo'lmadi: ${err.message}` : "MD parse xatosi.");
+        return;
+      }
+    }
     if (jsonSource) {
       await importStrictSource(jsonSource);
       return;
@@ -520,7 +577,10 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
   async function importCsv(file: File) {
     setError("");
     try {
-      const items = parseCsv(await file.text());
+      const text = await file.text();
+      const items = parseCsv(text);
+      setCsvValue(text);
+      setImportMode("csv");
       setDraftItems(items);
       setJsonSource(null);
       setSelectedTestIds([]);
@@ -535,6 +595,27 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
     }
   }
 
+  function handleJsonPasteChange(value: string) {
+    setPasteValue(value);
+    setJsonSource(null);
+    setDraftItems([]);
+    setSelectedTestIds([]);
+    setMode("draft");
+    setLoadedFileName("");
+    setNotice(value.trim() ? "Paste qilingan JSON hali DBga saqlanmagan. Saqlash uchun chapdagi Create pack bosing." : "");
+    setError("");
+  }
+
+  function previewJsonPackInfo() {
+    if (!pasteValue.trim()) return;
+    try {
+      const source = normalizeImportSource(parsePastedValue(pasteValue));
+      if (source) applyPackInfoFromSource(source);
+    } catch {
+      // Full validation runs on save; preview should not interrupt typing.
+    }
+  }
+
   function toggleTest(testId: number) {
     setJsonSource(null);
     setPasteValue("");
@@ -542,10 +623,27 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
     setSelectedTestIds((current) => current.includes(testId) ? current.filter((id) => id !== testId) : [...current, testId]);
   }
 
+  function resetImportState(nextMode: ImportMode) {
+    setImportMode(nextMode);
+    setError("");
+    setNotice("");
+    if (nextMode !== "json") {
+      setPasteValue("");
+      setJsonSource(null);
+    }
+    if (nextMode !== "csv") setCsvValue("");
+    if (nextMode !== "md") setMdValue("");
+    if (nextMode !== "existing") setSelectedTestIds([]);
+  }
+
   const createLabel = saving
     ? "Creating..."
     : jsonSource
       ? `Create imported pack (${jsonSource.tests.length} tests)`
+      : importMode === "csv" && csvValue.trim()
+        ? "Create pack from CSV"
+        : importMode === "md" && mdValue.trim()
+          ? "Create pack from MD"
       : itemsToCreate.length
         ? `Create pack with ${itemsToCreate.length} tests`
         : pasteValue.trim()
@@ -559,7 +657,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
           {error || notice}
         </div>
       ) : null}
-      <div className="grid gap-6 lg:grid-cols-[390px_1fr]">
+      <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
       <PremiumPanel>
         <Eyebrow>Pack info</Eyebrow>
         <h1 className="mt-2 text-3xl font-semibold">Create pack</h1>
@@ -586,16 +684,23 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
         </div>
       </PremiumPanel>
 
-      <PremiumPanel>
+      <section className="rounded-[24px] border border-black/8 bg-white/82 p-3 shadow-[0_24px_70px_rgba(0,0,0,0.08)] sm:p-4">
         <div>
           <Eyebrow>Import</Eyebrow>
-          <h2 className="mt-2 text-2xl font-semibold">JSON pack</h2>
-          <p className="mt-2 text-sm leading-6 text-black/55">JSONni paste qiling yoki fayl tanlang. Paste qilinganda chapdagi Create pack bosiladi, fayl upload qilinganda darhol DBga import qilinadi.</p>
+          <h2 className="mt-2 text-2xl font-semibold">Pack import</h2>
         </div>
 
-        <section className="mt-5 rounded-3xl border border-black/8 bg-[#fbfbf6] p-4">
+        <div className="mt-4 grid grid-cols-4 gap-2">
+          <ImportTab active={importMode === "json"} icon={FileJson} label="JSON" onClick={() => resetImportState("json")} />
+          <ImportTab active={importMode === "csv"} icon={FileSpreadsheet} label="CSV" onClick={() => resetImportState("csv")} />
+          <ImportTab active={importMode === "md"} icon={FileText} label="MD" onClick={() => resetImportState("md")} />
+          <ImportTab active={importMode === "existing"} icon={Layers3} label="Tests" onClick={() => { resetImportState("existing"); setMode("select"); }} />
+        </div>
+
+        {importMode === "json" ? (
+        <section className="mt-4 rounded-2xl border border-black/8 bg-[#fbfbf6] p-3">
           <FieldShell label="Strict JSON yoki { items: [...] }">
-            <textarea value={pasteValue} onChange={(event) => { setPasteValue(event.target.value); setJsonSource(null); setDraftItems([]); setSelectedTestIds([]); setMode("draft"); setLoadedFileName(""); setNotice(event.target.value.trim() ? "Paste qilingan JSON hali DBga saqlanmagan. Saqlash uchun chapdagi Create pack bosing." : ""); setError(""); }} rows={10} className={premiumInputClass} placeholder="{\n  &quot;version&quot;: &quot;1.0&quot;,\n  &quot;pack&quot;: { &quot;title&quot;: &quot;Linear Algebra Foundations&quot;, &quot;subject&quot;: &quot;math&quot;, &quot;branch&quot;: &quot;linear-algebra&quot;, &quot;level&quot;: &quot;foundations&quot;, &quot;language&quot;: &quot;uz&quot; },\n  &quot;tests&quot;: [{\n    &quot;title&quot;: &quot;Vectors Basics&quot;,\n    &quot;topic&quot;: &quot;vectors&quot;,\n    &quot;difficulty&quot;: &quot;beginner&quot;,\n    &quot;time_limit_minutes&quot;: 15,\n    &quot;questions&quot;: [{ &quot;type&quot;: &quot;single_choice&quot;, &quot;body&quot;: &quot;Question text&quot;, &quot;options&quot;: [{ &quot;id&quot;: &quot;A&quot;, &quot;text&quot;: &quot;Option A&quot; }], &quot;answer&quot;: { &quot;correct&quot;: &quot;A&quot; }, &quot;skills&quot;: [&quot;general&quot;] }]\n  }]\n}" />
+            <textarea value={pasteValue} onChange={(event) => handleJsonPasteChange(event.target.value)} onBlur={previewJsonPackInfo} rows={10} className={premiumInputClass} placeholder="{\n  &quot;version&quot;: &quot;1.0&quot;,\n  &quot;pack&quot;: { &quot;title&quot;: &quot;Linear Algebra Foundations&quot;, &quot;subject&quot;: &quot;math&quot;, &quot;branch&quot;: &quot;linear-algebra&quot;, &quot;level&quot;: &quot;foundations&quot;, &quot;language&quot;: &quot;uz&quot; },\n  &quot;tests&quot;: [{\n    &quot;title&quot;: &quot;Vectors Basics&quot;,\n    &quot;topic&quot;: &quot;vectors&quot;,\n    &quot;difficulty&quot;: &quot;beginner&quot;,\n    &quot;time_limit_minutes&quot;: 15,\n    &quot;questions&quot;: [{ &quot;type&quot;: &quot;single_choice&quot;, &quot;body&quot;: &quot;Question text&quot;, &quot;options&quot;: [{ &quot;id&quot;: &quot;A&quot;, &quot;text&quot;: &quot;Option A&quot; }], &quot;answer&quot;: { &quot;correct&quot;: &quot;A&quot; }, &quot;skills&quot;: [&quot;general&quot;] }]\n  }]\n}" />
           </FieldShell>
           <div className="mt-3 flex flex-wrap gap-2">
             <button onClick={() => fileRef.current?.click()} disabled={saving} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-white/70 disabled:opacity-50">
@@ -605,24 +710,36 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
             {loadedFileName ? <span className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black/55">{loadedFileName}</span> : null}
           </div>
         </section>
+        ) : null}
 
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
-          <button onClick={() => csvRef.current?.click()} disabled={saving} className="flex min-h-28 items-start gap-3 rounded-2xl border border-black/8 bg-white p-4 text-left hover:bg-[#fbfbf8] disabled:opacity-50">
-            <FileSpreadsheet className="mt-1 size-5 text-[#276a5b]" />
-            <span><span className="block font-semibold">CSV items</span><span className="mt-1 line-clamp-2 block text-sm text-black/52">{templateCsv.split("\n")[0]}</span></span>
-          </button>
-          <button onClick={() => setMode("select")} disabled={saving} className="flex min-h-28 items-start gap-3 rounded-2xl border border-black/8 bg-white p-4 text-left hover:bg-[#fbfbf8] disabled:opacity-50">
-            <Layers3 className="mt-1 size-5 text-[#276a5b]" />
-            <span><span className="block font-semibold">Existing tests</span><span className="mt-1 line-clamp-2 block text-sm text-black/52">Mavjud testlardan pack yig&apos;ish.</span></span>
-          </button>
-          <Link href="/crud" className="flex min-h-28 items-start gap-3 rounded-2xl border border-black/8 bg-white p-4 text-left hover:bg-[#fbfbf8]">
-            <Plus className="mt-1 size-5 text-[#276a5b]" />
-            <span><span className="block font-semibold">Manual test</span><span className="mt-1 line-clamp-2 block text-sm text-black/52">Bitta testni qo&apos;lda kiritish.</span></span>
-          </Link>
-        </div>
+        {importMode === "csv" ? (
+          <section className="mt-4 rounded-2xl border border-black/8 bg-[#fbfbf6] p-3">
+            <FieldShell label="CSV: test_slug,title,order,is_required">
+              <textarea value={csvValue} onChange={(event) => { setCsvValue(event.target.value); setDraftItems(parseCsv(event.target.value)); setMode("draft"); setError(""); setNotice(event.target.value.trim() ? "CSV tayyor. Saqlash uchun chapdagi Create pack bosing." : ""); }} rows={10} className={premiumInputClass} placeholder={templateCsv} />
+            </FieldShell>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button onClick={() => csvRef.current?.click()} disabled={saving} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-white/70 disabled:opacity-50">
+                <Upload className="size-4" />
+                Upload CSV
+              </button>
+              <Link href="/crud" className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-white/70">
+                <Plus className="size-4" />
+                Manual test
+              </Link>
+            </div>
+          </section>
+        ) : null}
 
-        {mode === "select" ? (
-          <section className="mt-5 rounded-3xl border border-black/8 bg-[#fbfbf6] p-4">
+        {importMode === "md" ? (
+          <section className="mt-4 rounded-2xl border border-black/8 bg-[#fbfbf6] p-3">
+            <FieldShell label="Markdown ichidagi ```json ... ``` yoki slug qatorlari">
+              <textarea value={mdValue} onChange={(event) => { setMdValue(event.target.value); setError(""); setNotice(event.target.value.trim() ? "MD tayyor. Saqlash uchun chapdagi Create pack bosing." : ""); }} rows={12} className={premiumInputClass} placeholder={"```json\n{ \"version\": \"1.0\", \"pack\": { \"title\": \"Pack title\", \"subject\": \"math\", \"branch\": \"algebra\", \"level\": \"beginner\", \"language\": \"uz\" }, \"tests\": [] }\n```"} />
+            </FieldShell>
+          </section>
+        ) : null}
+
+        {importMode === "existing" && mode === "select" ? (
+          <section className="mt-4 rounded-2xl border border-black/8 bg-[#fbfbf6] p-3">
             <div className="flex items-center gap-3 rounded-2xl border border-black/8 bg-white px-4 py-3">
               <Search className="size-4 text-black/35" />
               <input value={testQuery} onChange={(event) => setTestQuery(event.target.value)} placeholder="Test title, slug, topic..." className="w-full bg-transparent text-sm outline-none" />
@@ -698,7 +815,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
             );
           })}
         </div>
-      </PremiumPanel>
+      </section>
       </div>
     </div>
   );
@@ -710,6 +827,22 @@ function MiniStat({ label, value }: { label: string; value: number }) {
       <p className="text-base font-semibold">{value}</p>
       <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-black/35">{label}</p>
     </div>
+  );
+}
+
+function ImportTab({ active, icon: Icon, label, onClick }: { active: boolean; icon: typeof FileJson; label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-sm font-semibold",
+        active ? "border-[#276a5b] bg-[#151713] text-white" : "border-black/10 bg-white text-black/60 hover:bg-[#fbfbf6]",
+      )}
+    >
+      <Icon className="size-4" />
+      {label}
+    </button>
   );
 }
 
