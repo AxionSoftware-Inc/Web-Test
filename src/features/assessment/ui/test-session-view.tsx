@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowRight, RotateCcw } from "lucide-react";
 
 import type { GeneratedQuestion } from "@/features/test-generator/model/test-generator-types";
 import { cn } from "@/shared/lib/cn";
+import { LatexText } from "@/shared/ui/latex-text";
 
 export function TestSessionView({
   answer,
@@ -48,7 +49,7 @@ export function TestSessionView({
           </button>
         </div>
 
-        <p className="mt-6 whitespace-pre-wrap text-lg leading-8">{question.prompt}</p>
+        <p className="mt-6 whitespace-pre-wrap text-lg leading-8"><LatexText text={question.prompt} /></p>
 
         {question.type === "multiple-choice" ? (
           <div className="mt-6 grid gap-3">
@@ -62,7 +63,7 @@ export function TestSessionView({
                   answer === option ? "border-[#276a5b] bg-[#edf7f3]" : "border-black/10 bg-[#fbfbf8]",
                 )}
               >
-                {String.fromCharCode(65 + index)}. {option}
+                {String.fromCharCode(65 + index)}. <LatexText text={option} />
               </button>
             ))}
           </div>

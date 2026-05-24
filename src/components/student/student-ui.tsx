@@ -54,8 +54,8 @@ export function CompactCard({ title, meta, href, action, status, stats = [] }: {
     <Link href={href} className="flex min-h-[150px] flex-col rounded-xl border border-black/8 bg-white p-4 hover:bg-[#fbfbf6]">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="line-clamp-2 font-semibold leading-5">{title}</h3>
-          {meta ? <p className="mt-1 line-clamp-1 text-sm text-black/50">{meta}</p> : null}
+          <h3 className="line-clamp-2 font-semibold leading-5"><LatexText text={title} /></h3>
+          {meta ? <p className="mt-1 line-clamp-1 text-sm text-black/50"><LatexText text={meta} /></p> : null}
         </div>
         {status ? <Badge>{status.replace("_", " ")}</Badge> : null}
       </div>

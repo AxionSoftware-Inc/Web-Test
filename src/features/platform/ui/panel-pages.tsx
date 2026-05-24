@@ -4,6 +4,7 @@ import { BarChart3, BookOpenCheck, Building2, FileWarning, GraduationCap, Packag
 
 import type { ApiExamPack, ApiSchool, ApiTeacherClass, ApiTest } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
+import { LatexText } from "@/shared/ui/latex-text";
 import { PremiumPage, PremiumPanel } from "@/shared/ui/premium-shell";
 
 type Stat = { label: string; value: string | number };
@@ -616,17 +617,17 @@ function CardGrid({ cards }: { cards: Card[] }) {
         <Link key={`${card.href}-${card.title}`} href={card.href} className="rounded-3xl border border-black/8 bg-white p-5 shadow-[0_14px_42px_rgba(21,23,19,0.04)] hover:bg-[#fbfbf6]">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h3 className="text-lg font-semibold">{card.title}</h3>
-              {card.meta ? <p className="mt-1 text-sm text-black/50">{card.meta}</p> : null}
+              <h3 className="text-lg font-semibold"><LatexText text={card.title} /></h3>
+              {card.meta ? <p className="mt-1 text-sm text-black/50"><LatexText text={card.meta} /></p> : null}
             </div>
             {card.status ? <span className="rounded-full bg-[#edf7f3] px-3 py-1 text-xs font-semibold text-[#276a5b]">{card.status}</span> : null}
           </div>
-          {card.copy ? <p className="mt-3 line-clamp-3 text-sm leading-6 text-black/55">{card.copy}</p> : null}
+           {card.copy ? <p className="mt-3 line-clamp-3 text-sm leading-6 text-black/55"><LatexText text={card.copy} /></p> : null}
           {card.stats?.length ? (
             <div className="mt-5 grid grid-cols-2 gap-2">
               {card.stats.slice(0, 4).map((stat) => (
                 <div key={stat.label} className="rounded-2xl bg-[#fbfbf6] px-3 py-3">
-                  <p className="truncate text-sm font-semibold">{stat.value}</p>
+                  <p className="truncate text-sm font-semibold"><LatexText text={String(stat.value)} /></p>
                   <p className="mt-1 truncate text-[11px] font-semibold uppercase tracking-[0.12em] text-black/35">{stat.label}</p>
                 </div>
               ))}
