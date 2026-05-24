@@ -4,7 +4,7 @@ import { Check, Clipboard, Download, FileJson, FileSpreadsheet, Layers3, Plus, S
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 
-import type { ApiExamPack, ApiTest } from "@/shared/api/questlab-api";
+import type { ApiExamPack, ApiTest, StrictPackImportSource } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { cn } from "@/shared/lib/cn";
 import { getPackManageCode, savePackManageCode } from "@/shared/model/local-identity";
@@ -65,7 +65,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
   const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [accessCode, setAccessCode] = useState("2026");
   const [priceLabel, setPriceLabel] = useState("99 000 so'm");
-  const [mode, setMode] = useState<"manual" | "select" | "csv" | "paste" | "json">("select");
+  const [mode, setMode] = useState<"manual" | "select" | "csv" | "paste" | "json">("json");
   const [selectedTestIds, setSelectedTestIds] = useState<number[]>([]);
   const [draftItems, setDraftItems] = useState<DraftItem[]>([]);
   const [pasteValue, setPasteValue] = useState("");
@@ -121,10 +121,23 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
     setError("");
     try {
       const parsed = JSON.parse(await file.text()) as {
-        pack?: Partial<ApiExamPack>;
+        version?: string;
+        pack?: Partial<ApiExamPack> | StrictPackImportSource["pack"];
+        tests?: StrictPackImportSource["tests"];
         items?: Array<{ test_slug?: string; title?: string; order?: number; is_required?: boolean }>;
       };
-      const importedPack = parsed.pack ?? {};
+      if (parsed.version === "1.0" && parsed.pack && Array.isArray(parsed.tests)) {
+        const result = await questApi.importTestPack({
+          source: parsed as StrictPackImportSource,
+          creator_name: "Creator",
+          pack_manage_code: getPackManageCode(),
+        });
+        savePackManageCode(result.pack.slug, result.pack.manage_code);
+        setPacks((items) => [result.pack, ...items.filter((item) => item.slug !== result.pack.slug)]);
+        setError(result.skipped.length ? `${result.skipped.length} item import qilinmadi.` : "");
+        return;
+      }
+      const importedPack = (parsed.pack ?? {}) as Partial<ApiExamPack>;
       const manageCode = getPackManageCode();
       const pack = await questApi.createExamPack({
         title: importedPack.title || title,
@@ -164,19 +177,34 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
     }
   }
 
-  function applyPaste() {
+  async function applyPaste() {
     const value = pasteValue.trim();
     if (!value) return;
     try {
       const parsed = value.startsWith("{") || value.startsWith("[")
-        ? JSON.parse(value) as { items?: DraftItem[] } | DraftItem[]
+        ? JSON.parse(value) as ({ items?: DraftItem[] } | DraftItem[] | StrictPackImportSource)
         : parseLines(value);
-      const items = Array.isArray(parsed) ? parsed : parsed.items ?? [];
+      if (!Array.isArray(parsed) && "version" in parsed && parsed.version === "1.0" && parsed.pack && Array.isArray(parsed.tests)) {
+        setSaving(true);
+        const result = await questApi.importTestPack({
+          source: parsed,
+          creator_name: "Creator",
+          pack_manage_code: getPackManageCode(),
+        });
+        savePackManageCode(result.pack.slug, result.pack.manage_code);
+        setPacks((items) => [result.pack, ...items.filter((item) => item.slug !== result.pack.slug)]);
+        setPasteValue("");
+        setError(result.skipped.length ? `${result.skipped.length} item import qilinmadi.` : "");
+        return;
+      }
+      const items = Array.isArray(parsed) ? parsed : "items" in parsed ? parsed.items ?? [] : [];
       setDraftItems(items);
       setMode(value.startsWith("{") || value.startsWith("[") ? "json" : "paste");
       setError(items.length ? "" : "Paste ichida item topilmadi.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Paste parse failed.");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -187,22 +215,9 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
   return (
     <div className="grid gap-6 lg:grid-cols-[390px_1fr]">
       <PremiumPanel>
-        <Eyebrow>Exam pack</Eyebrow>
-        <h1 className="mt-2 text-3xl font-semibold">Create pack</h1>
-        <div className="mt-5 grid gap-3">
-          <button onClick={() => fileRef.current?.click()} disabled={saving} className="flex items-start gap-3 rounded-3xl border border-black/8 bg-white p-4 text-left hover:bg-[#fbfbf8] disabled:opacity-50">
-            <Upload className="mt-1 size-5 text-[#276a5b]" />
-            <span><span className="block font-semibold">Import JSON file</span><span className="mt-1 block text-sm text-black/52">Pack metadata va items JSONdan olinadi.</span></span>
-          </button>
-          <button onClick={() => csvRef.current?.click()} disabled={saving} className="flex items-start gap-3 rounded-3xl border border-black/8 bg-white p-4 text-left hover:bg-[#fbfbf8] disabled:opacity-50">
-            <FileSpreadsheet className="mt-1 size-5 text-[#276a5b]" />
-            <span><span className="block font-semibold">Import CSV items</span><span className="mt-1 block text-sm text-black/52">test_slug,title,order,is_required formatida.</span></span>
-          </button>
-          <Link href="/crud" className="flex items-start gap-3 rounded-3xl border border-black/8 bg-white p-4 text-left hover:bg-[#fbfbf8]">
-            <Plus className="mt-1 size-5 text-[#276a5b]" />
-            <span><span className="block font-semibold">Manual add test</span><span className="mt-1 block text-sm text-black/52">Bitta testni qo‘lda savollar bilan kiritish.</span></span>
-          </Link>
-        </div>
+        <Eyebrow>Pack info</Eyebrow>
+        <h1 className="mt-2 text-3xl font-semibold">Metadata</h1>
+        <p className="mt-3 text-sm leading-6 text-black/55">Bu panelda faqat nom, narx, ko&apos;rinish va tavsif turadi. Import va test qo&apos;shish o&apos;rtadagi builderda.</p>
         <div className="mt-6 grid gap-4">
           <Input label="Pack title" value={title} onChange={setTitle} />
           <Input label="Exam type" value={examType} onChange={setExamType} />
@@ -238,12 +253,27 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
           </button>
         </div>
 
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          <button onClick={() => fileRef.current?.click()} disabled={saving} className="flex min-h-28 items-start gap-3 rounded-2xl border border-black/8 bg-white p-4 text-left hover:bg-[#fbfbf8] disabled:opacity-50">
+            <Upload className="mt-1 size-5 text-[#276a5b]" />
+            <span><span className="block font-semibold">Import JSON</span><span className="mt-1 line-clamp-2 block text-sm text-black/52">Qat&apos;iy pack strukturasidagi JSON faylni saqlaydi.</span></span>
+          </button>
+          <button onClick={() => csvRef.current?.click()} disabled={saving} className="flex min-h-28 items-start gap-3 rounded-2xl border border-black/8 bg-white p-4 text-left hover:bg-[#fbfbf8] disabled:opacity-50">
+            <FileSpreadsheet className="mt-1 size-5 text-[#276a5b]" />
+            <span><span className="block font-semibold">Import CSV</span><span className="mt-1 line-clamp-2 block text-sm text-black/52">test_slug,title,order,is_required formatidagi ro&apos;yxat.</span></span>
+          </button>
+          <Link href="/crud" className="flex min-h-28 items-start gap-3 rounded-2xl border border-black/8 bg-white p-4 text-left hover:bg-[#fbfbf8]">
+            <Plus className="mt-1 size-5 text-[#276a5b]" />
+            <span><span className="block font-semibold">Manual test</span><span className="mt-1 line-clamp-2 block text-sm text-black/52">Bitta testni qo&apos;lda savollari bilan kiritish.</span></span>
+          </Link>
+        </div>
+
         <div className="mt-5 grid gap-2 sm:grid-cols-5">
-          <ModeButton active={mode === "select"} icon={Layers3} label="Select" onClick={() => setMode("select")} />
-          <ModeButton active={mode === "manual"} icon={Plus} label="Empty" onClick={() => setMode("manual")} />
+          <ModeButton active={mode === "json"} icon={FileJson} label="JSON" onClick={() => setMode("json")} />
           <ModeButton active={mode === "csv"} icon={FileSpreadsheet} label="CSV" onClick={() => setMode("csv")} />
           <ModeButton active={mode === "paste"} icon={Clipboard} label="Paste" onClick={() => setMode("paste")} />
-          <ModeButton active={mode === "json"} icon={FileJson} label="JSON" onClick={() => setMode("json")} />
+          <ModeButton active={mode === "select"} icon={Layers3} label="Existing" onClick={() => setMode("select")} />
+          <ModeButton active={mode === "manual"} icon={Plus} label="Empty" onClick={() => setMode("manual")} />
         </div>
 
         {mode === "select" ? (
@@ -274,11 +304,11 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
 
         {mode === "csv" || mode === "paste" || mode === "json" ? (
           <section className="mt-5 rounded-3xl border border-black/8 bg-[#fbfbf6] p-4">
-            <FieldShell label={mode === "json" ? "JSON items yoki { items: [...] }" : "Paste slugs, CSV rows yoki spreadsheetdan copy"}>
+            <FieldShell label={mode === "json" ? "JSON items yoki strict pack JSON" : "Paste slugs, CSV rows yoki spreadsheetdan copy"}>
               <textarea value={pasteValue} onChange={(event) => setPasteValue(event.target.value)} rows={8} className={premiumInputClass} placeholder={mode === "json" ? "{\"items\":[{\"test_slug\":\"algebra-basics\",\"title\":\"Algebra warmup\"}]}" : "algebra-basics,Algebra warmup\nquadratics-basics,Quadratics drill"} />
             </FieldShell>
             <div className="mt-3 flex flex-wrap gap-2">
-              <button onClick={applyPaste} className="rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white">Use pasted items</button>
+              <button onClick={() => void applyPaste()} className="rounded-2xl bg-[#151713] px-4 py-3 text-sm font-semibold text-white">Use pasted items</button>
               <button onClick={() => csvRef.current?.click()} className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold">Upload CSV</button>
             </div>
           </section>

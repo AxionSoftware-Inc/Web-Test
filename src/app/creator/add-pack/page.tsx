@@ -1,29 +1,39 @@
-import Link from "next/link";
+import type { Metadata } from "next";
 
-import { PremiumPage, PremiumPanel } from "@/shared/ui/premium-shell";
+import { ExamPacksClient } from "@/features/exam-packs/ui/exam-packs-client";
+import { questApi } from "@/shared/api/questlab-api";
+import { PremiumPage } from "@/shared/ui/premium-shell";
 
-export default function Page() {
-  const steps = ["Pack info", "Subject / branch / level", "Tests", "Questions", "Preview", "Publish"];
+export const metadata: Metadata = {
+  title: "Add Pack | QuestLab",
+};
+
+export const dynamic = "force-dynamic";
+
+export default async function Page() {
+  const [packs, tests] = await Promise.all([
+    questApi.examPacks(),
+    questApi.tests(),
+  ]);
+  const packResults = await Promise.all(
+    packs.map((pack) => questApi.examPackResults(pack.slug).catch(() => null)),
+  );
+  const usageBySlug = Object.fromEntries(
+    packResults
+      .filter((result): result is NonNullable<typeof result> => Boolean(result))
+      .map((result) => [
+        result.pack.slug,
+        {
+          attempts: result.attempts,
+          students_submitted: result.students_submitted,
+          average_score: result.average_score,
+        },
+      ]),
+  );
+
   return (
     <PremiumPage>
-      <PremiumPanel>
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#276a5b]">Creator</p>
-        <h1 className="mt-3 text-4xl font-semibold">Add Pack</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-black/58">Pack yaratish oqimi: metadata, testlar, import, preview va publish.</p>
-        <div className="mt-6 grid gap-3 md:grid-cols-3">
-          {steps.map((step, index) => (
-            <div key={step} className="rounded-2xl border border-black/8 bg-white p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-black/38">Step {index + 1}</p>
-              <p className="mt-2 font-semibold">{step}</p>
-            </div>
-          ))}
-        </div>
-      </PremiumPanel>
-      <section className="mt-6 grid gap-4 md:grid-cols-3">
-        <Link href="/exam-packs" className="rounded-3xl border border-black/8 bg-white p-5 hover:bg-[#fbfbf6]"><h2 className="text-lg font-semibold">Create pack</h2><p className="mt-2 text-sm text-black/58">Pack metadata, JSON/CSV import va test tanlash.</p></Link>
-        <Link href="/crud" className="rounded-3xl border border-black/8 bg-white p-5 hover:bg-[#fbfbf6]"><h2 className="text-lg font-semibold">Add test manually</h2><p className="mt-2 text-sm text-black/58">Testni savollari bilan qo&apos;lda kiritish.</p></Link>
-        <Link href="/crud/schema" className="rounded-3xl border border-black/8 bg-white p-5 hover:bg-[#fbfbf6]"><h2 className="text-lg font-semibold">Import schema</h2><p className="mt-2 text-sm text-black/58">JSON pack strukturasini ko&apos;rish.</p></Link>
-      </section>
+      <ExamPacksClient initialPacks={packs} tests={tests} usageBySlug={usageBySlug} />
     </PremiumPage>
   );
 }
