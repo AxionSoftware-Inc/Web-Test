@@ -18,9 +18,6 @@
   --color-brand-soft: var(--brand-soft);
   --color-brand-ring: var(--brand-ring);
 
-  --color-accent: var(--accent);
-  --color-accent-soft: var(--accent-soft);
-
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
 
@@ -38,16 +35,12 @@
 
   --color-student: var(--student);
   --color-student-soft: var(--student-soft);
-
   --color-teacher: var(--teacher);
   --color-teacher-soft: var(--teacher-soft);
-
   --color-school: var(--school);
   --color-school-soft: var(--school-soft);
-
   --color-creator: var(--creator);
   --color-creator-soft: var(--creator-soft);
-
   --color-admin: var(--admin);
   --color-admin-soft: var(--admin-soft);
 
@@ -59,13 +52,12 @@
   --radius-control: var(--radius-control);
 }
 
-/* QuestLab core design tokens */
+/* QuestLab desktop-first design system */
 :root {
   /*
-    Brand direction:
-    Professional assessment SaaS.
-    Warm background, clean white cards, deep green brand.
-    Compact, serious, school/teacher/student friendly.
+    Product direction:
+    Professional assessment SaaS for desktop/laptop.
+    Mobile is secondary because mobile app will be handled separately in Flutter.
   */
 
   /* Base */
@@ -90,11 +82,7 @@
   --brand-soft: #edf7f3;
   --brand-ring: rgba(39, 106, 91, 0.22);
 
-  /* Accent */
-  --accent: #8fd6bd;
-  --accent-soft: #f0fbf7;
-
-  /* Semantic colors */
+  /* Status colors */
   --success: #276a5b;
   --success-soft: #edf7f3;
 
@@ -110,7 +98,7 @@
   --neutral: rgba(21, 23, 19, 0.62);
   --neutral-soft: #f0f1ea;
 
-  /* Role accent colors */
+  /* Role accents */
   --student: #276a5b;
   --student-soft: #edf7f3;
 
@@ -126,6 +114,15 @@
   --admin: #2f3430;
   --admin-soft: #f0f1ea;
 
+  /* Charts */
+  --chart-1: #276a5b;
+  --chart-2: #315f9f;
+  --chart-3: #b7791f;
+  --chart-4: #a85050;
+  --chart-5: #5b4db7;
+  --chart-grid: rgba(21, 23, 19, 0.08);
+  --chart-axis: rgba(21, 23, 19, 0.44);
+
   /* Selection */
   --selection: rgba(143, 214, 189, 0.5);
 
@@ -139,33 +136,30 @@
   --shadow-panel: 0 12px 34px rgba(21, 23, 19, 0.06);
   --shadow-float: 0 18px 44px rgba(21, 23, 19, 0.12);
 
-  /* Layout */
-  --page-max: 1280px;
-  --page-max-wide: 1480px;
+  /* Desktop/laptop layout */
+  --page-max: 1440px;
+  --page-max-table: 1600px;
+  --page-max-test: 1680px;
+
   --sidebar-width: 264px;
   --topbar-height: 64px;
 
-  /* Spacing scale */
-  --page-x-mobile: 16px;
-  --page-x-tablet: 24px;
-  --page-x-desktop: 32px;
+  --page-x: 24px;
+  --page-x-wide: 32px;
   --page-y: 24px;
 
-  --card-p-sm: 14px;
+  --section-gap: 24px;
+  --card-gap: 16px;
+
   --card-p: 16px;
   --card-p-lg: 20px;
+  --panel-p: 24px;
 
-  /* Charts */
-  --chart-1: #276a5b;
-  --chart-2: #315f9f;
-  --chart-3: #b7791f;
-  --chart-4: #a85050;
-  --chart-5: #5b4db7;
-  --chart-grid: rgba(21, 23, 19, 0.08);
-  --chart-axis: rgba(21, 23, 19, 0.44);
+  --stat-card-h: 104px;
+  --entity-card-h: 156px;
+  --compact-row-h: 64px;
 }
 
-/* Global app base */
 html {
   background: var(--background);
 }
@@ -181,7 +175,7 @@ body {
   background: var(--selection);
 }
 
-/* Useful shared utility classes */
+/* Desktop-first layout primitives */
 .quest-page {
   min-height: 100vh;
   background: var(--background);
@@ -192,25 +186,41 @@ body {
   width: 100%;
   max-width: var(--page-max);
   margin-inline: auto;
-  padding: var(--page-y) var(--page-x-mobile);
+  padding: var(--page-y) var(--page-x);
 }
 
-@media (min-width: 640px) {
-  .quest-container {
-    padding-inline: var(--page-x-tablet);
+.quest-container-table {
+  width: 100%;
+  max-width: var(--page-max-table);
+  margin-inline: auto;
+  padding: var(--page-y) var(--page-x);
+}
+
+.quest-container-test {
+  width: 100%;
+  max-width: var(--page-max-test);
+  margin-inline: auto;
+  padding: 20px var(--page-x);
+}
+
+@media (min-width: 1536px) {
+  .quest-container,
+  .quest-container-table,
+  .quest-container-test {
+    padding-inline: var(--page-x-wide);
   }
 }
 
-@media (min-width: 1024px) {
-  .quest-container {
-    padding-inline: var(--page-x-desktop);
+/* Mobile fallback only, not main design target */
+@media (max-width: 767px) {
+  .quest-container,
+  .quest-container-table,
+  .quest-container-test {
+    padding: 16px;
   }
 }
 
-.quest-container-wide {
-  max-width: var(--page-max-wide);
-}
-
+/* Reusable surfaces */
 .quest-card {
   border: 1px solid var(--line);
   background: var(--surface);
@@ -229,15 +239,86 @@ body {
   background: var(--surface-soft);
 }
 
-.quest-focus {
-  outline: none;
-  box-shadow: 0 0 0 4px var(--brand-ring);
-}
-
 .quest-muted {
   color: var(--muted);
 }
 
 .quest-subtle {
   color: var(--subtle);
+}
+
+.quest-focus {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--brand-ring);
+}
+
+/* Standard card sizing */
+.quest-stat-card {
+  min-height: var(--stat-card-h);
+  padding: var(--card-p);
+}
+
+.quest-entity-card {
+  min-height: var(--entity-card-h);
+  padding: var(--card-p);
+}
+
+.quest-detail-card {
+  padding: var(--card-p-lg);
+}
+
+.quest-panel-pad {
+  padding: var(--panel-p);
+}
+
+/* Grid helpers */
+.quest-dashboard-grid {
+  display: grid;
+  gap: var(--section-gap);
+}
+
+.quest-metric-grid {
+  display: grid;
+  gap: var(--card-gap);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.quest-card-grid-3 {
+  display: grid;
+  gap: var(--card-gap);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.quest-card-grid-4 {
+  display: grid;
+  gap: var(--card-gap);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.quest-main-aside-grid {
+  display: grid;
+  gap: var(--section-gap);
+  grid-template-columns: minmax(0, 1fr) 360px;
+}
+
+.quest-test-grid {
+  display: grid;
+  gap: var(--section-gap);
+  grid-template-columns: 260px minmax(0, 1fr) 320px;
+}
+
+@media (max-width: 1279px) {
+  .quest-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quest-card-grid-3,
+  .quest-card-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quest-main-aside-grid,
+  .quest-test-grid {
+    grid-template-columns: 1fr;
+  }
 }

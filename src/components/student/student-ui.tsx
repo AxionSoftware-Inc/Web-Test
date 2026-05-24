@@ -20,14 +20,24 @@ import type { ApiMistakesSummary, ApiProfileSummary } from "@/shared/api/questla
 import { cn } from "@/shared/lib/cn";
 import { LatexText } from "@/shared/ui/latex-text";
 
-export function StudentShell({ eyebrow, title, copy, children, hideHeader, wide }: { eyebrow?: string; title?: string; copy?: string; children: React.ReactNode; hideHeader?: boolean; wide?: boolean }) {
+export function StudentShell({
+  children,
+  variant = "default",
+}: {
+  children: React.ReactNode;
+  variant?: "default" | "table" | "test";
+}) {
+  const container =
+    variant === "test"
+      ? "quest-container-test"
+      : variant === "table"
+        ? "quest-container-table"
+        : "quest-container";
+
   return (
     <main className="quest-page">
-      <div className={cn("quest-container", wide && "quest-container-wide")}>
-        <div className="grid gap-5 lg:gap-6">
-          {!hideHeader && title ? <PageHeader eyebrow={eyebrow} title={title} copy={copy} /> : null}
-          {children}
-        </div>
+      <div className={container}>
+        <div className="quest-dashboard-grid">{children}</div>
       </div>
     </main>
   );
@@ -45,7 +55,7 @@ export function PageHeader({ eyebrow, title, copy }: { eyebrow?: string; title: 
 
 export function SummaryGrid({ stats }: { stats: Array<[string, string | number]> }) {
   return (
-    <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <section className="quest-metric-grid">
       {stats.map(([label, value]) => (
         <div key={label} className="quest-card min-h-[96px] p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-subtle">{label}</p>

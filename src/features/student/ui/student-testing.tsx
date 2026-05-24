@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { AnalyticsBars, Badge, CompactCard, Empty, FilterSelect, MetricTile, MistakeCard, NumberField, ProgressRing, Section, StudentShell, SummaryGrid, TopicActionList, TrendChart } from "@/components/student/student-ui";
+import { AnalyticsBars, Badge, CompactCard, Empty, FilterSelect, MetricTile, MistakeCard, NumberField, PageHeader, ProgressRing, Section, StudentShell, SummaryGrid, TopicActionList, TrendChart } from "@/components/student/student-ui";
 import type { ApiExamPack, ApiExamPackItem, ApiMistakesSummary, ApiProfileSummary, ApiSession, ApiTest } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { cn } from "@/shared/lib/cn";
@@ -49,14 +49,14 @@ export function StudentDashboard({ summary, tests, packs, sessions }: { summary:
   const inProgress = sessions.find((item) => item.status === "in_progress");
   const weakTopics = summary.topic_progress.filter((item) => item.value < 70);
   return (
-    <StudentShell eyebrow="Student" title="Home" copy="Test ishlash, xatolar va progress uchun ixcham ish paneli." hideHeader>
+    <StudentShell>
       <SummaryGrid stats={[
         ["Pending tests", packs.filter((pack) => pack.is_active).length],
         ["Completed tests", summary.tests_taken],
         ["Average score", `${summary.average_score}%`],
         ["Weak topics", weakTopics.length],
       ]} />
-      <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="quest-main-aside-grid">
         <Section title="Continue test">
           {inProgress ? <CompactCard title={inProgress.test_title} meta="In progress" href={`/student/test-session/${inProgress.id}`} action="Continue" stats={[`${inProgress.answers.length} answered`]} /> : <Empty text="Davom ettiriladigan test yo'q." />}
         </Section>
@@ -65,12 +65,12 @@ export function StudentDashboard({ summary, tests, packs, sessions }: { summary:
         </Section>
       </div>
       <Section title="Assigned packs">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="quest-card-grid-3">
           {packs.filter((pack) => pack.is_active).slice(0, 6).map((pack) => <PackCard key={pack.id} pack={pack} />)}
         </div>
       </Section>
       <Section title="Recent results">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="quest-card-grid-3">
           {summary.recent_tests.map((item) => <CompactCard key={item.id} title={item.title} meta={item.topic} href={`/student/results/${item.id}`} action="View result" stats={[`${item.score}%`, `${item.correct}/${item.total}`]} />)}
           {!summary.recent_tests.length ? <Empty text="Hali natija yo'q." /> : null}
         </div>
@@ -96,7 +96,8 @@ export function StudentTestsWorkspace({ tests, packs, sessions }: { tests: ApiTe
       && (difficulty === "all" || test.difficulty === difficulty);
   });
   return (
-    <StudentShell eyebrow="Student" title="Tests" copy="Fan, topic, difficulty va packlar bo'yicha test katalogi.">
+    <StudentShell variant="table">
+      <PageHeader eyebrow="Student" title="Tests" copy="Fan, topic, difficulty va packlar bo'yicha test katalogi." />
       <div className="quest-card p-4">
         <div className="flex items-center gap-3 rounded-[var(--radius-control)] border border-line bg-surface-soft px-4 py-3">
           <Search className="size-5 shrink-0 text-subtle" />
@@ -119,13 +120,13 @@ export function StudentTestsWorkspace({ tests, packs, sessions }: { tests: ApiTe
         </aside>
         <div className="grid gap-4">
           <Section title="Test paketlar">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="quest-card-grid-3">
               {packs.filter((pack) => pack.is_active && `${pack.title} ${pack.exam_type} ${pack.description}`.toLowerCase().includes(query.toLowerCase())).map((pack) => <PackCard key={pack.id} pack={pack} />)}
               {!packs.filter((pack) => pack.is_active).length ? <Empty text="Pack yo'q." /> : null}
             </div>
           </Section>
           <Section title="Test bo'limlari">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="quest-card-grid-3">
               {filtered.map((test) => <TestCatalogCard key={test.id} test={test} status={completed.has(test.slug) ? "completed" : inProgress.has(test.slug) ? "in_progress" : "available"} session={sessions.find((item) => item.test_slug === test.slug)} relatedCount={tests.filter((item) => item.subject_slug === test.subject_slug && item.topic_slug === test.topic_slug).length} />)}
               {!filtered.length ? <Empty text="Bu filtr bo'yicha test yo'q." /> : null}
             </div>
@@ -139,7 +140,8 @@ export function StudentTestsWorkspace({ tests, packs, sessions }: { tests: ApiTe
 export function StudentPackDetail({ pack, items, results }: { pack: ApiExamPack; items: ApiExamPackItem[]; results?: { attempts: number; students_submitted: number; average_score: number; item_stats: Array<{ item_id: number; attempts: number; average_score: number }> } | null }) {
   const completed = results?.item_stats.filter((item) => item.attempts > 0).length ?? 0;
   return (
-    <StudentShell eyebrow="Pack" title={pack.title} copy={pack.description || "Tayyor test pack."}>
+    <StudentShell>
+      <PageHeader eyebrow="Pack" title={pack.title} copy={pack.description || "Tayyor test pack."} />
       <SummaryGrid stats={[
         ["Subject", pack.exam_type || "General"],
         ["Level", "Pack"],
@@ -180,7 +182,8 @@ export function StudentTestInstructions({ test, session }: { test: ApiTest; sess
   const status = session?.status ?? "available";
   const skills = testSkills(test);
   return (
-    <StudentShell eyebrow="Test bo'limi" title={test.title} copy={`${test.subject_slug} / ${test.topic_slug}`}>
+    <StudentShell>
+      <PageHeader eyebrow="Test bo'limi" title={test.title} copy={`${test.subject_slug} / ${test.topic_slug}`} />
       <SummaryGrid stats={[
         ["Subject", test.subject_slug],
         ["Topic", test.topic_slug],
@@ -191,7 +194,7 @@ export function StudentTestInstructions({ test, session }: { test: ApiTest; sess
         ["Due date", "No due date"],
         ["Status", status],
       ]} />
-      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+      <div className="quest-main-aside-grid">
         <Section title="Bo'lim haqida">
           <div className="quest-card p-4">
             <p className="line-clamp-2 text-sm leading-6 text-muted">Bu bo&apos;lim quyidagi skilllarni tekshiradi: {skills.length ? skills.join(", ") : "asosiy mavzu tushunchalari"}.</p>
@@ -266,7 +269,8 @@ export function StudentActiveSession({ initialSession, test }: { initialSession:
   }
 
   return (
-    <StudentShell eyebrow="Active test" title={test.title} copy="Javobni tanlang, flag qiling va submit qiling. To'g'ri javoblar submitdan oldin ko'rsatilmaydi." wide>
+    <StudentShell variant="test">
+      <PageHeader eyebrow="Active test" title={test.title} copy="Javobni tanlang, flag qiling va submit qiling. To'g'ri javoblar submitdan oldin ko'rsatilmaydi." />
       <div className="quest-card p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap items-center gap-2">
@@ -388,8 +392,9 @@ export function StudentResult({ session, test }: { session: ApiSession; test: Ap
   ];
   const resultTone = stats.score >= test.passing_score ? "Passed" : "Needs review";
   return (
-    <StudentShell eyebrow="Result" title={test.title} copy="Score, breakdown, weak skills va keyingi qadamlar.">
-      <section className="grid gap-4 lg:grid-cols-[1fr_340px]">
+    <StudentShell>
+      <PageHeader eyebrow="Result" title={test.title} copy="Score, breakdown, weak skills va keyingi qadamlar." />
+      <section className="quest-main-aside-grid">
         <div className="quest-card p-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
@@ -478,14 +483,15 @@ export function StudentMistakes({ initialSummary }: { initialSummary: ApiMistake
   }));
   const focus = summary.weak_skills[0];
   return (
-    <StudentShell eyebrow="Mistake analytics" title="Xatolar analizi" copy="Ishlangan testlardan xatolar ajratiladi, zaif skilllar va keyingi o'rganish yo'nalishi ko'rsatiladi.">
+    <StudentShell variant="table">
+      <PageHeader eyebrow="Mistake analytics" title="Xatolar analizi" copy="Ishlangan testlardan xatolar ajratiladi, zaif skilllar va keyingi o'rganish yo'nalishi ko'rsatiladi." />
       <SummaryGrid stats={[
         ["Total mistakes", totalMistakes],
         ["Weak skills", summary.weak_skills.length],
         ["Main weak skill", focus?.skill ?? "No data"],
         ["Lowest mastery", focus ? `${focus.percent}%` : "No data"],
       ]} />
-      <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+      <div className="quest-main-aside-grid">
         <Section title="Skill weakness index">
           <AnalyticsBars rows={skillRows} tone="critical" empty="Skill data hali yo'q." />
         </Section>
@@ -513,7 +519,7 @@ export function StudentMistakes({ initialSummary }: { initialSummary: ApiMistake
           <Search className="size-4 text-subtle" />
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Subject, topic, test, status..." className="w-full bg-transparent text-sm outline-none" />
         </div>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="quest-card-grid-3">
           {mistakes.map((mistake) => <MistakeCard key={`${mistake.session_id}-${mistake.question_id}`} mistake={mistake} />)}
           {!mistakes.length ? <Empty text="Xato topilmadi." /> : null}
         </div>
@@ -528,9 +534,10 @@ export function StudentMistakeDetail({ initialSummary, mistakeId }: { initialSum
     questApi.mistakesSummary(getStudentCode()).then(setSummary).catch(() => undefined);
   }, []);
   const mistake = summary.mistakes.find((item) => `${item.session_id}-${item.question_id}` === mistakeId) ?? summary.mistakes[0];
-  if (!mistake) return <StudentShell eyebrow="Mistake" title="Mistake not found"><Empty text="Bu xato topilmadi." /></StudentShell>;
+  if (!mistake) return <StudentShell><PageHeader eyebrow="Mistake" title="Mistake not found" /><Empty text="Bu xato topilmadi." /></StudentShell>;
   return (
-    <StudentShell eyebrow="Mistake detail" title={mistake.test_title} copy={mistake.topic}>
+    <StudentShell>
+      <PageHeader eyebrow="Mistake detail" title={mistake.test_title} copy={mistake.topic} />
       <Section title="Question">
         <div className="quest-card p-4">
           <LatexText text={mistake.prompt} />
@@ -565,9 +572,10 @@ export function StudentProgress({ summary }: { summary: ApiProfileSummary }) {
     meta: `${item.attempts} attempts`,
   }));
   return (
-    <StudentShell eyebrow="Student analytics" title="Progress" copy="Overall progress, topic mastery, score trend va kuchli/zaif mavzular.">
+    <StudentShell>
+      <PageHeader eyebrow="Student analytics" title="Progress" copy="Overall progress, topic mastery, score trend va kuchli/zaif mavzular." />
       <SummaryGrid stats={[["Average score", `${summary.average_score}%`], ["Completed tests", summary.tests_taken], ["Answered", summary.answered_questions], ["Correct", summary.correct_answers]]} />
-      <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="quest-main-aside-grid">
         <Section title="Score trend">
           <TrendChart rows={scoreRows} />
         </Section>
@@ -587,7 +595,7 @@ export function StudentProgress({ summary }: { summary: ApiProfileSummary }) {
         </Section>
       </div>
       <Section title="Strong topics">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{strong.map((topic) => <CompactCard key={topic.slug} title={topic.topic} meta={`${topic.attempts} attempts`} href="/student/tests" action="Practice" stats={[`${topic.value}% mastery`]} />)}{!strong.length ? <Empty text="Kuchli mavzular hali yetarli emas." /> : null}</div>
+        <div className="quest-card-grid-3">{strong.map((topic) => <CompactCard key={topic.slug} title={topic.topic} meta={`${topic.attempts} attempts`} href="/student/tests" action="Practice" stats={[`${topic.value}% mastery`]} />)}{!strong.length ? <Empty text="Kuchli mavzular hali yetarli emas." /> : null}</div>
       </Section>
     </StudentShell>
   );
@@ -595,10 +603,11 @@ export function StudentProgress({ summary }: { summary: ApiProfileSummary }) {
 
 export function StudentProfile({ summary }: { summary: ApiProfileSummary }) {
   return (
-    <StudentShell eyebrow="Student" title="Profile" copy="Basic settings va test history summary.">
+    <StudentShell>
+      <PageHeader eyebrow="Student" title="Profile" copy="Basic settings va test history summary." />
       <SummaryGrid stats={[["Name", summary.name], ["Role", "Student"], ["School", "Not linked"], ["Class", "Not linked"], ["Teacher", "Not linked"], ["Tests", summary.tests_taken]]} />
       <Section title="Test history summary">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{summary.recent_tests.map((test) => <CompactCard key={test.id} title={test.title} meta={test.topic} href={`/student/results/${test.id}`} action="View result" stats={[`${test.score}%`, test.submitted_at.slice(0, 10)]} />)}</div>
+        <div className="quest-card-grid-3">{summary.recent_tests.map((test) => <CompactCard key={test.id} title={test.title} meta={test.topic} href={`/student/results/${test.id}`} action="View result" stats={[`${test.score}%`, test.submitted_at.slice(0, 10)]} />)}</div>
       </Section>
     </StudentShell>
   );
