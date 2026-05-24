@@ -22,6 +22,11 @@ type DraftItem = {
   is_required?: boolean;
 };
 
+type LooseImportSource = Partial<StrictPackImportSource> & {
+  test?: StrictPackImportSource["tests"][number];
+  questions?: StrictPackImportSource["tests"][number]["questions"];
+};
+
 const templateCsv = "test_slug,title,order,is_required\nalgebra-basics,Algebra warmup,1,true\nquadratics-basics,Quadratics drill,2,true\n";
 
 function parseCsv(text: string): DraftItem[] {
@@ -46,6 +51,14 @@ function parseLines(text: string): DraftItem[] {
 }
 
 type PackUsage = { attempts: number; students_submitted: number; average_score: number };
+
+function hasQuestionShape(value: unknown): value is StrictPackImportSource["tests"][number]["questions"][number] {
+  return Boolean(value && typeof value === "object" && "type" in value && ("body" in value || "prompt" in value));
+}
+
+function hasTestShape(value: unknown): value is StrictPackImportSource["tests"][number] {
+  return Boolean(value && typeof value === "object" && "questions" in value && Array.isArray((value as { questions?: unknown }).questions));
+}
 
 export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { initialPacks: ApiExamPack[]; tests: ApiTest[]; usageBySlug?: Record<string, PackUsage> }) {
   const [packs, setPacks] = useState(initialPacks);
@@ -85,6 +98,58 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
     setError(message);
   }
 
+  function normalizeImportSource(raw: unknown): StrictPackImportSource | null {
+    const fallbackPack = {
+      title,
+      subject: examType.toLowerCase().includes("math") ? "math" : slugify(examType || "general"),
+      branch: slugify(examType || title || "general"),
+      level: "mixed",
+      language: "uz",
+    };
+    if (Array.isArray(raw)) {
+      if (raw.every(hasTestShape)) {
+        return { version: "1.0", pack: fallbackPack, tests: raw };
+      }
+      if (raw.every(hasQuestionShape)) {
+        return {
+          version: "1.0",
+          pack: fallbackPack,
+          tests: [{ title, topic: fallbackPack.branch, difficulty: "easy", time_limit_minutes: 15, questions: raw }],
+        };
+      }
+      return null;
+    }
+    if (!raw || typeof raw !== "object") return null;
+    const source = raw as LooseImportSource;
+    const pack = source.pack && typeof source.pack === "object" ? {
+      title: source.pack.title || fallbackPack.title,
+      subject: source.pack.subject || fallbackPack.subject,
+      branch: source.pack.branch || fallbackPack.branch,
+      level: source.pack.level || fallbackPack.level,
+      language: source.pack.language || fallbackPack.language,
+    } : fallbackPack;
+    if (Array.isArray(source.tests)) {
+      return { version: "1.0", pack, tests: source.tests };
+    }
+    if (source.test && hasTestShape(source.test)) {
+      return { version: "1.0", pack, tests: [source.test] };
+    }
+    if (Array.isArray(source.questions)) {
+      return {
+        version: "1.0",
+        pack,
+        tests: [{ title: pack.title, topic: pack.branch, difficulty: "easy", time_limit_minutes: 15, questions: source.questions }],
+      };
+    }
+    return null;
+  }
+
+  function skippedMessage(skipped: Array<{ title: string; reason: string }>) {
+    if (!skipped.length) return "";
+    const reasons = skipped.slice(0, 3).map((item) => `${item.title}: ${item.reason}`).join(" | ");
+    return `${skipped.length} test yaratilmadi. ${reasons}`;
+  }
+
   async function importStrictSource(source: StrictPackImportSource) {
     if (!source.tests.length) {
       setWarning("JSON ichida tests bo'sh. Kamida bitta test bo'lmasa pack yaratilmaydi.");
@@ -100,14 +165,18 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
         pack_manage_code: getPackManageCode(),
       });
       savePackManageCode(result.pack.slug, result.pack.manage_code);
-      setPacks((items) => [result.pack, ...items.filter((item) => item.slug !== result.pack.slug)]);
       setPasteValue("");
       setJsonSource(null);
       setLoadedFileName("");
       setDraftItems([]);
       setSelectedTestIds([]);
-      setNotice(`${result.pack.title} DBga saqlandi.`);
-      setError(result.skipped.length ? `${result.skipped.length} item import qilinmadi.` : "");
+      if (!result.tests.length) {
+        setWarning(skippedMessage(result.skipped) || "Hech qanday test yaratilmadi.");
+        return;
+      }
+      setPacks((items) => [result.pack, ...items.filter((item) => item.slug !== result.pack.slug)]);
+      setNotice(`${result.pack.title} DBga saqlandi. ${result.tests.length} test yaratildi.`);
+      setError(skippedMessage(result.skipped));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Pack import failed.");
     } finally {
@@ -166,8 +235,9 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
         const parsed = value.startsWith("{") || value.startsWith("[")
           ? JSON.parse(value) as ({ items?: DraftItem[] } | DraftItem[] | StrictPackImportSource)
           : parseLines(value);
-        if (!Array.isArray(parsed) && "version" in parsed && parsed.version === "1.0" && parsed.pack && Array.isArray(parsed.tests)) {
-          await importStrictSource(parsed);
+        const source = normalizeImportSource(parsed);
+        if (source) {
+          await importStrictSource(source);
           return;
         }
         const items = Array.isArray(parsed) ? parsed : "items" in parsed ? parsed.items ?? [] : [];
@@ -189,15 +259,17 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
         version?: string;
         pack?: Partial<ApiExamPack> | StrictPackImportSource["pack"];
         tests?: StrictPackImportSource["tests"];
+        questions?: StrictPackImportSource["tests"][number]["questions"];
         items?: Array<{ test_slug?: string; title?: string; order?: number; is_required?: boolean }>;
       };
-      if (parsed.version === "1.0" && parsed.pack && Array.isArray(parsed.tests)) {
-        setJsonSource(parsed as StrictPackImportSource);
+      const source = normalizeImportSource(parsed);
+      if (source) {
+        setJsonSource(source);
         setDraftItems([]);
         setSelectedTestIds([]);
         setMode("draft");
         setLoadedFileName(file.name);
-        setNotice(`${file.name} tayyor. Hali DBga saqlanmadi, chapdagi Create pack bosing.`);
+        setNotice(`${file.name} tayyor: ${source.tests.length} test. Hali DBga saqlanmadi, chapdagi Create pack bosing.`);
         return;
       }
       if (parsed.items?.length) {
