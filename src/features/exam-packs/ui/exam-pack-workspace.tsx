@@ -40,6 +40,24 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
   const filtered = items.filter((item) => `${item.title} ${item.test_title} ${item.difficulty}`.toLowerCase().includes(query.toLowerCase()));
   const alreadyAdded = new Set(items.map((item) => item.test));
   const filteredTests = tests.filter((test) => `${test.title} ${test.slug} ${test.difficulty} ${test.topic_slug}`.toLowerCase().includes(testQuery.toLowerCase()));
+  const exportTests = items
+    .map((item) => tests.find((test) => test.id === item.test))
+    .filter((test): test is ApiTest => Boolean(test))
+    .map((test) => ({
+      title: test.title,
+      topic: test.topic_slug,
+      difficulty: test.difficulty,
+      time_limit_minutes: test.estimated_minutes,
+      questions: test.test_questions.map((item) => ({
+        type: item.question.type,
+        body: item.question.prompt,
+        options: item.question.options.map((text, index) => ({ id: String.fromCharCode(65 + index), text })),
+        answer: { correct: item.question.answer },
+        explanation: item.question.explanation,
+        skills: item.question.skill_titles.length ? item.question.skill_titles : ["general"],
+        difficulty: item.question.difficulty,
+      })),
+    }));
 
   function download(name: string, content: string, type: string) {
     const blob = new Blob([content], { type });
@@ -198,7 +216,7 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
               <div className="mt-6 flex flex-wrap gap-2">
                 <button onClick={copyPackLink} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]"><Link2 className="size-4" />Copy link</button>
                 <button onClick={() => download(`${currentPack.slug}-results.csv`, csv, "text/csv;charset=utf-8")} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]"><Download className="size-4" />Export CSV</button>
-                <button onClick={() => download(`${currentPack.slug}.json`, JSON.stringify({ pack: currentPack, items, results }, null, 2), "application/json;charset=utf-8")} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]"><FileJson className="size-4" />Export JSON</button>
+                <button onClick={() => download(`${currentPack.slug}.json`, JSON.stringify({ version: "1.0", pack: currentPack, tests: exportTests, items, results }, null, 2), "application/json;charset=utf-8")} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]"><FileJson className="size-4" />Export JSON</button>
                 <button onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]"><Upload className="size-4" />Import CSV</button>
                 <button onClick={() => jsonRef.current?.click()} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-[#fbfbf6]"><FileJson className="size-4" />Import JSON</button>
                 <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importCsv(file); }} />

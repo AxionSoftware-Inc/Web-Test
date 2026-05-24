@@ -121,7 +121,7 @@ export type StrictPackImportSource = {
 export type ApiPackImportResult = {
   pack: ApiExamPack;
   tests: ApiTest[];
-  skipped: Array<{ title: string; reason: string }>;
+  skipped: Array<{ title: string; reason: string; layer?: string; code?: string; field?: string }>;
 };
 
 export type ApiAnswer = {
@@ -447,7 +447,7 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
     body: body ? JSON.stringify(body) : undefined,
     cache: "no-store",
   });
-  if (!res.ok) throw new Error(`API POST ${path} failed: ${res.status}`);
+  if (!res.ok) throw new Error(await apiErrorMessage(res, `API POST ${path} failed: ${res.status}`));
   return res.json() as Promise<T>;
 }
 
@@ -458,15 +458,40 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
     cache: "no-store",
   });
-  if (!res.ok) throw new Error(`API PATCH ${path} failed: ${res.status}`);
+  if (!res.ok) throw new Error(await apiErrorMessage(res, `API PATCH ${path} failed: ${res.status}`));
   return res.json() as Promise<T>;
 }
 
 export async function apiDelete<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, { method: "DELETE", cache: "no-store" });
-  if (!res.ok) throw new Error(`API DELETE ${path} failed: ${res.status}`);
+  if (!res.ok) throw new Error(await apiErrorMessage(res, `API DELETE ${path} failed: ${res.status}`));
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
+}
+
+async function apiErrorMessage(res: Response, fallback: string) {
+  try {
+    const payload = await res.json();
+    if (payload?.detail) return String(payload.detail);
+    if (Array.isArray(payload?.skipped) && payload.skipped.length) {
+      const reasons = payload.skipped
+        .slice(0, 3)
+        .map((item: { title?: string; test_slug?: string; reason?: string; layer?: string; code?: string }) => {
+          const prefix = [item.layer, item.code].filter(Boolean).join("/");
+          return `${item.title || item.test_slug || "Item"}${prefix ? ` [${prefix}]` : ""}: ${item.reason || "unknown reason"}`;
+        })
+        .join(" | ");
+      return `${fallback}. ${reasons}`;
+    }
+    if (payload && typeof payload === "object") {
+      return Object.entries(payload)
+        .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : String(value)}`)
+        .join(" | ");
+    }
+  } catch {
+    return fallback;
+  }
+  return fallback;
 }
 
 export const questApi = {
@@ -605,7 +630,7 @@ export const questApi = {
       manage_code?: string;
       items: Array<{ test?: number; test_slug?: string; title?: string; order?: number; is_required?: boolean }>;
     },
-  ) => apiPost<{ created: ApiExamPackItem[]; skipped: Array<{ test_slug: string; reason: string }> }>(`/exam-packs/${slug}/items/bulk/`, payload),
+  ) => apiPost<{ created: ApiExamPackItem[]; skipped: Array<{ test_slug: string; reason: string; layer?: string; code?: string; field?: string }> }>(`/exam-packs/${slug}/items/bulk/`, payload),
   updateExamPackItem: (
     slug: string,
     itemId: number,

@@ -22,12 +22,31 @@ type DraftItem = {
   is_required?: boolean;
 };
 
+type ImportTest = StrictPackImportSource["tests"][number];
+type ImportQuestion = ImportTest["questions"][number];
+
 type LooseImportSource = Partial<StrictPackImportSource> & {
-  test?: StrictPackImportSource["tests"][number];
-  questions?: StrictPackImportSource["tests"][number]["questions"];
+  test?: ImportTest;
+  questions?: ImportQuestion[];
+  examPack?: unknown;
+  exam_pack?: unknown;
+  packInfo?: unknown;
+  testlar?: unknown[];
+  title?: string;
+  subject?: string;
+  category?: string;
+  topic?: string;
+  branch?: string;
+  difficulty?: string;
+  estimatedMinutes?: number;
+  estimated_minutes?: number;
+  time_limit_minutes?: number;
+  items?: unknown[];
 };
 
 const templateCsv = "test_slug,title,order,is_required\nalgebra-basics,Algebra warmup,1,true\nquadratics-basics,Quadratics drill,2,true\n";
+
+const optionIds = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 function parseCsv(text: string): DraftItem[] {
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
@@ -51,13 +70,135 @@ function parseLines(text: string): DraftItem[] {
 }
 
 type PackUsage = { attempts: number; students_submitted: number; average_score: number };
+type ImportLayer = "client_parse" | "client_schema" | "api_transport" | "backend_schema" | "backend_db";
 
-function hasQuestionShape(value: unknown): value is StrictPackImportSource["tests"][number]["questions"][number] {
-  return Boolean(value && typeof value === "object" && "type" in value && ("body" in value || "prompt" in value));
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
-function hasTestShape(value: unknown): value is StrictPackImportSource["tests"][number] {
-  return Boolean(value && typeof value === "object" && "questions" in value && Array.isArray((value as { questions?: unknown }).questions));
+function readString(source: Record<string, unknown>, keys: string[], fallback = "") {
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  }
+  return fallback;
+}
+
+function readNumber(source: Record<string, unknown>, keys: string[], fallback: number) {
+  for (const key of keys) {
+    const value = source[key];
+    const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value.replace(/[^\d.]/g, "")) : NaN;
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return fallback;
+}
+
+function readStringList(value: unknown, fallback: string[] = []) {
+  if (Array.isArray(value)) {
+    return value.map((item) => readString({ item }, ["item"])).filter(Boolean);
+  }
+  if (typeof value === "string") {
+    return value.split(/[|,\n]/).map((item) => item.trim()).filter(Boolean);
+  }
+  return fallback;
+}
+
+function readQuestions(source: Record<string, unknown>) {
+  const candidates = [source.questions, source.test_questions, source.savollar];
+  const rows = candidates.find(Array.isArray);
+  if (!Array.isArray(rows)) return [];
+  return rows.map((item) => isRecord(item) && isRecord(item.question) ? item.question : item);
+}
+
+function normalizeQuestionType(value: string): ImportQuestion["type"] {
+  const normalized = value.toLowerCase().replace("-", "_");
+  if (normalized === "multiple_choice") return "multiple_choice";
+  if (normalized === "short_answer") return "short_answer";
+  return "single_choice";
+}
+
+function normalizeDifficulty(value: string): ImportTest["difficulty"] {
+  const normalized = value.toLowerCase();
+  if (["hard", "advanced"].includes(normalized)) return "advanced";
+  if (["medium", "intermediate"].includes(normalized)) return "intermediate";
+  return "beginner";
+}
+
+function normalizeOptions(raw: unknown) {
+  if (Array.isArray(raw)) {
+    return raw
+      .map((item, index) => {
+        if (isRecord(item)) {
+          const text = readString(item, ["text", "label", "value", "body", "title"]);
+          return text ? { id: readString(item, ["id", "key"], optionIds[index] ?? String(index + 1)), text } : null;
+        }
+        const text = readString({ item }, ["item"]);
+        return text ? { id: optionIds[index] ?? String(index + 1), text } : null;
+      })
+      .filter((item): item is { id: string; text: string } => Boolean(item));
+  }
+  if (isRecord(raw)) {
+    return Object.entries(raw)
+      .map(([id, value]) => ({ id, text: readString({ value }, ["value"]) }))
+      .filter((item) => item.text);
+  }
+  return [];
+}
+
+function normalizeQuestion(raw: unknown, fallbackDifficulty: ImportTest["difficulty"]): ImportQuestion | null {
+  if (!isRecord(raw)) return null;
+  const options = normalizeOptions(raw.options ?? raw.choices ?? raw.answers ?? raw.variantlar);
+  const answer = raw.answer ?? raw.javob;
+  const correct = isRecord(answer)
+    ? readString(answer, ["correct", "id", "value", "text"])
+    : readString(raw, ["correct", "correct_answer", "correctAnswer", "answer", "answer_key", "answerKey", "javob", "togri_javob", "to'g'ri_javob"]);
+  const body = readString(raw, ["body", "prompt", "question", "text", "savol", "matn"]);
+  if (!body && !options.length && !correct) return null;
+  return {
+    type: normalizeQuestionType(readString(raw, ["type"], options.length ? "single_choice" : "short_answer")),
+    body,
+    options,
+    answer: { correct },
+    explanation: readString(raw, ["explanation", "solution", "commentary", "yechim", "izoh"]),
+    skills: readStringList(raw.skills ?? raw.skill ?? raw.tags ?? raw.konikmalar, ["general"]),
+    difficulty: normalizeDifficulty(readString(raw, ["difficulty", "level"], fallbackDifficulty)),
+  };
+}
+
+function normalizeTest(raw: unknown, fallbackTitle: string, fallbackTopic: string): ImportTest | null {
+  if (!isRecord(raw)) return null;
+  const difficulty = normalizeDifficulty(readString(raw, ["difficulty", "level"], "beginner"));
+  const questions = readQuestions(raw)
+    .map((question) => normalizeQuestion(question, difficulty))
+    .filter((question): question is ImportQuestion => Boolean(question));
+  if (!questions.length) return null;
+  return {
+    title: readString(raw, ["title", "name", "nom"], fallbackTitle),
+    topic: readString(raw, ["topic", "topic_slug", "category", "branch", "subject", "bolim", "bo'lim"], fallbackTopic),
+    difficulty,
+    time_limit_minutes: readNumber(raw, ["time_limit_minutes", "estimated_minutes", "estimatedMinutes", "minutes", "duration", "vaqt"], 15),
+    questions,
+  };
+}
+
+function extractJson(text: string) {
+  const trimmed = text.trim();
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced?.[1]) return fenced[1].trim();
+  const objectStart = trimmed.indexOf("{");
+  const arrayStart = trimmed.indexOf("[");
+  const starts = [objectStart, arrayStart].filter((index) => index >= 0);
+  if (!starts.length) return trimmed;
+  const start = Math.min(...starts);
+  const end = trimmed[start] === "[" ? trimmed.lastIndexOf("]") : trimmed.lastIndexOf("}");
+  return end > start ? trimmed.slice(start, end + 1) : trimmed;
+}
+
+function parsePastedValue(text: string) {
+  const jsonText = extractJson(text);
+  if (jsonText.startsWith("{") || jsonText.startsWith("[")) return JSON.parse(jsonText) as unknown;
+  return parseLines(text);
 }
 
 export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { initialPacks: ApiExamPack[]; tests: ApiTest[]; usageBySlug?: Record<string, PackUsage> }) {
@@ -98,6 +239,10 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
     setError(message);
   }
 
+  function setImportError(layer: ImportLayer, code: string, message: string) {
+    setWarning(`[${layer}/${code}] ${message}`);
+  }
+
   function normalizeImportSource(raw: unknown): StrictPackImportSource | null {
     const fallbackPack = {
       title,
@@ -107,52 +252,119 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
       language: "uz",
     };
     if (Array.isArray(raw)) {
-      if (raw.every(hasTestShape)) {
-        return { version: "1.0", pack: fallbackPack, tests: raw };
-      }
-      if (raw.every(hasQuestionShape)) {
+      const tests = raw
+        .map((item, index) => normalizeTest(item, `${title} ${index + 1}`, fallbackPack.branch))
+        .filter((item): item is ImportTest => Boolean(item));
+      if (tests.length) return { version: "1.0", pack: fallbackPack, tests };
+      const questions = raw
+        .map((item) => normalizeQuestion(item, "beginner"))
+        .filter((item): item is ImportQuestion => Boolean(item));
+      if (questions.length) {
         return {
           version: "1.0",
           pack: fallbackPack,
-          tests: [{ title, topic: fallbackPack.branch, difficulty: "easy", time_limit_minutes: 15, questions: raw }],
+          tests: [{ title, topic: fallbackPack.branch, difficulty: "beginner", time_limit_minutes: 15, questions }],
         };
       }
       return null;
     }
     if (!raw || typeof raw !== "object") return null;
     const source = raw as LooseImportSource;
-    const pack = source.pack && typeof source.pack === "object" ? {
-      title: source.pack.title || fallbackPack.title,
-      subject: source.pack.subject || fallbackPack.subject,
-      branch: source.pack.branch || fallbackPack.branch,
-      level: source.pack.level || fallbackPack.level,
-      language: source.pack.language || fallbackPack.language,
-    } : fallbackPack;
-    if (Array.isArray(source.tests)) {
-      return { version: "1.0", pack, tests: source.tests };
+    const sourceRecord = raw as Record<string, unknown>;
+    const packRecord = isRecord(source.pack)
+      ? source.pack
+      : isRecord(source.examPack)
+        ? source.examPack
+        : isRecord(source.exam_pack)
+          ? source.exam_pack
+          : isRecord(source.packInfo)
+            ? source.packInfo
+            : sourceRecord;
+    const pack = {
+      title: readString(packRecord, ["title", "name", "nom"], fallbackPack.title),
+      subject: readString(packRecord, ["subject", "subject_slug"], fallbackPack.subject),
+      branch: readString(packRecord, ["branch", "category", "topic", "exam_type", "bolim", "bo'lim"], fallbackPack.branch),
+      level: readString(packRecord, ["level", "difficulty"], fallbackPack.level),
+      language: readString(packRecord, ["language", "lang"], fallbackPack.language),
+    };
+    const sourceTests = Array.isArray(source.tests)
+      ? source.tests
+      : Array.isArray(source.testlar)
+        ? source.testlar
+        : [];
+    if (sourceTests.length) {
+      const tests = sourceTests
+        .map((item, index) => normalizeTest(item, `${pack.title} ${index + 1}`, pack.branch))
+        .filter((item): item is ImportTest => Boolean(item));
+      if (tests.length) return { version: "1.0", pack, tests };
     }
-    if (source.test && hasTestShape(source.test)) {
-      return { version: "1.0", pack, tests: [source.test] };
+    if (source.test) {
+      const test = normalizeTest(source.test, pack.title, pack.branch);
+      if (test) return { version: "1.0", pack, tests: [test] };
     }
-    if (Array.isArray(source.questions)) {
+    const directQuestions = readQuestions(sourceRecord)
+      .map((question) => normalizeQuestion(question, normalizeDifficulty(readString(sourceRecord, ["difficulty", "level"], "beginner"))))
+      .filter((item): item is ImportQuestion => Boolean(item));
+    if (directQuestions.length) {
       return {
         version: "1.0",
         pack,
-        tests: [{ title: pack.title, topic: pack.branch, difficulty: "easy", time_limit_minutes: 15, questions: source.questions }],
+        tests: [{
+          title: readString(sourceRecord, ["title", "name"], pack.title),
+          topic: readString(sourceRecord, ["topic", "category", "branch"], pack.branch),
+          difficulty: normalizeDifficulty(readString(sourceRecord, ["difficulty", "level"], "beginner")),
+          time_limit_minutes: readNumber(sourceRecord, ["time_limit_minutes", "estimated_minutes", "estimatedMinutes", "minutes", "duration"], 15),
+          questions: directQuestions,
+        }],
       };
+    }
+    if (Array.isArray(source.items)) {
+      const tests = source.items
+        .map((item, index) => {
+          const candidate = isRecord(item) && isRecord(item.test) ? item.test : item;
+          return normalizeTest(candidate, `${pack.title} ${index + 1}`, pack.branch);
+        })
+        .filter((item): item is ImportTest => Boolean(item));
+      if (tests.length) return { version: "1.0", pack, tests };
     }
     return null;
   }
 
+  function normalizeDraftItems(raw: unknown): DraftItem[] {
+    const rows = Array.isArray(raw)
+      ? raw
+      : isRecord(raw) && Array.isArray(raw.items)
+        ? raw.items
+        : [];
+    const items: DraftItem[] = [];
+    rows.forEach((item, index) => {
+      if (!isRecord(item)) return;
+      const testValue = item.test;
+      const draftItem: DraftItem = {
+        test: typeof testValue === "number" ? testValue : undefined,
+        test_slug: readString(item, ["test_slug", "slug", "testSlug"]),
+        title: readString(item, ["title", "name"]),
+        order: readNumber(item, ["order"], index + 1),
+        is_required: typeof item.is_required === "boolean" ? item.is_required : item.required !== false,
+      };
+      if (draftItem.test || draftItem.test_slug) items.push(draftItem);
+    });
+    return items;
+  }
+
   function skippedMessage(skipped: Array<{ title: string; reason: string }>) {
     if (!skipped.length) return "";
-    const reasons = skipped.slice(0, 3).map((item) => `${item.title}: ${item.reason}`).join(" | ");
+    const reasons = skipped.slice(0, 3).map((item) => {
+      const row = item as typeof item & { layer?: string; code?: string; field?: string };
+      const prefix = [row.layer, row.code].filter(Boolean).join("/");
+      return `${row.title}${prefix ? ` [${prefix}]` : ""}: ${row.reason}`;
+    }).join(" | ");
     return `${skipped.length} test yaratilmadi. ${reasons}`;
   }
 
   async function importStrictSource(source: StrictPackImportSource) {
     if (!source.tests.length) {
-      setWarning("JSON ichida tests bo'sh. Kamida bitta test bo'lmasa pack yaratilmaydi.");
+      setImportError("client_schema", "tests_empty", "JSON ichida tests bo'sh. Kamida bitta test bo'lmasa pack yaratilmaydi.");
       return;
     }
     setSaving(true);
@@ -178,23 +390,16 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
       setNotice(`${result.pack.title} DBga saqlandi. ${result.tests.length} test yaratildi.`);
       setError(skippedMessage(result.skipped));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Pack import failed.");
+      setImportError("api_transport", "import_request_failed", err instanceof Error ? err.message : "Pack import failed.");
     } finally {
       setSaving(false);
     }
   }
 
   async function createPackWithItems(items: DraftItem[]) {
-    const knownIds = new Set(tests.map((test) => test.id));
-    const knownSlugs = new Set(tests.map((test) => test.slug));
-    const validItems = items.filter((item) => {
-      if (item.test && knownIds.has(item.test)) return true;
-      if (item.test_slug && knownSlugs.has(item.test_slug)) return true;
-      return false;
-    });
-    const invalidCount = items.length - validItems.length;
-    if (!validItems.length) {
-      setWarning("Import yoki paste qilingan testlar topilmadi. Bo'sh pack yaratilmaydi.");
+    const cleanItems = items.filter((item) => item.test || item.test_slug);
+    if (!cleanItems.length) {
+      setImportError("client_schema", "items_empty", "JSON yoki paste ichida testlar topilmadi. `tests` orqali savollar bilan import qiling yoki `items` ichida `test_slug` bering.");
       return;
     }
     setSaving(true);
@@ -213,16 +418,14 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
         is_active: true,
       });
       savePackManageCode(pack.slug, pack.manage_code);
-      if (validItems.length) {
-        const result = await questApi.bulkCreateExamPackItems(pack.slug, { manage_code: pack.manage_code, items: validItems });
+      if (cleanItems.length) {
+        const result = await questApi.bulkCreateExamPackItems(pack.slug, { manage_code: pack.manage_code, items: cleanItems });
         if (!result.created.length) {
-          setWarning("Testlar packga qo'shilmadi. Bo'sh pack saqlanmadi.");
+          setImportError("backend_db", "no_items_created", `Testlar packga qo'shilmadi. ${result.skipped.slice(0, 3).map((item) => `${item.test_slug || "test"} [${[item.layer, item.code].filter(Boolean).join("/") || "backend"}]: ${item.reason}`).join(" | ")}`);
           return;
         }
         if (result.skipped.length) {
-          setError(`${result.skipped.length + invalidCount} test qo'shilmadi.`);
-        } else if (invalidCount) {
-          setError(`${invalidCount} test topilmadi va qo'shilmadi.`);
+          setError(`${result.skipped.length} test qo'shilmadi. ${result.skipped.slice(0, 2).map((item) => `${item.test_slug || "test"} [${[item.layer, item.code].filter(Boolean).join("/") || "backend"}]: ${item.reason}`).join(" | ")}`);
         }
         pack.item_count = result.created.length;
         pack.items = result.created;
@@ -234,7 +437,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
       setLoadedFileName("");
       setNotice(`${pack.title} DBga saqlandi.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Exam pack create failed.");
+      setImportError("api_transport", "pack_items_request_failed", err instanceof Error ? err.message : "Exam pack create failed.");
     } finally {
       setSaving(false);
     }
@@ -248,19 +451,17 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
     const value = pasteValue.trim();
     if (value) {
       try {
-        const parsed = value.startsWith("{") || value.startsWith("[")
-          ? JSON.parse(value) as ({ items?: DraftItem[] } | DraftItem[] | StrictPackImportSource)
-          : parseLines(value);
+        const parsed = parsePastedValue(value);
         const source = normalizeImportSource(parsed);
         if (source) {
           await importStrictSource(source);
           return;
         }
-        const items = Array.isArray(parsed) ? parsed : "items" in parsed ? parsed.items ?? [] : [];
+        const items = normalizeDraftItems(parsed);
         await createPackWithItems(items);
         return;
       } catch (err) {
-        setWarning(err instanceof Error ? `JSON parse xatosi: ${err.message}` : "JSON parse xatosi.");
+        setImportError("client_parse", "json_parse_failed", err instanceof Error ? `JSON parse xatosi: ${err.message}` : "JSON parse xatosi.");
         return;
       }
     }
@@ -271,35 +472,22 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
     setError("");
     setNotice("");
     try {
-      const parsed = JSON.parse(await file.text()) as {
-        version?: string;
-        pack?: Partial<ApiExamPack> | StrictPackImportSource["pack"];
-        tests?: StrictPackImportSource["tests"];
-        questions?: StrictPackImportSource["tests"][number]["questions"];
-        items?: Array<{ test_slug?: string; title?: string; order?: number; is_required?: boolean }>;
-      };
+      const parsed = parsePastedValue(await file.text());
       const source = normalizeImportSource(parsed);
       if (source) {
-        setJsonSource(source);
-        setDraftItems([]);
-        setSelectedTestIds([]);
-        setMode("draft");
         setLoadedFileName(file.name);
-        setNotice(`${file.name} tayyor: ${source.tests.length} test. Hali DBga saqlanmadi, chapdagi Create pack bosing.`);
+        await importStrictSource(source);
         return;
       }
-      if (parsed.items?.length) {
-        setDraftItems(parsed.items);
-        setJsonSource(null);
-        setSelectedTestIds([]);
-        setMode("draft");
+      const items = normalizeDraftItems(parsed);
+      if (items.length) {
         setLoadedFileName(file.name);
-        setNotice(`${parsed.items.length} item tayyor. Hali DBga saqlanmadi, chapdagi Create pack bosing.`);
+        await createPackWithItems(items);
         return;
       }
-      setWarning("JSON ichida tests yoki items topilmadi. Bo'sh pack yaratilmaydi.");
+      setImportError("client_schema", "import_shape_unknown", "JSON ichida tests yoki items topilmadi. Bo'sh pack yaratilmaydi.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "JSON load failed.");
+      setImportError("client_parse", "file_parse_failed", err instanceof Error ? err.message : "JSON load failed.");
     } finally {
       if (fileRef.current) fileRef.current.value = "";
     }
@@ -378,12 +566,12 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
         <div>
           <Eyebrow>Import</Eyebrow>
           <h2 className="mt-2 text-2xl font-semibold">JSON pack</h2>
-          <p className="mt-2 text-sm leading-6 text-black/55">Qat&apos;iy strukturadagi JSONni paste qiling yoki fayl tanlang. Saqlash faqat chapdagi Create pack orqali bo&apos;ladi.</p>
+          <p className="mt-2 text-sm leading-6 text-black/55">JSONni paste qiling yoki fayl tanlang. Paste qilinganda chapdagi Create pack bosiladi, fayl upload qilinganda darhol DBga import qilinadi.</p>
         </div>
 
         <section className="mt-5 rounded-3xl border border-black/8 bg-[#fbfbf6] p-4">
           <FieldShell label="Strict JSON yoki { items: [...] }">
-            <textarea value={pasteValue} onChange={(event) => { setPasteValue(event.target.value); setJsonSource(null); setDraftItems([]); setSelectedTestIds([]); setMode("draft"); setLoadedFileName(""); setNotice(event.target.value.trim() ? "Paste qilingan JSON hali DBga saqlanmagan. Saqlash uchun chapdagi Create pack bosing." : ""); setError(""); }} rows={10} className={premiumInputClass} placeholder="{\n  &quot;version&quot;: &quot;1.0&quot;,\n  &quot;pack&quot;: { &quot;title&quot;: &quot;Linear Algebra Foundations&quot;, &quot;subject&quot;: &quot;math&quot;, &quot;branch&quot;: &quot;linear-algebra&quot;, &quot;level&quot;: &quot;foundations&quot;, &quot;language&quot;: &quot;uz&quot; },\n  &quot;tests&quot;: [{ &quot;title&quot;: &quot;Vectors Basics&quot;, &quot;topic&quot;: &quot;vectors&quot;, &quot;difficulty&quot;: &quot;easy&quot;, &quot;time_limit_minutes&quot;: 15, &quot;questions&quot;: [] }]\n}" />
+            <textarea value={pasteValue} onChange={(event) => { setPasteValue(event.target.value); setJsonSource(null); setDraftItems([]); setSelectedTestIds([]); setMode("draft"); setLoadedFileName(""); setNotice(event.target.value.trim() ? "Paste qilingan JSON hali DBga saqlanmagan. Saqlash uchun chapdagi Create pack bosing." : ""); setError(""); }} rows={10} className={premiumInputClass} placeholder="{\n  &quot;version&quot;: &quot;1.0&quot;,\n  &quot;pack&quot;: { &quot;title&quot;: &quot;Linear Algebra Foundations&quot;, &quot;subject&quot;: &quot;math&quot;, &quot;branch&quot;: &quot;linear-algebra&quot;, &quot;level&quot;: &quot;foundations&quot;, &quot;language&quot;: &quot;uz&quot; },\n  &quot;tests&quot;: [{\n    &quot;title&quot;: &quot;Vectors Basics&quot;,\n    &quot;topic&quot;: &quot;vectors&quot;,\n    &quot;difficulty&quot;: &quot;beginner&quot;,\n    &quot;time_limit_minutes&quot;: 15,\n    &quot;questions&quot;: [{ &quot;type&quot;: &quot;single_choice&quot;, &quot;body&quot;: &quot;Question text&quot;, &quot;options&quot;: [{ &quot;id&quot;: &quot;A&quot;, &quot;text&quot;: &quot;Option A&quot; }], &quot;answer&quot;: { &quot;correct&quot;: &quot;A&quot; }, &quot;skills&quot;: [&quot;general&quot;] }]\n  }]\n}" />
           </FieldShell>
           <div className="mt-3 flex flex-wrap gap-2">
             <button onClick={() => fileRef.current?.click()} disabled={saving} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-white/70 disabled:opacity-50">
