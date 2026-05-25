@@ -1,7 +1,7 @@
-import { StudentProgressPage } from "@/features/platform/ui/panel-pages";
+import { SchoolStudentDetailPage } from "@/features/platform/ui/panel-pages";
 
 export const dynamic = "force-dynamic";
 
-export default function Page() {
-  return <StudentProgressPage />;
+export default async function Page({ params }: { params: Promise<{ studentId: string }> }) {
+  return <SchoolStudentDetailPage studentId={(await params).studentId} />;
 }

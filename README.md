@@ -28,3 +28,41 @@ npm run dev -- --port 3001
 npm run lint
 npm run build
 ```
+
+## Public Question JSON Structure
+
+Creators and import tools should use this structure for questions. `topic_slug` is mandatory because it is the primary grouping key for mastery, mistakes and recommendations.
+
+```json
+{
+  "id": 1,
+  "type": "multiple_choice",
+  "title": "Kasrli tenglama",
+  "body": "$\\\\frac{x}{4}=6$ tenglamani yeching.",
+  "options": ["$x=10$", "$x=18$", "$x=24$", "$x=28$"],
+  "answer": "$x=24$",
+  "explanation": "$\\\\frac{x}{4}=6 \\\\Rightarrow x=6\\\\cdot4 \\\\Rightarrow x=24$.",
+  "subject": "Algebra",
+  "topic": "Kasrli tenglamalar",
+  "topic_slug": "fraction-equations",
+  "skills": ["fraction-equation", "multiplication-property"],
+  "level": "beginner",
+  "difficulty": "easy",
+  "estimated_seconds": 25,
+  "mastery_weight": 1,
+  "is_fundamental": true,
+  "prerequisites": ["linear-equations"],
+  "mistake_tags": ["fraction-error", "transformation-error"],
+  "remediation": {
+    "practice_slug": "fraction-equations-practice",
+    "lesson_slug": "fraction-equations-review"
+  }
+}
+```
+
+Notes:
+
+- Use 1-3 short skill tags per question.
+- Use `estimated_seconds` only as a mastery signal, not as a harsh student-facing judgment.
+- Use `mastery_weight` `1` by default. Increase it only for important or harder questions.
+- Store historical answer analysis from metadata snapshots so edited questions do not rewrite old results.

@@ -2,11 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BarChart3, BookOpenCheck, Building2, FileWarning, GraduationCap, PackageCheck, Settings, UsersRound } from "lucide-react";
 
-import type { ApiClassResults, ApiExamPack, ApiExamPackResults, ApiSchool, ApiTeacherClass, ApiTest } from "@/shared/api/questlab-api";
+import type { ApiClassResults, ApiClassStudent, ApiExamPack, ApiExamPackResults, ApiSchool, ApiTeacherClass, ApiTest } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
+import { SchoolStudentDirectory, type SchoolStudentDirectoryRow } from "@/features/platform/ui/school-student-directory";
 import { LatexText } from "@/shared/ui/latex-text";
 import { PremiumPage, PremiumPanel } from "@/shared/ui/premium-shell";
 import { CreatorPacksManager } from "@/features/exam-packs/ui/creator-packs-manager";
+import { normalizeAnswer } from "@/features/assessment/lib/assessment-scoring";
 import { TopicBreakdownChart } from "@/components/questlab/charts/topic-breakdown-chart";
 import { WeakTopicBars } from "@/components/questlab/charts/weak-topic-bars";
 import { EntityCard as QuestEntityCard } from "@/components/questlab/cards/entity-card";
@@ -31,6 +33,16 @@ function average(values: number[]) {
   return clean.length ? Math.round(clean.reduce((sum, value) => sum + value, 0) / clean.length) : 0;
 }
 
+function maxIsoDate(current?: string | null, next?: string | null) {
+  if (!current) return next ?? null;
+  if (!next) return current;
+  return Date.parse(next) > Date.parse(current) ? next : current;
+}
+
+function maxIsoDates(values: Array<string | null | undefined>) {
+  return values.reduce<string | null>((current, next) => maxIsoDate(current, next), null);
+}
+
 async function baseData() {
   const [schools, classes, tests, packs, sessions, questions] = await Promise.all([
     questApi.schools().catch(() => []),
@@ -45,6 +57,10 @@ async function baseData() {
 
 async function classResults(classes: ApiTeacherClass[]) {
   return Promise.all(classes.map((item) => questApi.classResults(item.slug).catch(() => null)));
+}
+
+async function classStudents(classes: ApiTeacherClass[]) {
+  return Promise.all(classes.map((item) => questApi.classStudents(item.slug).catch(() => [] as ApiClassStudent[])));
 }
 
 async function packResults(packs: ApiExamPack[]) {
@@ -268,24 +284,62 @@ export async function PackDetailPage({ packId, base = "/admin/packs" }: { packId
 }
 
 export function ReportsPage({ role = "Admin" }: { role?: string }) {
+  const base = role.toLowerCase();
   return (
-    <PanelShell eyebrow={role} title="Reports" copy="Xatoliklar, savol reportlari va performance exportlar shu yerda yig'iladi.">
-      <ReportsEmpty />
-    </PanelShell>
+    <QuestPage variant="table">
+      <QuestPageHeader eyebrow={role} title="Reports" copy="Performance, moderation and export-ready report workspaces." />
+      <div className="quest-metric-grid">
+        <TeacherMetric label="Report types" value={4} />
+        <TeacherMetric label="Exports" value="CSV/PDF" />
+        <TeacherMetric label="Review queue" value="Ready" />
+        <TeacherMetric label="Status" value="Operational" />
+      </div>
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <Card className="p-5">
+          <TeacherSectionHeader title="Report workspaces" />
+          <div className="mt-4 quest-card-grid-3">
+            <GenericEntityCard title="Performance report" href={`/${base}/reports/performance`} meta="Scores, attempts and class progress" stats={[{ label: "Scope", value: role }, { label: "Format", value: "CSV" }]} />
+            <GenericEntityCard title="Weak topic report" href={`/${base}/reports/weak-topics`} meta="Topic and skill mastery signals" stats={[{ label: "Chart", value: "Bar" }, { label: "Status", value: "ready" }]} />
+            <GenericEntityCard title="Question quality report" href={`/${base}/reports/questions`} meta="Reported or low-performing questions" stats={[{ label: "Review", value: "manual" }, { label: "Priority", value: "medium" }]} />
+            <GenericEntityCard title="Session export" href={`/${base}/reports/sessions`} meta="Submitted sessions and result exports" stats={[{ label: "Export", value: "CSV" }, { label: "Data", value: "live" }]} />
+          </div>
+        </Card>
+        <aside className="grid h-fit gap-5 xl:sticky xl:top-24">
+          <Card className="p-5">
+            <TeacherSectionHeader title="Report readiness" />
+            <div className="mt-4">
+              <WeakTopicBars rows={[
+                { label: "Performance", value: 92, meta: "available" },
+                { label: "Weak topics", value: 86, meta: "available" },
+                { label: "Question quality", value: 64, meta: "needs review data" },
+                { label: "Exports", value: 78, meta: "CSV ready" },
+              ]} />
+            </div>
+          </Card>
+        </aside>
+      </div>
+    </QuestPage>
   );
 }
 
 export function SettingsPage({ role = "Admin" }: { role?: string }) {
   return (
-    <PanelShell eyebrow={role} title="Settings" copy="Account, permission va platforma sozlamalari.">
-      <Section title="MVP settings">
-        <CardGrid cards={[
-          { title: "Profile", href: "/profile", meta: "Account settings", copy: "Username, phone va active role." },
-          { title: "Access", href: "/profile", meta: "Role permissions", copy: "Admin role switch, school/teacher/student permissions." },
-          { title: "Data export", href: "#", meta: "Soon", copy: "PDF/Excel export keyingi bosqichda ulanadi." },
-        ]} />
-      </Section>
-    </PanelShell>
+    <QuestPage variant="reading">
+      <QuestPageHeader eyebrow={role} title="Settings" copy="Account, permissions and platform configuration." />
+      <div className="quest-metric-grid">
+        <TeacherMetric label="Role" value={role} />
+        <TeacherMetric label="Access" value="Active" />
+        <TeacherMetric label="Exports" value="Enabled" />
+      </div>
+      <Card className="p-5">
+        <TeacherSectionHeader title="Settings areas" />
+        <div className="mt-4 grid gap-3">
+          <GenericEntityCard title="Profile" href="/profile" meta="Username, phone and active role" />
+          <GenericEntityCard title="Access control" href="/profile" meta="Role permissions and workspace access" />
+          <GenericEntityCard title="Data export" href="/profile" meta="Report export preferences and account data" />
+        </div>
+      </Card>
+    </QuestPage>
   );
 }
 
@@ -585,7 +639,27 @@ export async function SchoolClassesPage() {
         <TeacherMetric label="Assignments" value={classes.reduce((sum, item) => sum + item.assignment_count, 0)} />
         <TeacherMetric label="Average score" value={`${average(validResults.map((item) => item.average_score))}%`} />
       </div>
-      <Card className="p-5"><TeacherSectionHeader title="Class workspaces" /><div className="mt-4 quest-card-grid-3">{classes.map((item) => <SchoolClassCard key={item.id} classroom={item} result={validResults.find((row) => row.classroom.slug === item.slug)} />)}{!classes.length ? <QuestEmptyState title="No classes yet" /> : null}</div></Card>
+      <Card className="p-5">
+        <TeacherSectionHeader title="Class workspaces" />
+        <div className="mt-4 overflow-hidden rounded-[var(--radius-card)] border border-line">
+          <div className="grid grid-cols-[1.1fr_1fr_120px_120px_130px] gap-3 border-b border-line bg-surface-soft px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-subtle max-lg:hidden">
+            <span>Class</span><span>Teacher</span><span>Students</span><span>Assignments</span><span>Average</span>
+          </div>
+          {classes.map((item) => {
+            const result = validResults.find((row) => row.classroom.slug === item.slug);
+            return (
+              <Link key={item.id} href={`/school/classes/${item.slug}`} className="grid gap-3 border-b border-line px-4 py-4 hover:bg-surface-soft lg:grid-cols-[1.1fr_1fr_120px_120px_130px] lg:items-center">
+                <div><p className="font-semibold">{item.name}</p><p className="mt-1 text-xs text-muted">{item.slug}</p></div>
+                <p className="text-sm text-muted">{item.teacher_name}</p>
+                <p className="text-sm text-muted">{item.student_count}</p>
+                <p className="text-sm text-muted">{item.assignment_count}</p>
+                <Badge variant={result && result.average_score >= 70 ? "success" : "warning"}>{result ? `${result.average_score}%` : "No data"}</Badge>
+              </Link>
+            );
+          })}
+          {!classes.length ? <div className="p-5"><QuestEmptyState title="No classes yet" /></div> : null}
+        </div>
+      </Card>
     </QuestPage>
   );
 }
@@ -610,30 +684,232 @@ export async function SchoolTeachersPage() {
 export async function SchoolStudentsPage() {
   const school = await firstSchool();
   const classes = await questApi.schoolClasses(school.slug);
-  const results = await classResults(classes);
-  const students = results.flatMap((result) => result?.student_progress.map((student) => ({ ...student, className: result.classroom.name, classSlug: result.classroom.slug })) ?? []);
+  const [results, rosters] = await Promise.all([classResults(classes), classStudents(classes)]);
+  const progressRows = results.flatMap((result) => result?.student_progress.map((student) => ({ ...student, className: result.classroom.name, classSlug: result.classroom.slug, classId: result.classroom.id })) ?? []);
+  const rosterRows = rosters.flatMap((rows, index) => rows.map((student) => ({
+    student_name: student.name,
+    student_code: student.student_code || String(student.id),
+    completed: 0,
+    average_score: 0,
+    last_submitted_at: null as string | null,
+    className: classes[index]?.name ?? "Class",
+    classSlug: classes[index]?.slug ?? "",
+    classId: classes[index]?.id ?? student.classroom,
+  })));
+  const byStudent = new Map<string, SchoolStudentDirectoryRow>();
+  [...rosterRows, ...progressRows].forEach((student) => {
+    const key = student.student_code || `${student.classSlug}-${student.student_name}`;
+    const current = byStudent.get(key);
+    const classNames = Array.from(new Set([...(current?.classNames ?? []), student.className].filter(Boolean)));
+    byStudent.set(key, {
+      studentCode: key,
+      studentName: student.student_name,
+      classNames,
+      classSlug: student.classSlug || current?.classSlug || "",
+      completed: Math.max(current?.completed ?? 0, student.completed),
+      averageScore: Math.max(current?.averageScore ?? 0, student.average_score),
+      lastSubmittedAt: maxIsoDate(current?.lastSubmittedAt, student.last_submitted_at),
+      status: student.average_score >= 85 ? "strong" : student.average_score >= 70 ? "good" : student.average_score > 0 ? "needs_review" : "no_data",
+    });
+  });
+  const students = Array.from(byStudent.values()).sort((a, b) => a.studentName.localeCompare(b.studentName));
   return (
     <QuestPage variant="table">
       <QuestPageHeader eyebrow="School" title="Students" copy="Student progress across school classes." />
       <div className="quest-metric-grid">
         <TeacherMetric label="Students" value={students.length} />
         <TeacherMetric label="Classes" value={classes.length} />
-        <TeacherMetric label="Average score" value={`${average(students.map((item) => item.average_score))}%`} />
-        <TeacherMetric label="Needs review" value={students.filter((item) => item.average_score < 70).length} />
+        <TeacherMetric label="Average score" value={`${average(students.map((item) => item.averageScore))}%`} />
+        <TeacherMetric label="Needs review" value={students.filter((item) => item.status === "needs_review").length} />
       </div>
       <Card className="p-5">
         <TeacherSectionHeader title="Student table" />
-        <div className="mt-4 overflow-hidden rounded-[var(--radius-card)] border border-line">
-          <div className="grid grid-cols-[1fr_1fr_120px_120px_180px] gap-3 border-b border-line bg-surface-soft px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-subtle max-lg:hidden"><span>Student</span><span>Class</span><span>Completed</span><span>Average</span><span>Last submit</span></div>
-          {students.map((student) => (
-            <Link key={`${student.classSlug}-${student.student_code}`} href={`/school/students/${student.student_code}`} className="grid gap-3 border-b border-line px-4 py-4 hover:bg-surface-soft lg:grid-cols-[1fr_1fr_120px_120px_180px] lg:items-center">
-              <div><p className="font-semibold">{student.student_name}</p><p className="mt-1 text-xs text-muted">{student.student_code}</p></div>
-              <p className="text-sm text-muted">{student.className}</p><p className="text-sm text-muted">{student.completed} tests</p><Badge variant={student.average_score >= 70 ? "success" : "warning"}>{student.average_score}%</Badge><p className="text-sm text-muted">{student.last_submitted_at ? new Date(student.last_submitted_at).toLocaleString() : "No submit"}</p>
-            </Link>
-          ))}
-          {!students.length ? <div className="p-5"><QuestEmptyState title="No student results yet" /></div> : null}
-        </div>
+        <SchoolStudentDirectory students={students} />
       </Card>
+    </QuestPage>
+  );
+}
+
+export async function SchoolClassDetailPage({ classId }: { classId: string }) {
+  const school = await firstSchool();
+  const [classes, teachers] = await Promise.all([
+    questApi.schoolClasses(school.slug),
+    questApi.schoolTeachers(school.slug).catch(() => []),
+  ]);
+  const classroom = byIdOrSlug(classes, classId);
+  if (!classroom) notFound();
+  const [results, students] = await Promise.all([
+    questApi.classResults(classroom.slug).catch(() => null),
+    questApi.classStudents(classroom.slug).catch(() => []),
+  ]);
+  const classTeachers = teachers.filter((teacher) => teacher.class_slugs.includes(classroom.slug) || teacher.classes.includes(classroom.id));
+  const progressByCode = new Map((results?.student_progress ?? []).map((student) => [student.student_code, student]));
+  const studentRows = students.map((student) => {
+    const progress = progressByCode.get(student.student_code);
+    return {
+      code: student.student_code || String(student.id),
+      name: student.name,
+      completed: progress?.completed ?? 0,
+      average: progress?.average_score ?? 0,
+      last: progress?.last_submitted_at ?? null,
+    };
+  });
+  const resultRows = results?.results ?? [];
+  const weakRows = (results?.weak_skills ?? []).slice(0, 6).map((item) => ({ label: item.skill, value: item.percent, meta: `${item.correct}/${item.total} correct` }));
+  return (
+    <QuestPage variant="table">
+      <QuestPageHeader eyebrow="School class" title={classroom.name} copy={`${classroom.teacher_name} classi: teachers, students and test results.`} />
+      <div className="quest-metric-grid">
+        <TeacherMetric label="Teachers" value={classTeachers.length || 1} />
+        <TeacherMetric label="Students" value={students.length || classroom.student_count} />
+        <TeacherMetric label="Assignments" value={classroom.assignment_count} />
+        <TeacherMetric label="Average score" value={`${results?.average_score ?? 0}%`} />
+        <TeacherMetric label="Attempts" value={results?.attempts ?? 0} />
+      </div>
+      <div className="quest-main-aside-grid">
+        <div className="grid gap-5">
+          <Card className="p-5">
+            <TeacherSectionHeader title="Teachers" />
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {(classTeachers.length ? classTeachers : [{ id: 0, name: classroom.teacher_name, email: "", teacher_code: "", class_count: 1, is_active: true }]).map((teacher) => (
+                <Link key={teacher.id || teacher.name} href={teacher.id ? `/school/teachers/${teacher.id}` : "/school/teachers"} className="quest-card p-4 hover:bg-surface-soft">
+                  <h3 className="font-semibold">{teacher.name}</h3>
+                  <p className="mt-1 text-sm text-muted">{teacher.email || teacher.teacher_code || "Class teacher"}</p>
+                </Link>
+              ))}
+            </div>
+          </Card>
+          <Card className="p-5">
+            <TeacherSectionHeader title="Students" />
+            <div className="mt-4 grid gap-3">
+              {studentRows.map((student) => (
+                <Link key={student.code} href={`/school/students/${student.code}`} className="grid gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-4 hover:bg-surface-soft md:grid-cols-[1fr_110px_110px_180px] md:items-center">
+                  <div><p className="font-semibold">{student.name}</p><p className="mt-1 text-xs text-muted">{student.code}</p></div>
+                  <p className="text-sm text-muted">{student.completed} tests</p>
+                  <Badge variant={student.average >= 70 ? "success" : student.average > 0 ? "warning" : "default"}>{student.average ? `${student.average}%` : "No data"}</Badge>
+                  <p className="text-sm text-muted">{student.last ? new Date(student.last).toLocaleString() : "No submit"}</p>
+                </Link>
+              ))}
+              {!studentRows.length ? <QuestEmptyState title="No students yet" /> : null}
+            </div>
+          </Card>
+          <Card className="p-5">
+            <TeacherSectionHeader title="Recent test results" />
+            <div className="mt-4 grid gap-3">
+              {resultRows.slice(0, 12).map((row) => (
+                <Link key={row.session_id} href={`/school/results/${row.session_id}`} className="grid gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-4 hover:bg-surface-soft md:grid-cols-[1fr_1fr_100px_180px] md:items-center">
+                  <div><p className="font-semibold">{row.student_name}</p><p className="mt-1 text-xs text-muted">{row.student_code}</p></div>
+                  <p className="text-sm text-muted">{row.test_title}</p>
+                  <Badge variant={row.score >= 70 ? "success" : "warning"}>{row.score}%</Badge>
+                  <p className="text-sm text-muted">{row.submitted_at ? new Date(row.submitted_at).toLocaleString() : "No submit"}</p>
+                </Link>
+              ))}
+              {!resultRows.length ? <QuestEmptyState title="No submitted tests yet" /> : null}
+            </div>
+          </Card>
+        </div>
+        <aside className="grid h-fit gap-5 xl:sticky xl:top-24">
+          <Card className="p-5"><TeacherSectionHeader title="Weak skills" /><div className="mt-4">{weakRows.length ? <WeakTopicBars rows={weakRows} /> : <QuestEmptyState title="No weak skills yet" />}</div></Card>
+          <Card className="p-5"><TeacherSectionHeader title="Class settings" /><div className="mt-4 grid gap-3"><MiniInfo label="Visibility" value={classroom.visibility} /><MiniInfo label="Join code" value={classroom.join_code || "Not set"} /><MiniInfo label="Manage code" value={classroom.manage_code ? "set" : "missing"} /></div></Card>
+        </aside>
+      </div>
+    </QuestPage>
+  );
+}
+
+export async function SchoolTeacherDetailPage({ teacherId }: { teacherId: string }) {
+  const school = await firstSchool();
+  const [teachers, classes] = await Promise.all([
+    questApi.schoolTeachers(school.slug),
+    questApi.schoolClasses(school.slug),
+  ]);
+  const teacher = teachers.find((item) => String(item.id) === teacherId || item.teacher_code === teacherId);
+  if (!teacher) notFound();
+  const teacherClasses = classes.filter((item) => teacher.class_slugs.includes(item.slug) || teacher.classes.includes(item.id) || item.teacher_name === teacher.name);
+  const results = (await classResults(teacherClasses)).filter((item): item is ApiClassResults => Boolean(item));
+  const students = new Set(results.flatMap((item) => item.student_progress.map((student) => student.student_code))).size;
+  const recentResults = results.flatMap((item) => item.results.map((row) => ({ ...row, className: item.classroom.name, classSlug: item.classroom.slug }))).sort((a, b) => Date.parse(b.submitted_at ?? "") - Date.parse(a.submitted_at ?? "")).slice(0, 12);
+  const weakRows = results.flatMap((item) => item.weak_skills.slice(0, 2).map((skill) => ({ label: skill.skill, value: skill.percent, meta: item.classroom.name }))).slice(0, 6);
+  return (
+    <QuestPage variant="table">
+      <QuestPageHeader eyebrow="School teacher" title={teacher.name} copy={teacher.email || teacher.teacher_code || "Teacher profile and class activity."} />
+      <div className="quest-metric-grid">
+        <TeacherMetric label="Classes" value={teacherClasses.length} />
+        <TeacherMetric label="Students" value={students} />
+        <TeacherMetric label="Attempts" value={results.reduce((sum, item) => sum + item.attempts, 0)} />
+        <TeacherMetric label="Average score" value={`${average(results.map((item) => item.average_score))}%`} />
+        <TeacherMetric label="Status" value={teacher.is_active ? "active" : "inactive"} />
+      </div>
+      <div className="quest-main-aside-grid">
+        <div className="grid gap-5">
+          <Card className="p-5"><TeacherSectionHeader title="Classes" /><div className="mt-4 quest-card-grid-3">{teacherClasses.map((item) => <SchoolClassCard key={item.id} classroom={item} result={results.find((result) => result.classroom.slug === item.slug)} />)}{!teacherClasses.length ? <QuestEmptyState title="No classes assigned" /> : null}</div></Card>
+          <Card className="p-5">
+            <TeacherSectionHeader title="Recent student results" />
+            <div className="mt-4 grid gap-3">
+              {recentResults.map((row) => (
+                <Link key={`${row.session_id}-${row.classSlug}`} href={`/school/students/${row.student_code}`} className="grid gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-4 hover:bg-surface-soft md:grid-cols-[1fr_1fr_100px_150px] md:items-center">
+                  <div><p className="font-semibold">{row.student_name}</p><p className="mt-1 text-xs text-muted">{row.className}</p></div>
+                  <p className="text-sm text-muted">{row.test_title}</p>
+                  <Badge variant={row.score >= 70 ? "success" : "warning"}>{row.score}%</Badge>
+                  <p className="text-sm text-muted">{row.submitted_at ? new Date(row.submitted_at).toLocaleDateString() : "No submit"}</p>
+                </Link>
+              ))}
+              {!recentResults.length ? <QuestEmptyState title="No submitted tests yet" /> : null}
+            </div>
+          </Card>
+        </div>
+        <aside className="grid h-fit gap-5 xl:sticky xl:top-24">
+          <Card className="p-5"><TeacherSectionHeader title="Teacher info" /><div className="mt-4 grid gap-3"><MiniInfo label="Email" value={teacher.email || "No email"} /><MiniInfo label="Code" value={teacher.teacher_code || "No code"} /><MiniInfo label="Class count" value={teacher.class_count} /></div></Card>
+          <Card className="p-5"><TeacherSectionHeader title="Weak skills" /><div className="mt-4">{weakRows.length ? <WeakTopicBars rows={weakRows} /> : <QuestEmptyState title="No weak skills yet" />}</div></Card>
+        </aside>
+      </div>
+    </QuestPage>
+  );
+}
+
+export async function SchoolStudentDetailPage({ studentId }: { studentId: string }) {
+  const school = await firstSchool();
+  const classes = await questApi.schoolClasses(school.slug);
+  const [results, rosters] = await Promise.all([classResults(classes), classStudents(classes)]);
+  const rosterMatches = rosters.flatMap((rows, index) => rows.map((student) => ({ ...student, className: classes[index]?.name ?? "Class", classSlug: classes[index]?.slug ?? "" }))).filter((student) => String(student.id) === studentId || student.student_code === studentId);
+  const resultRows = results.flatMap((result) => result?.results.map((row) => ({ ...row, className: result.classroom.name, classSlug: result.classroom.slug })) ?? []).filter((row) => row.student_code === studentId || rosterMatches.some((student) => student.student_code === row.student_code));
+  const progressRows = results.flatMap((result) => result?.student_progress.map((student) => ({ ...student, className: result.classroom.name, classSlug: result.classroom.slug })) ?? []).filter((student) => student.student_code === studentId || rosterMatches.some((row) => row.student_code === student.student_code));
+  const name = progressRows[0]?.student_name ?? rosterMatches[0]?.name;
+  if (!name) notFound();
+  const averageScore = average(progressRows.map((item) => item.average_score));
+  const completed = progressRows.reduce((sum, item) => sum + item.completed, 0);
+  const classesText = Array.from(new Set([...progressRows.map((item) => item.className), ...rosterMatches.map((item) => item.className)])).join(", ");
+  const lastSubmit = maxIsoDates(progressRows.map((item) => item.last_submitted_at));
+  return (
+    <QuestPage variant="table">
+      <QuestPageHeader eyebrow="School student" title={name} copy={`${studentId} bo'yicha classlar, test natijalari va o'zlashtirish.`} />
+      <div className="quest-metric-grid">
+        <TeacherMetric label="Classes" value={classesText || "No class"} />
+        <TeacherMetric label="Completed tests" value={completed} />
+        <TeacherMetric label="Average score" value={`${averageScore}%`} />
+        <TeacherMetric label="Last submit" value={lastSubmit ? new Date(lastSubmit).toLocaleDateString() : "No submit"} />
+        <TeacherMetric label="Status" value={averageScore >= 85 ? "strong" : averageScore >= 70 ? "good" : averageScore > 0 ? "needs review" : "no data"} />
+      </div>
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <Card className="p-5">
+          <TeacherSectionHeader title="Test result history" />
+          <div className="mt-4 grid gap-3">
+            {resultRows.map((row) => (
+              <Link key={row.session_id} href={`/school/results/${row.session_id}`} className="grid gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-4 hover:bg-surface-soft md:grid-cols-[1fr_1fr_100px_180px] md:items-center">
+                <div><p className="font-semibold">{row.test_title}</p><p className="mt-1 text-xs text-muted">{row.className}</p></div>
+                <p className="text-sm text-muted">{row.correct}/{row.total} correct</p>
+                <Badge variant={row.score >= 70 ? "success" : "warning"}>{row.score}%</Badge>
+                <p className="text-sm text-muted">{row.submitted_at ? new Date(row.submitted_at).toLocaleString() : "No submit"}</p>
+              </Link>
+            ))}
+            {!resultRows.length ? <QuestEmptyState title="No test results yet" /> : null}
+          </div>
+        </Card>
+        <aside className="grid h-fit gap-5 lg:sticky lg:top-24">
+          <Card className="p-5"><TeacherSectionHeader title="Progress by class" /><div className="mt-4 grid gap-3">{progressRows.map((row) => <Link key={row.classSlug} href={`/school/classes/${row.classSlug}`} className="rounded-[var(--radius-card)] border border-line bg-surface p-4 hover:bg-surface-soft"><h3 className="font-semibold">{row.className}</h3><p className="mt-2 text-sm text-muted">{row.completed} completed · {row.average_score}% average</p></Link>)}{!progressRows.length ? <QuestEmptyState title="No progress yet" /> : null}</div></Card>
+          <Card className="p-5"><TeacherSectionHeader title="Student info" /><div className="mt-4 grid gap-3"><MiniInfo label="Code" value={studentId} /><MiniInfo label="Classes" value={classesText || "No class"} /><MiniInfo label="Visibility" value="school" /></div></Card>
+        </aside>
+      </div>
     </QuestPage>
   );
 }
@@ -746,7 +1022,7 @@ export async function TeacherHomePage() {
             <TeacherSectionHeader title="Recent submissions" action={<Button asChild variant="secondary" size="sm"><Link href="/teacher/results">All</Link></Button>} />
             <div className="mt-4 grid gap-3">
               {recentResults.map((row) => (
-                <Link key={row.session_id} href={`/results/${row.session_id}`} className="rounded-[var(--radius-card)] border border-line bg-surface p-3 hover:bg-surface-soft">
+                <Link key={row.session_id} href={`/teacher/results/${row.session_id}`} className="rounded-[var(--radius-card)] border border-line bg-surface p-3 hover:bg-surface-soft">
                   <div className="flex items-center justify-between gap-3">
                     <p className="line-clamp-1 text-sm font-semibold">{row.student_name}</p>
                     <Badge variant={row.score >= 70 ? "success" : "warning"}>{row.score}%</Badge>
@@ -787,7 +1063,7 @@ export async function TeacherResultsPage() {
               <span>Student</span><span>Class</span><span>Test</span><span>Correct</span><span>Score</span>
             </div>
             {rows.map((row) => (
-              <Link key={row.session_id} href={`/results/${row.session_id}`} className="grid gap-3 border-b border-line px-4 py-4 hover:bg-surface-soft lg:grid-cols-[1.1fr_1fr_1fr_100px_110px] lg:items-center">
+              <Link key={row.session_id} href={`/teacher/results/${row.session_id}`} className="grid gap-3 border-b border-line px-4 py-4 hover:bg-surface-soft lg:grid-cols-[1.1fr_1fr_1fr_100px_110px] lg:items-center">
                 <div><p className="font-semibold">{row.student_name}</p><p className="mt-1 text-xs text-muted">{row.submitted_at ? new Date(row.submitted_at).toLocaleString() : "Submitted"}</p></div>
                 <p className="text-sm text-muted">{row.className}</p>
                 <p className="line-clamp-1 text-sm text-muted">{row.test_title}</p>
@@ -801,6 +1077,151 @@ export async function TeacherResultsPage() {
         <aside className="grid h-fit gap-5 xl:sticky xl:top-24">
           <Card className="p-5"><TeacherSectionHeader title="Class average" /><div className="mt-4"><TopicBreakdownChart rows={classRows} color="var(--chart-2)" /></div></Card>
           <Card className="p-5"><TeacherSectionHeader title="Weak topic mastery" /><div className="mt-4">{weakRows.length ? <WeakTopicBars rows={weakRows} /> : <QuestEmptyState title="No weak topics yet" />}</div></Card>
+        </aside>
+      </div>
+    </QuestPage>
+  );
+}
+
+export async function TeacherResultDetailPage({ resultId }: { resultId: string }) {
+  const [session, tests, classes] = await Promise.all([
+    questApi.session(resultId),
+    questApi.tests(),
+    questApi.classes(),
+  ]);
+  const scopedSession = session as typeof session & { classroom?: number | null };
+  const test = tests.find((item) => item.id === session.test);
+  if (!test) notFound();
+  const classroom = classes.find((item) => item.id === scopedSession.classroom);
+  const answerMap = new Map(session.answers.map((answer) => [answer.question, answer.value]));
+  const rows = test.test_questions.map((item) => {
+    const answer = answerMap.get(item.question.id) ?? "";
+    const correct = normalizeAnswer(answer) === normalizeAnswer(item.question.answer);
+    return { ...item, answer, correct };
+  });
+  const correct = rows.filter((row) => row.correct).length;
+  const score = rows.length ? Math.round((correct / rows.length) * 100) : 0;
+  const weakSkills = rows
+    .filter((row) => !row.correct)
+    .flatMap((row) => row.question.skill_titles.length ? row.question.skill_titles : ["general"])
+    .reduce((map, skill) => map.set(skill, (map.get(skill) ?? 0) + 1), new Map<string, number>());
+  const weakRows = Array.from(weakSkills.entries()).map(([label, value]) => ({ label, value: Math.max(4, 100 - value * 20), meta: `${value} wrong` })).slice(0, 6);
+  return (
+    <QuestPage variant="table">
+      <QuestPageHeader eyebrow="Teacher result" title={test.title} copy={`${session.student_name || session.student_code || "Student"} result detail.`} actions={<Button asChild variant="secondary"><Link href="/teacher/results">Back to results</Link></Button>} />
+      <div className="quest-metric-grid">
+        <TeacherMetric label="Student" value={session.student_name || session.student_code || "No name"} />
+        <TeacherMetric label="Class" value={classroom?.name ?? "No class"} />
+        <TeacherMetric label="Score" value={`${score}%`} />
+        <TeacherMetric label="Correct" value={`${correct}/${rows.length}`} />
+        <TeacherMetric label="Submitted" value={session.submitted_at ? new Date(session.submitted_at).toLocaleDateString() : "No submit"} />
+      </div>
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <Card className="p-5">
+          <TeacherSectionHeader title="Question results" />
+          <div className="mt-4 grid gap-3">
+            {rows.map((row) => (
+              <div key={row.question.id} className="rounded-[var(--radius-card)] border border-line bg-surface p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-subtle">{row.question.difficulty} / {row.question.skill_titles.join(", ") || "general"}</p>
+                    <div className="mt-2 font-semibold"><LatexText text={row.question.prompt} /></div>
+                  </div>
+                  <Badge variant={row.correct ? "success" : "warning"}>{row.correct ? "correct" : "wrong"}</Badge>
+                </div>
+                <div className="mt-3 grid gap-2 text-sm text-muted md:grid-cols-2">
+                  <p><strong>Student answer:</strong> {row.answer || "Skipped"}</p>
+                  <p><strong>Correct answer:</strong> {row.question.answer}</p>
+                </div>
+                {row.question.explanation ? <div className="mt-3 rounded-[var(--radius-control)] bg-surface-soft p-3 text-sm leading-6 text-muted"><LatexText text={row.question.explanation} /></div> : null}
+              </div>
+            ))}
+          </div>
+        </Card>
+        <aside className="grid h-fit gap-5 xl:sticky xl:top-24">
+          <Card className="p-5"><TeacherSectionHeader title="Weak skills in this result" /><div className="mt-4">{weakRows.length ? <WeakTopicBars rows={weakRows} /> : <QuestEmptyState title="No wrong answers" />}</div></Card>
+          <Card className="p-5"><TeacherSectionHeader title="Actions" /><div className="mt-4 grid gap-3"><Button asChild><Link href={classroom ? `/teacher/classes/${classroom.slug}` : "/teacher/classes"}>Open class</Link></Button><Button asChild variant="secondary"><Link href={`/teacher/students/${session.student_code || session.student_name}`}>Open student</Link></Button></div></Card>
+        </aside>
+      </div>
+    </QuestPage>
+  );
+}
+
+export async function TeacherClassAssignmentDetailPage({ classSlug, assignmentId }: { classSlug: string; assignmentId: string }) {
+  const [classroom, assignments, results] = await Promise.all([
+    questApi.classDetail(classSlug),
+    questApi.classAssignments(classSlug),
+    questApi.classResults(classSlug),
+  ]);
+  const assignment = assignments.find((item) => String(item.id) === assignmentId);
+  if (!assignment) notFound();
+  const stats = results.assignment_stats.find((item) => String(item.assignment_id) === assignmentId);
+  const submissions = results.results.filter((row) => String(row.assignment_id ?? "") === assignmentId);
+  const affectedStudents = results.student_progress.filter((student) => submissions.some((row) => row.student_code === student.student_code));
+  return (
+    <QuestPage variant="table">
+      <QuestPageHeader
+        eyebrow="Teacher assignment"
+        title={assignment.title}
+        copy={`${classroom.name} / ${assignment.test_title}`}
+        actions={<Button asChild variant="secondary"><Link href={`/teacher/classes/${classSlug}`}>Back to class</Link></Button>}
+      />
+      <div className="quest-metric-grid">
+        <TeacherMetric label="Mode" value={assignment.mode} />
+        <TeacherMetric label="Status" value={assignment.is_active ? "active" : "closed"} />
+        <TeacherMetric label="Attempts" value={stats?.attempts ?? submissions.length} />
+        <TeacherMetric label="Students" value={stats?.unique_students ?? affectedStudents.length} />
+        <TeacherMetric label="Average score" value={`${stats?.average_score ?? average(submissions.map((item) => item.score))}%`} />
+      </div>
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <Card className="p-5">
+          <TeacherSectionHeader title="Submissions" />
+          <div className="mt-4 overflow-hidden rounded-[var(--radius-card)] border border-line">
+            <div className="grid grid-cols-[1fr_100px_100px_180px] gap-3 border-b border-line bg-surface-soft px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-subtle max-lg:hidden">
+              <span>Student</span><span>Correct</span><span>Score</span><span>Submitted</span>
+            </div>
+            {submissions.map((row) => (
+              <Link key={row.session_id} href={`/teacher/results/${row.session_id}`} className="grid gap-3 border-b border-line px-4 py-4 hover:bg-surface-soft lg:grid-cols-[1fr_100px_100px_180px] lg:items-center">
+                <div><p className="font-semibold">{row.student_name}</p><p className="mt-1 text-xs text-muted">{row.student_code}</p></div>
+                <p className="text-sm text-muted">{row.correct}/{row.total}</p>
+                <Badge variant={row.score >= 70 ? "success" : "warning"}>{row.score}%</Badge>
+                <p className="text-sm text-muted">{row.submitted_at ? new Date(row.submitted_at).toLocaleString() : "No submit"}</p>
+              </Link>
+            ))}
+            {!submissions.length ? <div className="p-5"><QuestEmptyState title="No submissions yet" /></div> : null}
+          </div>
+        </Card>
+        <aside className="grid h-fit gap-5 xl:sticky xl:top-24">
+          <Card className="p-5">
+            <TeacherSectionHeader title="Assignment settings" />
+            <div className="mt-4 grid gap-3">
+              <MiniInfo label="Test" value={assignment.test_title} />
+              <MiniInfo label="Difficulty" value={assignment.difficulty} />
+              <MiniInfo label="Questions" value={assignment.question_count} />
+              <MiniInfo label="Due date" value={assignment.due_at ? new Date(assignment.due_at).toLocaleString() : "No deadline"} />
+              <MiniInfo label="Attempt limit" value={assignment.attempt_limit} />
+              <MiniInfo label="Grading" value={assignment.grading_policy} />
+            </div>
+          </Card>
+          <Card className="p-5">
+            <TeacherSectionHeader title="Students" />
+            <div className="mt-4 grid gap-3">
+              {affectedStudents.map((student) => (
+                <Link key={student.student_code} href={`/teacher/students/${student.student_code}`} className="rounded-[var(--radius-card)] border border-line bg-surface p-3 hover:bg-surface-soft">
+                  <p className="font-semibold">{student.student_name}</p>
+                  <p className="mt-1 text-sm text-muted">{student.completed} completed / {student.average_score}% average</p>
+                </Link>
+              ))}
+              {!affectedStudents.length ? <QuestEmptyState title="No student submissions yet" /> : null}
+            </div>
+          </Card>
+          <Card className="p-5">
+            <TeacherSectionHeader title="Actions" />
+            <div className="mt-4 grid gap-3">
+              <Button asChild><Link href={`/class/${classSlug}/assignments/${assignment.id}`}>Open student preview</Link></Button>
+              <Button asChild variant="secondary"><Link href={`/tests/${assignment.test_slug}`}>Open test</Link></Button>
+            </div>
+          </Card>
         </aside>
       </div>
     </QuestPage>
@@ -1161,17 +1582,6 @@ function MiniInfo({ label, value }: { label: string; value: string | number }) {
       <p className="text-sm font-semibold">{value}</p>
       <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-subtle">{label}</p>
     </div>
-  );
-}
-
-function ReportsEmpty() {
-  return (
-    <Section title="Recent reports/issues">
-      <CardGrid cards={[
-        { title: "Question reports", href: "/admin/reports/question-reports", meta: "MVP empty state", copy: "Report modeli ulanganda savol/test bo'yicha xatoliklar shu yerda chiqadi.", status: "ready" },
-        { title: "Platform issues", href: "/admin/reports/platform-issues", meta: "MVP empty state", copy: "User feedback va shikoyatlar uchun alohida model keyingi bosqichda ulanadi.", status: "ready" },
-      ]} />
-    </Section>
   );
 }
 

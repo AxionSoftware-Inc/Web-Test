@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default async function Page({ params }: PageProps) {
   const { classSlug } = await params;
-  const tests = await questApi.topicTests("algebra");
+  const tests = (await questApi.tests()).filter((test) => test.status === "published");
 
   return <AssignTestClient classSlug={classSlug} tests={tests} />;
 }

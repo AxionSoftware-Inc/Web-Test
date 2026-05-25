@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/questlab/layout/page-header";
 import { QuestPage } from "@/components/questlab/layout/quest-page";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import type { ApiClassResults, ApiTeacherClass } from "@/shared/api/questlab-api";
+import type { ApiClassResults, ApiClassStudent, ApiTeacherClass } from "@/shared/api/questlab-api";
 
 type StudentRow = {
   student_name: string;
@@ -22,17 +22,31 @@ type StudentRow = {
   last_submitted_at: string | null;
 };
 
-export function TeacherStudentsPage({ classes, results }: { classes: ApiTeacherClass[]; results: ApiClassResults[] }) {
+export function TeacherStudentsPage({ classes, results, rosters = [] }: { classes: ApiTeacherClass[]; results: ApiClassResults[]; rosters?: ApiClassStudent[][] }) {
   const [query, setQuery] = useState("");
   const students = useMemo<StudentRow[]>(() => {
-    return results.flatMap((result) =>
+    const progressRows = results.flatMap((result) =>
       result.student_progress.map((student) => ({
         ...student,
         class_name: result.classroom.name,
         class_slug: result.classroom.slug,
       })),
     );
-  }, [results]);
+    const existing = new Set(progressRows.map((student) => `${student.class_slug}:${student.student_code}`));
+    const rosterRows = rosters.flatMap((rows, index) => rows.map((student) => {
+      const classroom = classes[index];
+      return {
+        student_name: student.name,
+        student_code: student.student_code || String(student.id),
+        class_name: classroom?.name ?? "Class",
+        class_slug: classroom?.slug ?? "",
+        completed: 0,
+        average_score: 0,
+        last_submitted_at: null,
+      };
+    })).filter((student) => !existing.has(`${student.class_slug}:${student.student_code}`));
+    return [...progressRows, ...rosterRows];
+  }, [classes, results, rosters]);
   const filtered = students.filter((student) => `${student.student_name} ${student.student_code} ${student.class_name}`.toLowerCase().includes(query.toLowerCase()));
   const average = students.length ? Math.round(students.reduce((sum, item) => sum + item.average_score, 0) / students.length) : 0;
   const studentRows = [...students].sort((a, b) => a.average_score - b.average_score).slice(0, 8).map((student) => ({
@@ -71,7 +85,7 @@ export function TeacherStudentsPage({ classes, results }: { classes: ApiTeacherC
                 </div>
                 <p className="text-sm font-semibold text-muted">{student.class_name}</p>
                 <p className="text-sm text-muted">{student.completed} tests</p>
-                <Badge variant={student.average_score >= 70 ? "success" : "warning"}>{student.average_score}%</Badge>
+                <Badge variant={student.average_score >= 70 ? "success" : student.average_score > 0 ? "warning" : "default"}>{student.average_score ? `${student.average_score}%` : "No data"}</Badge>
                 <p className="text-sm text-muted">{student.last_submitted_at ? new Date(student.last_submitted_at).toLocaleString() : "No submit"}</p>
               </Link>
             ))}

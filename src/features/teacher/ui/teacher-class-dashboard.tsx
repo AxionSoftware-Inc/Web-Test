@@ -362,7 +362,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                 <article key={item.id} className="grid gap-4 rounded-3xl border border-black/8 bg-white p-4 transition hover:shadow-[0_16px_45px_rgba(21,23,19,0.08)] md:grid-cols-[1fr_auto] md:items-center">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-lg font-semibold">{item.title}</h3>
+                      <Link href={`/teacher/classes/${classroom.slug}/assignments/${item.id}`} className="text-lg font-semibold hover:text-brand">{item.title}</Link>
                       <span className="rounded-full bg-black/5 px-3 py-1 text-xs font-semibold capitalize text-black/50">{item.mode}</span>
                       <span className={cn("rounded-full px-3 py-1 text-xs font-semibold", item.is_active ? "bg-brand-soft text-brand" : "bg-black/5 text-black/45")}>{item.is_active ? "Active" : "Paused"}</span>
                     </div>
@@ -448,7 +448,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
               <article key={item.assignment_id} className="rounded-3xl border border-black/8 bg-white p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-semibold">{item.assignment_title}</p>
+                    <Link href={`/teacher/classes/${classroom.slug}/assignments/${item.assignment_id}`} className="font-semibold hover:text-brand">{item.assignment_title}</Link>
                     <p className="mt-1 text-sm text-black/50">{item.test_title}</p>
                     <p className="mt-1 text-xs font-semibold capitalize text-black/38">{item.mode}{item.due_at ? ` / due ${new Date(item.due_at).toLocaleDateString()}` : ""}</p>
                   </div>
@@ -490,7 +490,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
               <span>Score</span>
             </div>
             {resultRows.map((item) => (
-              <Link key={item.session_id} href={`/results/${item.session_id}`} className="grid gap-3 border-b border-black/6 px-4 py-4 hover:bg-surface-soft md:grid-cols-[1.1fr_1fr_100px_110px] md:items-center">
+              <Link key={item.session_id} href={`/teacher/results/${item.session_id}`} className="grid gap-3 border-b border-black/6 px-4 py-4 hover:bg-surface-soft md:grid-cols-[1.1fr_1fr_100px_110px] md:items-center">
                 <div>
                   <p className="font-semibold">{item.student_name}</p>
                   <p className="mt-1 text-xs text-black/45">{item.submitted_at ? new Date(item.submitted_at).toLocaleString() : "Submitted"}</p>
@@ -515,12 +515,12 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
               <span>Last submit</span>
             </div>
             {studentProgress.map((student) => (
-              <div key={student.student_code} className="grid gap-3 border-b border-black/6 px-4 py-4 md:grid-cols-[1fr_120px_120px_180px] md:items-center">
+              <Link key={student.student_code} href={`/teacher/students/${student.student_code}`} className="grid gap-3 border-b border-black/6 px-4 py-4 hover:bg-surface-soft md:grid-cols-[1fr_120px_120px_180px] md:items-center">
                 <p className="font-semibold">{student.student_name}</p>
                 <p className="text-sm text-black/58">{student.completed}/{assignments.length} tests</p>
                 <span className="w-fit rounded-xl bg-brand-soft px-3 py-2 text-sm font-semibold text-brand">{student.average_score}%</span>
                 <p className="text-sm text-black/48">{student.last_submitted_at ? new Date(student.last_submitted_at).toLocaleString() : "No submit"}</p>
-              </div>
+              </Link>
             ))}
             {!studentProgress.length ? <p className="p-6 text-sm text-black/56">Hali hech kim test topshirmagan.</p> : null}
           </div>

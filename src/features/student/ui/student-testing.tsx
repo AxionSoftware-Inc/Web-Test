@@ -3,7 +3,7 @@
 import { ArrowLeft, ArrowRight, Flag, Search, Timer } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -23,7 +23,9 @@ import { Badge as UiBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { PackCard, TestCatalogCard } from "@/components/student/student-cards";
-import { AnalyticsBars, Badge, CompactCard, Empty, FilterSelect, MetricTile, MistakeCard, NumberField, PageHeader, ProgressRing, Section, StudentShell, SummaryGrid, TopicActionList, TrendChart } from "@/components/student/student-ui";
+import { AnalyticsBars, Badge, CompactCard, Empty, FilterSelect, MetricTile, NumberField, PageHeader, ProgressRing, Section, StudentShell, SummaryGrid, TopicActionList, TrendChart } from "@/components/student/student-ui";
+import { apiSessionToAnswerSnapshots, apiSessionsToAnswerSnapshots, buildMasteryReport, clearRuntimeSession, readRuntimeQuestionTimes, writeRuntimeQuestionTimes, writeRuntimeReport } from "@/features/mastery-engine/model";
+import type { MasteryReport } from "@/features/mastery-engine/model";
 import type { ApiExamPack, ApiExamPackItem, ApiMistakesSummary, ApiProfileSummary, ApiSession, ApiTest } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { cn } from "@/shared/lib/cn";
@@ -32,6 +34,10 @@ import { LatexText } from "@/shared/ui/latex-text";
 
 function normalize(value: string) {
   return value.toLowerCase().replace(/\s+/g, "").replace(/[()]/g, "").replace(/\\/g, "");
+}
+
+function nowMs() {
+  return new Date().getTime();
 }
 
 function scoreSession(session: ApiSession, test: ApiTest) {
@@ -659,6 +665,9 @@ export function StudentActiveSession({ initialSession, test }: { initialSession:
   const [savingQuestionId, setSavingQuestionId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const timeSpentRef = useRef<Record<string, number>>({});
+  const activeQuestionRef = useRef<number | null>(null);
+  const activeStartedAtRef = useRef(0);
   const question = questions[index];
   const answerMap = useMemo(() => new Map(session.answers.map((answer) => [answer.question, answer])), [session.answers]);
   const current = answerMap.get(question.id);
@@ -676,6 +685,35 @@ export function StudentActiveSession({ initialSession, test }: { initialSession:
     return () => window.clearInterval(id);
   }, []);
 
+  const flushQuestionTime = useCallback(() => {
+    const questionId = activeQuestionRef.current;
+    if (!questionId || !activeStartedAtRef.current) return;
+    const elapsedSeconds = Math.max(0, Math.round((nowMs() - activeStartedAtRef.current) / 1000));
+    if (elapsedSeconds < 1) return;
+    const key = String(questionId);
+    timeSpentRef.current = {
+      ...timeSpentRef.current,
+      [key]: Math.min(60 * 30, (timeSpentRef.current[key] ?? 0) + elapsedSeconds),
+    };
+    writeRuntimeQuestionTimes(session.id, timeSpentRef.current);
+    activeStartedAtRef.current = nowMs();
+  }, [session.id]);
+
+  useEffect(() => {
+    timeSpentRef.current = readRuntimeQuestionTimes(session.id);
+    activeQuestionRef.current = question.id;
+    activeStartedAtRef.current = nowMs();
+    return () => {
+      flushQuestionTime();
+    };
+  }, [flushQuestionTime, question.id, session.id]);
+
+  useEffect(() => {
+    flushQuestionTime();
+    activeQuestionRef.current = question.id;
+    activeStartedAtRef.current = nowMs();
+  }, [flushQuestionTime, question.id]);
+
   async function save(value: string, flagged = current?.is_flagged ?? false) {
     setDraftAnswers((answers) => ({ ...answers, [question.id]: value }));
     setSavingQuestionId(question.id);
@@ -691,7 +729,17 @@ export function StudentActiveSession({ initialSession, test }: { initialSession:
     setSubmitting(true);
     setSubmitError("");
     try {
-      await questApi.submit(String(session.id));
+      flushQuestionTime();
+      const submitted = await questApi.submit(String(session.id));
+      const studentId = getStudentCode();
+      const report = buildMasteryReport(studentId, apiSessionToAnswerSnapshots({
+        session: submitted,
+        test,
+        studentId,
+        timeSpentByQuestionId: timeSpentRef.current,
+      }));
+      writeRuntimeReport(session.id, report);
+      clearRuntimeSession(session.id);
       router.replace(`/student/results/${session.id}`);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "Submit failed.");
@@ -896,28 +944,38 @@ export function StudentResult({ session, test }: { session: ApiSession; test: Ap
 
 export function StudentMistakes({ initialSummary }: { initialSummary: ApiMistakesSummary }) {
   const [summary, setSummary] = useState(initialSummary);
+  const [report, setReport] = useState<MasteryReport | null>(null);
   const [query, setQuery] = useState("");
   useEffect(() => {
-    questApi.mistakesSummary(getStudentCode()).then(setSummary).catch(() => undefined);
+    Promise.all([questApi.mistakesSummary(getStudentCode()), questApi.sessions(), questApi.tests()]).then(([next, sessions, tests]) => {
+      const studentId = getStudentCode();
+      setSummary(next);
+      setReport(buildMasteryReport(studentId, apiSessionsToAnswerSnapshots({ sessions, tests, studentId })));
+    }).catch(() => undefined);
   }, []);
-  const mistakes = summary.mistakes.filter((item) => `${item.test_title} ${item.topic} ${item.skills.join(" ")}`.toLowerCase().includes(query.toLowerCase()));
-  const totalMistakes = summary.mistakes.length;
-  const topicRows = topCounts(summary.mistakes.map((item) => item.topic), 6);
-  const testRows = topCounts(summary.mistakes.map((item) => item.test_title), 5);
-  const skillRows = summary.weak_skills.slice(0, 8).map((item) => ({
+  const engineMistakes = report?.mistakes ?? [];
+  const mistakes = engineMistakes.filter((item) => `${item.topic} ${item.skills.join(" ")} ${item.status}`.toLowerCase().includes(query.toLowerCase()));
+  const weakTopics = report?.weakTopics ?? [];
+  const skillRows = (report?.skills ?? []).filter((item) => item.mastery < 75).slice(0, 8).map((item) => ({
     label: item.skill,
-    value: Math.max(0, 100 - item.percent),
-    meta: `${item.percent}% mastery / ${item.total} questions`,
+    value: Math.max(0, 100 - item.mastery),
+    meta: `${item.mastery}% mastery / ${item.attempts} attempts`,
   }));
-  const focus = summary.weak_skills[0];
+  const topicRows = weakTopics.slice(0, 8).map((item) => ({
+    label: item.topic,
+    value: Math.max(0, 100 - item.mastery),
+    meta: `${item.correct}/${item.attempts} correct · ${item.confidence}`,
+  }));
+  const statusRows = topCounts(engineMistakes.map((item) => item.status), 5);
+  const focus = report?.recommendedActions[0];
   return (
     <StudentShell variant="table">
-      <PageHeader eyebrow="Mistake analytics" title="Xatolar analizi" copy="Ishlangan testlardan xatolar ajratiladi, zaif skilllar va keyingi o'rganish yo'nalishi ko'rsatiladi." />
+      <PageHeader eyebrow="Mastery Engine" title="Weak Topic / Review Center" copy="Xatolar test arxivi emas: topic mastery, confidence, priority va keyingi qadam engine orqali hisoblanadi." />
       <SummaryGrid stats={[
-        ["Total mistakes", totalMistakes],
-        ["Weak skills", summary.weak_skills.length],
-        ["Main weak skill", focus?.skill ?? "No data"],
-        ["Lowest mastery", focus ? `${focus.percent}%` : "No data"],
+        ["Total mistakes", engineMistakes.length || summary.mistakes.length],
+        ["Weak topics", weakTopics.length],
+        ["High priority", weakTopics.filter((item) => item.priorityScore >= 70).length],
+        ["Recommended", focus?.label ?? "No data"],
       ]} />
       <div className="quest-main-aside-grid">
         <Section title="Skill weakness index">
@@ -926,20 +984,20 @@ export function StudentMistakes({ initialSummary }: { initialSummary: ApiMistake
         <Section title="Recommended next action">
           <div className="quest-card p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-subtle">Priority</p>
-            <h3 className="mt-2 text-xl font-semibold">{focus?.skill ?? "Avval test ishlang"}</h3>
+            <h3 className="mt-2 text-xl font-semibold">{focus?.label ?? "Avval test ishlang"}</h3>
             <p className="mt-2 text-sm leading-6 text-muted">
-              {focus ? `${focus.skill} bo'yicha mastery ${focus.percent}%. Avval xato savollarni ko'rib chiqing, keyin shu skillga yaqin testni qayta ishlang.` : "Mistake analytics uchun kamida bitta test submit qiling."}
+              {focus?.reason ?? "Mistake analytics uchun kamida bitta test submit qiling."}
             </p>
-            <Button asChild className="mt-4"><Link href="/student/tests">Practice topic</Link></Button>
+            <Button asChild className="mt-4"><Link href={focus?.href ?? "/student/tests"}>Practice topic</Link></Button>
           </div>
         </Section>
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
-        <Section title="Mistakes by topic">
+        <Section title="Weak topics by priority">
           <AnalyticsBars rows={topicRows} empty="Topic bo'yicha xato yo'q." />
         </Section>
-        <Section title="Mistakes by test">
-          <AnalyticsBars rows={testRows} empty="Test bo'yicha xato yo'q." />
+        <Section title="Mistake lifecycle">
+          <AnalyticsBars rows={statusRows} empty="Lifecycle data yo'q." />
         </Section>
       </div>
       <Section title="Mistake review queue">
@@ -948,7 +1006,7 @@ export function StudentMistakes({ initialSummary }: { initialSummary: ApiMistake
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Subject, topic, test, status..." className="w-full bg-transparent text-sm outline-none" />
         </div>
         <div className="quest-card-grid-3">
-          {mistakes.map((mistake) => <MistakeCard key={`${mistake.session_id}-${mistake.question_id}`} mistake={mistake} />)}
+          {mistakes.map((mistake) => <EngineMistakeCard key={mistake.id} mistake={mistake} />)}
           {!mistakes.length ? <Empty text="Xato topilmadi." /> : null}
         </div>
       </Section>
@@ -958,30 +1016,67 @@ export function StudentMistakes({ initialSummary }: { initialSummary: ApiMistake
 
 export function StudentMistakeDetail({ initialSummary, mistakeId }: { initialSummary: ApiMistakesSummary; mistakeId: string }) {
   const [summary, setSummary] = useState(initialSummary);
+  const [report, setReport] = useState<MasteryReport | null>(null);
   useEffect(() => {
-    questApi.mistakesSummary(getStudentCode()).then(setSummary).catch(() => undefined);
+    Promise.all([questApi.mistakesSummary(getStudentCode()), questApi.sessions(), questApi.tests()]).then(([next, sessions, tests]) => {
+      const studentId = getStudentCode();
+      setSummary(next);
+      setReport(buildMasteryReport(studentId, apiSessionsToAnswerSnapshots({ sessions, tests, studentId })));
+    }).catch(() => undefined);
   }, []);
-  const mistake = summary.mistakes.find((item) => `${item.session_id}-${item.question_id}` === mistakeId) ?? summary.mistakes[0];
-  if (!mistake) return <StudentShell variant="reading"><PageHeader eyebrow="Mistake" title="Mistake not found" /><Empty text="Bu xato topilmadi." /></StudentShell>;
+  const mistake = report?.mistakes.find((item) => item.id === mistakeId) ?? report?.mistakes[0];
+  const fallback = summary.mistakes.find((item) => `${item.session_id}-${item.question_id}` === mistakeId) ?? summary.mistakes[0];
+  if (!mistake && !fallback) return <StudentShell variant="reading"><PageHeader eyebrow="Mistake" title="Mistake not found" /><Empty text="Bu xato topilmadi." /></StudentShell>;
+  if (!mistake && fallback) {
+    return (
+      <StudentShell variant="reading">
+        <PageHeader eyebrow="Mistake detail" title={fallback.test_title} copy={fallback.topic} />
+        <Section title="Question">
+          <div className="quest-card p-4">
+            <LatexText text={fallback.prompt} />
+            <div className="mt-4 grid gap-2 text-sm text-muted">
+              <p><strong>Your answer:</strong> {fallback.user_answer || "Skipped"}</p>
+              <p><strong>Correct answer:</strong> {fallback.correct_answer}</p>
+            </div>
+          </div>
+        </Section>
+      </StudentShell>
+    );
+  }
+  if (!mistake) return null;
   return (
     <StudentShell variant="reading">
-      <PageHeader eyebrow="Mistake detail" title={mistake.test_title} copy={mistake.topic} />
+      <PageHeader eyebrow="Mistake detail" title={mistake.questionTitle ?? mistake.topic} copy={`${mistake.topic} · ${mistake.priority} priority`} />
       <Section title="Question">
         <div className="quest-card p-4">
-          <LatexText text={mistake.prompt} />
+          <LatexText text={mistake.questionPreview} />
           <div className="mt-4 grid gap-2 text-sm text-muted">
-            <p><strong>Your answer:</strong> {mistake.user_answer || "Skipped"}</p>
-            <p><strong>Correct answer:</strong> {mistake.correct_answer}</p>
+            <p><strong>Your answer:</strong> {mistake.studentAnswer || "Skipped"}</p>
+            <p><strong>Correct answer:</strong> {mistake.correctAnswer}</p>
             <p><strong>Related topic:</strong> {mistake.topic}</p>
-            <p><strong>Common mistake:</strong> {mistake.skills.length ? `${mistake.skills.join(", ")} skillini qayta ko'rib chiqish kerak.` : "Asosiy tushunchani qayta tekshiring."}</p>
+            <p><strong>Signals:</strong> {mistake.status} · {mistake.timeQuality} · {mistake.mistakeType}</p>
+            <p><strong>Skills:</strong> {mistake.skills.length ? mistake.skills.join(", ") : "general"}</p>
           </div>
           {mistake.explanation ? <div className="mt-4 rounded-xl bg-surface-soft p-4 text-sm leading-6 text-muted"><LatexText text={mistake.explanation} /></div> : null}
         </div>
       </Section>
       <div className="flex flex-wrap gap-3">
-        <Button asChild><Link href="/student/tests">Practice topic</Link></Button>
+        <Button asChild><Link href={mistake.recommendedAction.href}>{mistake.recommendedAction.label}</Link></Button>
       </div>
     </StudentShell>
+  );
+}
+
+function EngineMistakeCard({ mistake }: { mistake: NonNullable<MasteryReport["mistakes"][number]> }) {
+  return (
+    <Link href={`/student/mistakes/${mistake.id}`} className="quest-card flex min-h-[170px] flex-col p-4 transition hover:bg-surface-soft">
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-student">{mistake.topic}</p>
+      <h3 className="mt-2 line-clamp-2 text-sm font-semibold leading-5 sm:text-base"><LatexText text={mistake.questionPreview} /></h3>
+      <div className="mt-auto pt-4 text-xs text-muted">
+        <p className="line-clamp-1">{mistake.priority} priority · {mistake.status}</p>
+        <p className="line-clamp-1">{mistake.skills.join(", ") || "general"}</p>
+      </div>
+    </Link>
   );
 }
 

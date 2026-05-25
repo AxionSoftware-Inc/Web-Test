@@ -2,13 +2,18 @@
 
 import { ArrowLeft, ArrowRight, CheckCircle2, Flag, Timer } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Progress } from "@/components/ui/progress";
+import { readRuntimeQuestionTimes, writeRuntimeQuestionTimes } from "@/features/mastery-engine/model";
 import type { ApiAnswer, ApiQuestion, ApiSession } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { cn } from "@/shared/lib/cn";
 import { LatexText } from "@/shared/ui/latex-text";
+
+function nowMs() {
+  return new Date().getTime();
+}
 
 export function BackendSessionQuestionClient({
   initialSession,
@@ -25,6 +30,9 @@ export function BackendSessionQuestionClient({
   const [optimisticAnswers, setOptimisticAnswers] = useState<Record<number, string>>({});
   const [savingQuestionId, setSavingQuestionId] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const timeSpentRef = useRef<Record<string, number>>({});
+  const activeQuestionRef = useRef<number | null>(null);
+  const activeStartedAtRef = useRef(0);
   const question = questions[questionIndex];
   const answerMap = useMemo(() => new Map(session.answers.map((answer) => [answer.question, answer])), [session.answers]);
   const current = answerMap.get(question.id);
@@ -43,6 +51,35 @@ export function BackendSessionQuestionClient({
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
   }, []);
+
+  const flushQuestionTime = useCallback(() => {
+    const questionId = activeQuestionRef.current;
+    if (!questionId || !activeStartedAtRef.current) return;
+    const elapsedSeconds = Math.max(0, Math.round((nowMs() - activeStartedAtRef.current) / 1000));
+    if (elapsedSeconds < 1) return;
+    const key = String(questionId);
+    timeSpentRef.current = {
+      ...timeSpentRef.current,
+      [key]: Math.min(60 * 30, (timeSpentRef.current[key] ?? 0) + elapsedSeconds),
+    };
+    writeRuntimeQuestionTimes(session.id, timeSpentRef.current);
+    activeStartedAtRef.current = nowMs();
+  }, [session.id]);
+
+  useEffect(() => {
+    timeSpentRef.current = readRuntimeQuestionTimes(session.id);
+    activeQuestionRef.current = question.id;
+    activeStartedAtRef.current = nowMs();
+    return () => {
+      flushQuestionTime();
+    };
+  }, [flushQuestionTime, question.id, session.id]);
+
+  useEffect(() => {
+    flushQuestionTime();
+    activeQuestionRef.current = question.id;
+    activeStartedAtRef.current = nowMs();
+  }, [flushQuestionTime, question.id]);
 
   async function saveAnswer(value: string, isFlagged = current?.is_flagged ?? false) {
     setOptimisticAnswers((answers) => ({ ...answers, [question.id]: value }));

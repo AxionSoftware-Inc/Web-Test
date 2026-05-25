@@ -11,7 +11,10 @@ export const dynamic = "force-dynamic";
 
 export default async function Page() {
   const classes = await questApi.classes();
-  const results = await Promise.all(classes.map((classroom) => questApi.classResults(classroom.slug)));
+  const [results, rosters] = await Promise.all([
+    Promise.all(classes.map((classroom) => questApi.classResults(classroom.slug))),
+    Promise.all(classes.map((classroom) => questApi.classStudents(classroom.slug).catch(() => []))),
+  ]);
 
-  return <TeacherStudentsPage classes={classes} results={results} />;
+  return <TeacherStudentsPage classes={classes} results={results} rosters={rosters} />;
 }

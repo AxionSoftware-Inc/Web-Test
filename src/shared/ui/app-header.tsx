@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, Building2, GraduationCap, Home, LayoutDashboard, PackageCheck, Plus, Settings, TriangleAlert, UserRound, UsersRound } from "lucide-react";
+import { BarChart3, Building2, GraduationCap, Home, Info, LayoutDashboard, PackageCheck, Plus, Settings, TriangleAlert, UserRound, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -128,6 +128,16 @@ export function AppHeader() {
               </Link>
             );
           })}
+          <Link
+            href="/about"
+            className={cn(
+              "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-black/58 hover:bg-[#f3f3ec]",
+              isActive("/about") && "bg-ink text-white shadow-sm hover:bg-ink",
+            )}
+          >
+            <Info className="size-4" />
+            <span className="hidden md:inline">About</span>
+          </Link>
         </nav>
 
         <div className="flex items-center gap-2">

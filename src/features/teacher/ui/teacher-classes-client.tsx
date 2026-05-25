@@ -103,24 +103,23 @@ export function TeacherClassesClient({ initialClasses }: { initialClasses: ApiTe
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search classes..." className="w-full bg-transparent text-sm outline-none" />
             </div>
           </div>
-          <div className="mt-4 quest-card-grid-3">
+          <div className="mt-4 overflow-hidden rounded-[var(--radius-card)] border border-line">
+            <div className="grid grid-cols-[1.1fr_1fr_120px_120px_120px] gap-3 border-b border-line bg-surface-soft px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-subtle max-lg:hidden">
+              <span>Class</span><span>Teacher</span><span>Visibility</span><span>Students</span><span>Assignments</span>
+            </div>
             {filtered.map((item) => (
-              <Link key={item.id} href={`/teacher/classes/${item.slug}`} className="quest-card flex min-h-[150px] flex-col p-4 hover:bg-surface-soft">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h3 className="line-clamp-2 text-base font-semibold">{item.name}</h3>
-                    <p className="mt-1 text-sm text-muted">{item.teacher_name}</p>
-                  </div>
-                  <Badge variant={item.visibility === "private" ? "warning" : "info"}>{item.visibility}</Badge>
+              <Link key={item.id} href={`/teacher/classes/${item.slug}`} className="grid gap-3 border-b border-line px-4 py-4 hover:bg-surface-soft lg:grid-cols-[1.1fr_1fr_120px_120px_120px] lg:items-center">
+                <div>
+                  <h3 className="font-semibold">{item.name}</h3>
+                  <p className="mt-1 line-clamp-1 text-xs text-muted">{item.description || item.slug}</p>
                 </div>
-                <p className="mt-3 line-clamp-2 text-sm leading-6 text-muted">{item.description || "No description"}</p>
-                <div className="mt-auto flex flex-wrap gap-2 pt-4 text-xs font-semibold text-subtle">
-                  <span className="rounded-lg bg-surface-soft px-2 py-1">{item.assignment_count} assignments</span>
-                  <span className="rounded-lg bg-surface-soft px-2 py-1">{item.student_count} students</span>
-                </div>
+                <p className="text-sm text-muted">{item.teacher_name}</p>
+                <Badge variant={item.visibility === "private" ? "warning" : "info"}>{item.visibility}</Badge>
+                <p className="text-sm text-muted">{item.student_count}</p>
+                <p className="text-sm text-muted">{item.assignment_count}</p>
               </Link>
             ))}
-            {!filtered.length ? <p className="rounded-[var(--radius-card)] border border-dashed border-line p-5 text-sm text-muted">No classes found.</p> : null}
+            {!filtered.length ? <p className="p-5 text-sm text-muted">No classes found.</p> : null}
           </div>
         </Card>
       </div>

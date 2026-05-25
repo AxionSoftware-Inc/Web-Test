@@ -7,7 +7,7 @@ import { questApi } from "@/shared/api/questlab-api";
 import { getAuthenticatedIdentity } from "@/shared/model/local-identity";
 import { getRole } from "@/shared/model/roles";
 
-const publicPaths = ["/", "/auth/login", "/auth/register", "/auth/onboarding"];
+const publicPaths = ["/", "/about", "/auth/login", "/auth/register", "/auth/onboarding"];
 
 function isPublicPath(pathname: string) {
   return publicPaths.includes(pathname) || pathname.startsWith("/class/") || pathname.startsWith("/test-session/");

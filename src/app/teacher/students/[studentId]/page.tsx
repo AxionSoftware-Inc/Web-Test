@@ -79,7 +79,7 @@ export default async function Page({ params }: PageProps) {
                 <span>Test</span><span>Class</span><span>Correct</span><span>Score</span>
               </div>
               {submissions.map((row) => (
-                <Link key={row.session_id} href={`/results/${row.session_id}`} className="grid gap-3 border-b border-line px-4 py-4 hover:bg-surface-soft lg:grid-cols-[1fr_1fr_100px_110px] lg:items-center">
+                <Link key={row.session_id} href={`/teacher/results/${row.session_id}`} className="grid gap-3 border-b border-line px-4 py-4 hover:bg-surface-soft lg:grid-cols-[1fr_1fr_100px_110px] lg:items-center">
                   <div>
                     <p className="line-clamp-1 font-semibold">{row.test_title}</p>
                     <p className="mt-1 text-xs text-muted">{row.submitted_at ? new Date(row.submitted_at).toLocaleString() : "Submitted"}</p>
