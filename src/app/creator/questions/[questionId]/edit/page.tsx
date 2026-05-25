@@ -1,5 +1,7 @@
-import { redirect } from "next/navigation";
+import { CreatorQuestionEditPage } from "@/features/platform/ui/panel-pages";
+
+export const dynamic = "force-dynamic";
 
 export default async function Page({ params }: { params: Promise<{ questionId: string }> }) {
-  redirect(`/questions/${(await params).questionId}`);
+  return <CreatorQuestionEditPage questionId={(await params).questionId} />;
 }

@@ -1030,25 +1030,64 @@ export function StudentProgress({ summary }: { summary: ApiProfileSummary }) {
 }
 
 export function StudentProfile({ summary }: { summary: ApiProfileSummary }) {
+  const scoreTrend = summary.recent_tests.slice(0, 10).reverse().map((test) => ({
+    label: shortDate(test.submitted_at),
+    score: test.score,
+    testTitle: test.title,
+    date: test.submitted_at,
+  }));
+  const weakTopics = [...summary.topic_progress].sort((a, b) => a.value - b.value).slice(0, 5).map((topic) => ({
+    topic: topic.topic,
+    mastery: topic.value,
+    attempts: topic.attempts,
+  }));
+  const strongTopics = summary.topic_progress.filter((topic) => topic.value >= 75).slice(0, 3);
+  const recommendation = summary.recommendations[0] ?? {
+    title: weakTopics[0] ? `Practice ${weakTopics[0].topic}` : "Start a new test",
+    description: weakTopics[0] ? `${weakTopics[0].topic} is your lowest current mastery topic.` : "Complete a test to build your profile.",
+    href: "/student/tests",
+  };
+
   return (
-    <StudentShell variant="reading">
-      <PageHeader eyebrow="Student" title="Profile" copy="Basic settings va test history summary." />
-      <SummaryGrid stats={[["Name", summary.name], ["Role", "Student"], ["School", "Not linked"], ["Class", "Not linked"], ["Teacher", "Not linked"], ["Tests", summary.tests_taken]]} />
-      <div className="quest-main-aside-grid">
-        <Card className="p-5">
-          <h2 className="text-lg font-semibold">Learning profile</h2>
-          <p className="mt-2 text-sm leading-6 text-muted">Your current student role and learning analytics are summarized from completed tests.</p>
-          <div className="mt-4 grid gap-3">
-            <InfoPill label="Average score" value={`${summary.average_score}%`} />
-            <InfoPill label="Answered" value={summary.answered_questions} />
-            <InfoPill label="Correct" value={summary.correct_answers} />
-          </div>
-        </Card>
-        <OverallMasteryCard value={summary.math_mastery || summary.average_score || 0} />
+    <StudentShell variant="wide">
+      <PageHeader eyebrow="Student" title={summary.name || "Profile"} copy="Your learning profile, progress trend and next focus area." />
+      <SummaryGrid stats={[["Level", summary.level || "Student"], ["Tests", summary.tests_taken], ["Average score", `${summary.average_score}%`], ["Answered", summary.answered_questions], ["Correct", summary.correct_answers], ["Mastery", `${summary.math_mastery || summary.average_score || 0}%`]]} />
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="grid gap-5">
+          <Card className="p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold">Score trend</h2>
+              <Button asChild variant="secondary" size="sm"><Link href="/student/progress">Open progress</Link></Button>
+            </div>
+            <div className="mt-4">
+              <ScoreTrendChart rows={scoreTrend} />
+            </div>
+          </Card>
+          <Section title="Recent tests">
+            <div className="quest-card-grid-3">
+              {summary.recent_tests.slice(0, 6).map((test) => <CompactCard key={test.id} title={test.title} meta={test.topic} href={`/student/results/${test.id}`} action="View result" stats={[`${test.score}%`, `${test.correct}/${test.total}`, test.submitted_at.slice(0, 10)]} />)}
+              {!summary.recent_tests.length ? <Empty text="Recent test history hali yo'q." /> : null}
+            </div>
+          </Section>
+        </div>
+        <aside className="grid h-fit gap-5 xl:sticky xl:top-24">
+          <OverallMasteryCard value={summary.math_mastery || summary.average_score || 0} />
+          <WeakTopicsCard rows={weakTopics} />
+          <Card className="p-5">
+            <h2 className="text-lg font-semibold">Recommended next</h2>
+            <h3 className="mt-3 text-base font-semibold">{recommendation.title}</h3>
+            <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">{recommendation.description}</p>
+            <Button asChild className="mt-4"><Link href={recommendation.href}>Continue</Link></Button>
+          </Card>
+          <Card className="p-5">
+            <h2 className="text-lg font-semibold">Strong topics</h2>
+            <div className="mt-4 grid gap-3">
+              {strongTopics.map((topic) => <InfoPill key={topic.slug} label={topic.topic} value={`${topic.value}%`} />)}
+              {!strongTopics.length ? <CompactEmpty title="No strong topics yet" /> : null}
+            </div>
+          </Card>
+        </aside>
       </div>
-      <Section title="Test history summary">
-        <div className="quest-card-grid-3">{summary.recent_tests.map((test) => <CompactCard key={test.id} title={test.title} meta={test.topic} href={`/student/results/${test.id}`} action="View result" stats={[`${test.score}%`, test.submitted_at.slice(0, 10)]} />)}</div>
-      </Section>
     </StudentShell>
   );
 }

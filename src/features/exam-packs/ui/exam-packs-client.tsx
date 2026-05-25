@@ -4,11 +4,13 @@ import { Check, FileJson, FileSpreadsheet, FileText, Layers3, Plus, Search, Uplo
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import type { ApiExamPack, ApiTest, StrictPackImportSource } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { cn } from "@/shared/lib/cn";
 import { getPackManageCode, savePackManageCode } from "@/shared/model/local-identity";
-import { Eyebrow, FieldShell, PremiumPanel, premiumInputClass } from "@/shared/ui/premium-shell";
+import { Eyebrow, FieldShell, premiumInputClass } from "@/shared/ui/premium-shell";
 
 function slugify(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50);
@@ -756,15 +758,15 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
   return (
     <div className="grid gap-4">
       {error || notice ? (
-        <div className={cn("rounded-3xl border px-5 py-4 text-sm font-semibold", error ? "border-red-200 bg-red-50 text-red-700" : "border-[#bfe8d8] bg-brand-soft text-brand")}>
+        <div className={cn("rounded-[var(--radius-card)] border px-5 py-4 text-sm font-semibold", error ? "border-danger-soft bg-danger-soft text-danger" : "border-success-soft bg-success-soft text-success")}>
           {error || notice}
         </div>
       ) : null}
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
-      <PremiumPanel>
+      <Card className="p-5">
         <Eyebrow>Pack info</Eyebrow>
         <h1 className="mt-2 text-3xl font-semibold">Create pack</h1>
-        <p className="mt-3 text-sm leading-6 text-black/55">Nom, narx va ko&apos;rinishni kiriting. Import/paste qilingan kontent faqat shu tugma bosilganda DBga saqlanadi.</p>
+        <p className="mt-3 text-sm leading-6 text-muted">Nom, narx va ko&apos;rinishni kiriting. Import/paste qilingan kontent faqat shu tugma bosilganda DBga saqlanadi.</p>
         <div className="mt-6 grid gap-4">
           <Input label="Pack title" value={title} onChange={setTitle} />
           <Input label="Exam type" value={examType} onChange={setExamType} />
@@ -779,15 +781,15 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
           <FieldShell label="Description">
             <textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={4} className={premiumInputClass} />
           </FieldShell>
-          <button onClick={createPack} disabled={saving} className="rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
+          <Button onClick={createPack} disabled={saving}>
             {createLabel}
-          </button>
+          </Button>
           <input ref={fileRef} type="file" accept=".json,application/json" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void loadJsonFile(file); }} />
           <input ref={csvRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importCsv(file); }} />
         </div>
-      </PremiumPanel>
+      </Card>
 
-      <section className="rounded-[24px] border border-black/8 bg-white/82 p-3 shadow-[0_24px_70px_rgba(0,0,0,0.08)] sm:p-4">
+      <Card className="p-4">
         <div>
           <Eyebrow>Import</Eyebrow>
           <h2 className="mt-2 text-2xl font-semibold">Pack import</h2>
@@ -806,10 +808,10 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
             <textarea value={pasteValue} onChange={(event) => handleJsonPasteChange(event.target.value)} onBlur={previewJsonPackInfo} rows={10} className={premiumInputClass} placeholder="{\n  &quot;version&quot;: &quot;1.0&quot;,\n  &quot;pack&quot;: { &quot;title&quot;: &quot;Linear Algebra Foundations&quot;, &quot;subject&quot;: &quot;math&quot;, &quot;branch&quot;: &quot;linear-algebra&quot;, &quot;level&quot;: &quot;foundations&quot;, &quot;language&quot;: &quot;uz&quot; },\n  &quot;tests&quot;: [{\n    &quot;title&quot;: &quot;Vectors Basics&quot;,\n    &quot;topic&quot;: &quot;vectors&quot;,\n    &quot;difficulty&quot;: &quot;beginner&quot;,\n    &quot;time_limit_minutes&quot;: 15,\n    &quot;questions&quot;: [{ &quot;type&quot;: &quot;single_choice&quot;, &quot;body&quot;: &quot;Question text&quot;, &quot;options&quot;: [{ &quot;id&quot;: &quot;A&quot;, &quot;text&quot;: &quot;Option A&quot; }], &quot;answer&quot;: { &quot;correct&quot;: &quot;A&quot; }, &quot;skills&quot;: [&quot;general&quot;] }]\n  }]\n}" />
           </FieldShell>
           <div className="mt-3 flex flex-wrap gap-2">
-            <button onClick={() => fileRef.current?.click()} disabled={saving} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-white/70 disabled:opacity-50">
+            <Button onClick={() => fileRef.current?.click()} disabled={saving} variant="secondary">
               <Upload className="size-4" />
               Upload JSON
-            </button>
+            </Button>
             {loadedFileName ? <span className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black/55">{loadedFileName}</span> : null}
           </div>
         </section>
@@ -821,14 +823,16 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
               <textarea value={csvValue} onChange={(event) => { setCsvValue(event.target.value); setDraftItems(parseCsv(event.target.value)); setMode("draft"); setError(""); setNotice(event.target.value.trim() ? "CSV tayyor. Saqlash uchun chapdagi Create pack bosing." : ""); }} rows={10} className={premiumInputClass} placeholder={templateCsv} />
             </FieldShell>
             <div className="mt-3 flex flex-wrap gap-2">
-              <button onClick={() => csvRef.current?.click()} disabled={saving} className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-white/70 disabled:opacity-50">
+              <Button onClick={() => csvRef.current?.click()} disabled={saving} variant="secondary">
                 <Upload className="size-4" />
                 Upload CSV
-              </button>
-              <Link href="/crud" className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold hover:bg-white/70">
+              </Button>
+              <Button asChild variant="secondary">
+                <Link href="/crud">
                 <Plus className="size-4" />
                 Manual test
-              </Link>
+                </Link>
+              </Button>
             </div>
           </section>
         ) : null}
@@ -896,7 +900,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
           {packs.map((pack) => {
             const usage = usageBySlug[pack.slug];
             return (
-              <Link key={pack.id} href={`/exam-packs/${pack.slug}`} className="rounded-3xl border border-black/8 bg-white p-5 hover:bg-surface-soft">
+              <Link key={pack.id} href={`/exam-packs/${pack.slug}`} className="quest-card p-5 hover:bg-surface-soft">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-lg font-semibold">{pack.title}</p>
@@ -918,7 +922,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
             );
           })}
         </div>
-      </section>
+      </Card>
       </div>
     </div>
   );

@@ -4,6 +4,9 @@ import { ExternalLink, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import type { ApiExamPack } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { getPackManageCode } from "@/shared/model/local-identity";
@@ -40,52 +43,57 @@ export function CreatorPacksManager({ initialPacks, usageBySlug }: { initialPack
 
   return (
     <div className="grid gap-4">
-      {notice ? <p className="rounded-2xl border border-[#bfe8d8] bg-brand-soft px-4 py-3 text-sm font-semibold text-brand">{notice}</p> : null}
-      {error ? <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</p> : null}
+      {notice ? <p className="rounded-[var(--radius-card)] border border-success-soft bg-success-soft px-4 py-3 text-sm font-semibold text-success">{notice}</p> : null}
+      {error ? <p className="rounded-[var(--radius-card)] border border-danger-soft bg-danger-soft px-4 py-3 text-sm font-semibold text-danger">{error}</p> : null}
       {packs.length ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="quest-card-grid-3">
           {packs.map((pack) => {
             const usage = usageBySlug[pack.slug];
             return (
-              <article key={pack.slug} className="rounded-3xl border border-black/8 bg-white p-5 shadow-[0_14px_42px_rgba(21,23,19,0.04)]">
+              <Card key={pack.slug} className="flex min-h-[220px] flex-col p-4">
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-lg font-semibold">{pack.title}</h3>
-                    <p className="mt-1 text-sm text-black/50">{pack.exam_type || "Pack"}</p>
+                  <div className="min-w-0">
+                    <h3 className="line-clamp-2 text-base font-semibold">{pack.title}</h3>
+                    <p className="mt-1 text-sm text-muted">{pack.exam_type || "Pack"}</p>
                   </div>
-                  <span className="rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand">{pack.is_active ? "published" : "inactive"}</span>
+                  <Badge variant={pack.is_active ? "success" : "default"}>{pack.is_active ? "published" : "inactive"}</Badge>
                 </div>
-                {pack.description ? <p className="mt-3 line-clamp-3 text-sm leading-6 text-black/55">{pack.description}</p> : null}
+                {pack.description ? <p className="mt-3 line-clamp-2 text-sm leading-6 text-muted">{pack.description}</p> : null}
                 <div className="mt-5 grid grid-cols-3 gap-2 text-center">
                   <MiniStat label="Tests" value={pack.item_count} />
                   <MiniStat label="Usage" value={usage?.attempts ?? 0} />
                   <MiniStat label="Avg" value={`${usage?.average_score ?? 0}%`} />
                 </div>
-                <div className="mt-5 grid grid-cols-3 gap-2">
-                  <Link href={`/exam-packs/${pack.slug}`} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-3 py-3 text-sm font-semibold hover:bg-surface-soft">
+                <div className="mt-auto grid grid-cols-3 gap-2 pt-5">
+                  <Button asChild variant="secondary" size="sm">
+                    <Link href={`/exam-packs/${pack.slug}`}>
                     <Pencil className="size-4" />
                     Edit
-                  </Link>
-                  <Link href={`/creator/packs/${pack.slug}`} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white px-3 py-3 text-sm font-semibold hover:bg-surface-soft">
+                    </Link>
+                  </Button>
+                  <Button asChild variant="secondary" size="sm">
+                    <Link href={`/creator/packs/${pack.slug}`}>
                     <ExternalLink className="size-4" />
                     Open
-                  </Link>
-                  <button
+                    </Link>
+                  </Button>
+                  <Button
                     type="button"
                     onClick={() => void deletePack(pack)}
                     disabled={busySlug === pack.slug}
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-3 py-3 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
+                    variant="destructive"
+                    size="sm"
                   >
                     <Trash2 className="size-4" />
                     Delete
-                  </button>
+                  </Button>
                 </div>
-              </article>
+              </Card>
             );
           })}
         </div>
       ) : (
-        <div className="rounded-3xl border border-dashed border-black/12 bg-white/70 p-8 text-center text-sm font-semibold text-black/45">Pack topilmadi.</div>
+        <div className="rounded-[var(--radius-card)] border border-dashed border-line bg-surface p-8 text-center text-sm font-semibold text-muted">Pack topilmadi.</div>
       )}
     </div>
   );
@@ -93,9 +101,9 @@ export function CreatorPacksManager({ initialPacks, usageBySlug }: { initialPack
 
 function MiniStat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-2xl bg-surface-soft px-3 py-3">
+    <div className="rounded-[var(--radius-control)] bg-surface-soft px-3 py-3">
       <p className="text-base font-semibold">{value}</p>
-      <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-black/35">{label}</p>
+      <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-subtle">{label}</p>
     </div>
   );
 }

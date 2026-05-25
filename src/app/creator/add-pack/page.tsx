@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 
 import { ExamPacksClient } from "@/features/exam-packs/ui/exam-packs-client";
+import { PageHeader } from "@/components/questlab/layout/page-header";
+import { QuestPage } from "@/components/questlab/layout/quest-page";
 import { questApi } from "@/shared/api/questlab-api";
-import { PremiumPage } from "@/shared/ui/premium-shell";
 
 export const metadata: Metadata = {
   title: "Add Pack | QuestLab",
@@ -32,8 +33,9 @@ export default async function Page() {
   );
 
   return (
-    <PremiumPage>
+    <QuestPage variant="wide">
+      <PageHeader eyebrow="Creator" title="Create pack" copy="Build a pack manually or import JSON, CSV and markdown content." />
       <ExamPacksClient initialPacks={packs} tests={tests} usageBySlug={usageBySlug} />
-    </PremiumPage>
+    </QuestPage>
   );
 }
