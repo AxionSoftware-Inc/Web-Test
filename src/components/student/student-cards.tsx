@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/student/student-ui";
 import type { ApiExamPack, ApiSession, ApiTest } from "@/shared/api/questlab-api";
-import { cn } from "@/shared/lib/cn";
 
 export type StudentTestStatus = "assigned" | "in_progress" | "completed" | "available";
 
@@ -84,18 +84,14 @@ export function TestCatalogCard({
           Details
         </Link>
 
-        <button
+        <Button
           type="button"
           onClick={() => router.push(actionHref)}
-          className={cn(
-            "rounded-xl px-4 py-2 text-sm font-semibold transition",
-            status === "completed"
-              ? "bg-surface-soft text-ink hover:bg-neutral-soft"
-              : "bg-brand text-white hover:bg-brand-hover"
-          )}
+          variant={status === "completed" ? "secondary" : "default"}
+          size="sm"
         >
           {actionLabel[status]}
-        </button>
+        </Button>
       </div>
     </article>
   );
@@ -132,12 +128,9 @@ export function PackCard({ pack }: { pack: ApiExamPack }) {
       <div className="mt-auto flex items-center justify-between gap-3 pt-4">
         <span className="text-sm text-muted">Pack workspace</span>
 
-        <Link
-          href={`/student/packs/${pack.slug}`}
-          className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover"
-        >
-          Open
-        </Link>
+        <Button asChild size="sm">
+          <Link href={`/student/packs/${pack.slug}`}>Open</Link>
+        </Button>
       </div>
     </article>
   );

@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge as UiBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { PackCard, TestCatalogCard } from "@/components/student/student-cards";
 import { AnalyticsBars, Badge, CompactCard, Empty, FilterSelect, MetricTile, MistakeCard, NumberField, PageHeader, ProgressRing, Section, StudentShell, SummaryGrid, TopicActionList, TrendChart } from "@/components/student/student-ui";
 import type { ApiExamPack, ApiExamPackItem, ApiMistakesSummary, ApiProfileSummary, ApiSession, ApiTest } from "@/shared/api/questlab-api";
@@ -493,6 +494,7 @@ export function StudentTestsWorkspace({ tests, packs, sessions }: { tests: ApiTe
   const [difficulty, setDifficulty] = useState("all");
   const completed = new Set(sessions.filter((item) => item.status === "submitted").map((item) => item.test_slug));
   const inProgress = new Set(sessions.filter((item) => item.status === "in_progress").map((item) => item.test_slug));
+  const activePacks = packs.filter((pack) => pack.is_active);
   const subjects = Array.from(new Set(tests.map((test) => test.subject_slug))).filter(Boolean);
   const topics = Array.from(new Set(tests.map((test) => test.topic_slug))).filter(Boolean);
   const filtered = tests.filter((test) => {
@@ -505,6 +507,12 @@ export function StudentTestsWorkspace({ tests, packs, sessions }: { tests: ApiTe
   return (
     <StudentShell variant="table">
       <PageHeader eyebrow="Student" title="Tests" copy="Fan, topic, difficulty va packlar bo'yicha test katalogi." />
+      <SummaryGrid stats={[
+        ["Available tests", filtered.length],
+        ["Active packs", activePacks.length],
+        ["In progress", inProgress.size],
+        ["Completed", completed.size],
+      ]} />
       <div className="quest-card p-4">
         <div className="flex items-center gap-3 rounded-[var(--radius-control)] border border-line bg-surface-soft px-4 py-3">
           <Search className="size-5 shrink-0 text-subtle" />
@@ -528,8 +536,8 @@ export function StudentTestsWorkspace({ tests, packs, sessions }: { tests: ApiTe
         <div className="grid gap-4">
           <Section title="Test paketlar">
             <div className="quest-card-grid-3">
-              {packs.filter((pack) => pack.is_active && `${pack.title} ${pack.exam_type} ${pack.description}`.toLowerCase().includes(query.toLowerCase())).map((pack) => <PackCard key={pack.id} pack={pack} />)}
-              {!packs.filter((pack) => pack.is_active).length ? <Empty text="Pack yo'q." /> : null}
+              {activePacks.filter((pack) => `${pack.title} ${pack.exam_type} ${pack.description}`.toLowerCase().includes(query.toLowerCase())).map((pack) => <PackCard key={pack.id} pack={pack} />)}
+              {!activePacks.length ? <Empty text="Pack yo'q." /> : null}
             </div>
           </Section>
           <Section title="Test bo'limlari">
@@ -546,39 +554,55 @@ export function StudentTestsWorkspace({ tests, packs, sessions }: { tests: ApiTe
 
 export function StudentPackDetail({ pack, items, results }: { pack: ApiExamPack; items: ApiExamPackItem[]; results?: { attempts: number; students_submitted: number; average_score: number; item_stats: Array<{ item_id: number; attempts: number; average_score: number }> } | null }) {
   const completed = results?.item_stats.filter((item) => item.attempts > 0).length ?? 0;
+  const averageScore = results?.average_score ?? 0;
   return (
-    <StudentShell>
+    <StudentShell variant="wide">
       <PageHeader eyebrow="Pack" title={pack.title} copy={pack.description || "Tayyor test pack."} />
       <SummaryGrid stats={[
         ["Subject", pack.exam_type || "General"],
         ["Level", "Pack"],
         ["Tests", items.length],
         ["Completed", completed],
-        ["Average score", `${results?.average_score ?? 0}%`],
+        ["Average score", `${averageScore}%`],
         ["Due date", "No due date"],
       ]} />
-      <Section title="Test list">
-        <div className="grid gap-4">
-          {items.map((item) => {
-            const stat = results?.item_stats.find((row) => row.item_id === item.id);
-            return (
-              <div key={item.id} className="grid gap-3 quest-card p-4 md:grid-cols-[1fr_auto] md:items-center">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold">{item.title}</h3>
-                    <Badge>{stat?.attempts ? "completed" : "available"}</Badge>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <Section title="Test list">
+          <div className="grid gap-4">
+            {items.map((item) => {
+              const stat = results?.item_stats.find((row) => row.item_id === item.id);
+              return (
+                <div key={item.id} className="grid gap-3 quest-card p-4 md:grid-cols-[1fr_auto] md:items-center">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-semibold">{item.title}</h3>
+                      <Badge>{stat?.attempts ? "completed" : "available"}</Badge>
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-sm text-muted">{item.difficulty} / {item.question_count} questions / skills-based test</p>
                   </div>
-                  <p className="mt-1 line-clamp-2 text-sm text-muted">{item.difficulty} / {item.question_count} questions / skills-based test</p>
+                  <div className="flex items-center gap-2">
+                    {stat?.attempts ? <span className="text-sm font-semibold text-muted">{stat.average_score}%</span> : null}
+                    <Button asChild size="sm">
+                      <Link href={`/student/tests/${item.test_slug}`}>{stat?.attempts ? "View result" : "Start"}</Link>
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {stat?.attempts ? <span className="text-sm font-semibold text-muted">{stat.average_score}%</span> : null}
-                  <Link href={`/student/tests/${item.test_slug}`} className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover">{stat?.attempts ? "View result" : "Start"}</Link>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </Section>
+              );
+            })}
+          </div>
+        </Section>
+        <aside className="grid h-fit gap-4 xl:sticky xl:top-24">
+          <OverallMasteryCard value={averageScore} />
+          <Card className="p-5">
+            <h2 className="text-lg font-semibold">Pack progress</h2>
+            <div className="mt-4 grid gap-3">
+              <InfoPill label="Completed" value={`${completed}/${items.length}`} />
+              <InfoPill label="Attempts" value={results?.attempts ?? 0} />
+              <InfoPill label="Submitted" value={results?.students_submitted ?? 0} />
+            </div>
+          </Card>
+        </aside>
+      </div>
     </StudentShell>
   );
 }
@@ -589,7 +613,7 @@ export function StudentTestInstructions({ test, session }: { test: ApiTest; sess
   const status = session?.status ?? "available";
   const skills = testSkills(test);
   return (
-    <StudentShell>
+    <StudentShell variant="reading">
       <PageHeader eyebrow="Test bo'limi" title={test.title} copy={`${test.subject_slug} / ${test.topic_slug}`} />
       <SummaryGrid stats={[
         ["Subject", test.subject_slug],
@@ -603,11 +627,11 @@ export function StudentTestInstructions({ test, session }: { test: ApiTest; sess
       ]} />
       <div className="quest-main-aside-grid">
         <Section title="Bo'lim haqida">
-          <div className="quest-card p-4">
+          <div className="quest-card p-5">
             <p className="line-clamp-2 text-sm leading-6 text-muted">Bu bo&apos;lim quyidagi skilllarni tekshiradi: {skills.length ? skills.join(", ") : "asosiy mavzu tushunchalari"}.</p>
             <p className="mt-3 text-sm text-muted">Savollar va to&apos;g&apos;ri javoblar submit qilinmaguncha ko&apos;rsatilmaydi.</p>
             <div className="mt-4 grid gap-2">
-              {skills.map((skill) => <span key={skill} className="rounded-xl bg-surface-soft px-3 py-2 text-sm font-semibold text-muted">{skill}</span>)}
+              {skills.length ? skills.map((skill) => <span key={skill} className="rounded-xl bg-surface-soft px-3 py-2 text-sm font-semibold text-muted">{skill}</span>) : <Empty text="Skill taglari hali ulanmagan." />}
             </div>
           </div>
         </Section>
@@ -615,9 +639,9 @@ export function StudentTestInstructions({ test, session }: { test: ApiTest; sess
           <div className="grid gap-4">
             <NumberField label="Nechta test ishlamoqchisiz?" value={questionCount} min={1} max={Math.max(1, test.test_questions.length)} onChange={setQuestionCount} />
             <NumberField label="Timer, daqiqa" value={minutes} min={1} max={240} onChange={setMinutes} />
-            {status === "in_progress" && session ? <Link href={`/student/test-session/${session.id}`} className="rounded-xl bg-brand px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand-hover">Continue</Link> : null}
-            <Link href={`/student/tests/${test.slug}/start?count=${questionCount}&minutes=${minutes}`} className="rounded-xl bg-brand px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand-hover">Start</Link>
-            {status === "submitted" && session ? <Link href={`/student/results/${session.id}`} className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3 text-center text-sm font-semibold">View result</Link> : null}
+            {status === "in_progress" && session ? <Button asChild><Link href={`/student/test-session/${session.id}`}>Continue</Link></Button> : null}
+            <Button asChild><Link href={`/student/tests/${test.slug}/start?count=${questionCount}&minutes=${minutes}`}>Start</Link></Button>
+            {status === "submitted" && session ? <Button asChild variant="secondary"><Link href={`/student/results/${session.id}`}>View result</Link></Button> : null}
           </div>
         </Section>
       </div>
@@ -685,11 +709,9 @@ export function StudentActiveSession({ initialSession, test }: { initialSession:
             <span className="rounded-[var(--radius-control)] bg-info-soft px-3 py-2 text-sm font-semibold text-info">{answered}/{questions.length} answered</span>
             <span className="rounded-[var(--radius-control)] bg-neutral-soft px-3 py-2 text-sm font-semibold text-neutral">Question {index + 1}</span>
           </div>
-          <button onClick={submit} disabled={submitting} className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover disabled:opacity-60">{submitting ? "Finishing..." : "Submit test"}</button>
+          <Button onClick={submit} disabled={submitting}>{submitting ? "Finishing..." : "Submit test"}</Button>
         </div>
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-neutral-soft">
-          <div className="h-full rounded-full bg-brand" style={{ width: `${progress}%` }} />
-        </div>
+        <Progress value={progress} className="mt-4" />
         {submitError ? <p className="mt-3 rounded-xl bg-danger-soft px-3 py-2 text-sm font-semibold text-danger">{submitError}</p> : null}
       </div>
 
@@ -765,18 +787,17 @@ export function StudentActiveSession({ initialSession, test }: { initialSession:
             />
           )}
           <div className="mt-5 flex justify-between gap-3">
-            <button type="button" onClick={() => setIndex((value) => Math.max(0, value - 1))} className="inline-flex items-center gap-2 rounded-[var(--radius-control)] border border-line px-4 py-2 text-sm font-semibold hover:bg-surface-soft"><ArrowLeft className="size-4" />Previous</button>
-            <button
+            <Button type="button" variant="secondary" onClick={() => setIndex((value) => Math.max(0, value - 1))}><ArrowLeft className="size-4" />Previous</Button>
+            <Button
               type="button"
               onClick={() => {
                 if (shouldFinish) void submit();
                 else setIndex((value) => Math.min(questions.length - 1, value + 1));
               }}
               disabled={submitting}
-              className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover disabled:opacity-60"
             >
               {shouldFinish ? (submitting ? "Finishing..." : "Finish") : "Next"}{!shouldFinish ? <ArrowRight className="size-4" /> : null}
-            </button>
+            </Button>
           </div>
         </article>
       </div>
@@ -824,9 +845,9 @@ export function StudentResult({ session, test }: { session: ApiSession; test: Ap
             {skills[0] ? `${skills[0]} bo'yicha xatolar bor. Avval mistake review, keyin shu topicdagi testni qayta ishlang.` : "Natija yaxshi. Keyingi topic yoki packga o'ting."}
           </p>
           <div className="mt-4 grid gap-2">
-            <Link href="/student/mistakes" className="rounded-[var(--radius-control)] bg-brand px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-brand-hover">Review mistakes</Link>
-            <Link href={`/student/tests/${test.slug}/start`} className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-2 text-center text-sm font-semibold">Start</Link>
-            <Link href="/student/tests" className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-2 text-center text-sm font-semibold">Practice</Link>
+            <Button asChild><Link href="/student/mistakes">Review mistakes</Link></Button>
+            <Button asChild variant="secondary"><Link href={`/student/tests/${test.slug}/start`}>Start</Link></Button>
+            <Button asChild variant="secondary"><Link href="/student/tests">Practice</Link></Button>
           </div>
         </aside>
       </section>
@@ -862,7 +883,7 @@ export function StudentResult({ session, test }: { session: ApiSession; test: Ap
 
       {correctQuestions.length ? (
         <Section title="Strong signals">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="quest-card-grid-3">
             {Array.from(new Set(correctQuestions.flatMap((question) => question.skill_titles))).slice(0, 6).map((skill) => (
               <CompactCard key={skill} title={skill} meta="Answered correctly" href="/student/tests" action="Practice" stats={["strong"]} />
             ))}
@@ -909,7 +930,7 @@ export function StudentMistakes({ initialSummary }: { initialSummary: ApiMistake
             <p className="mt-2 text-sm leading-6 text-muted">
               {focus ? `${focus.skill} bo'yicha mastery ${focus.percent}%. Avval xato savollarni ko'rib chiqing, keyin shu skillga yaqin testni qayta ishlang.` : "Mistake analytics uchun kamida bitta test submit qiling."}
             </p>
-            <Link href="/student/tests" className="mt-4 inline-flex rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover">Practice topic</Link>
+            <Button asChild className="mt-4"><Link href="/student/tests">Practice topic</Link></Button>
           </div>
         </Section>
       </div>
@@ -941,9 +962,9 @@ export function StudentMistakeDetail({ initialSummary, mistakeId }: { initialSum
     questApi.mistakesSummary(getStudentCode()).then(setSummary).catch(() => undefined);
   }, []);
   const mistake = summary.mistakes.find((item) => `${item.session_id}-${item.question_id}` === mistakeId) ?? summary.mistakes[0];
-  if (!mistake) return <StudentShell><PageHeader eyebrow="Mistake" title="Mistake not found" /><Empty text="Bu xato topilmadi." /></StudentShell>;
+  if (!mistake) return <StudentShell variant="reading"><PageHeader eyebrow="Mistake" title="Mistake not found" /><Empty text="Bu xato topilmadi." /></StudentShell>;
   return (
-    <StudentShell>
+    <StudentShell variant="reading">
       <PageHeader eyebrow="Mistake detail" title={mistake.test_title} copy={mistake.topic} />
       <Section title="Question">
         <div className="quest-card p-4">
@@ -958,7 +979,7 @@ export function StudentMistakeDetail({ initialSummary, mistakeId }: { initialSum
         </div>
       </Section>
       <div className="flex flex-wrap gap-3">
-        <Link href="/student/tests" className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover">Practice topic</Link>
+        <Button asChild><Link href="/student/tests">Practice topic</Link></Button>
       </div>
     </StudentShell>
   );
@@ -979,7 +1000,7 @@ export function StudentProgress({ summary }: { summary: ApiProfileSummary }) {
     meta: `${item.attempts} attempts`,
   }));
   return (
-    <StudentShell>
+    <StudentShell variant="wide">
       <PageHeader eyebrow="Student analytics" title="Progress" copy="Overall progress, topic mastery, score trend va kuchli/zaif mavzular." />
       <SummaryGrid stats={[["Average score", `${summary.average_score}%`], ["Completed tests", summary.tests_taken], ["Answered", summary.answered_questions], ["Correct", summary.correct_answers]]} />
       <div className="quest-main-aside-grid">
@@ -1010,9 +1031,21 @@ export function StudentProgress({ summary }: { summary: ApiProfileSummary }) {
 
 export function StudentProfile({ summary }: { summary: ApiProfileSummary }) {
   return (
-    <StudentShell>
+    <StudentShell variant="reading">
       <PageHeader eyebrow="Student" title="Profile" copy="Basic settings va test history summary." />
       <SummaryGrid stats={[["Name", summary.name], ["Role", "Student"], ["School", "Not linked"], ["Class", "Not linked"], ["Teacher", "Not linked"], ["Tests", summary.tests_taken]]} />
+      <div className="quest-main-aside-grid">
+        <Card className="p-5">
+          <h2 className="text-lg font-semibold">Learning profile</h2>
+          <p className="mt-2 text-sm leading-6 text-muted">Your current student role and learning analytics are summarized from completed tests.</p>
+          <div className="mt-4 grid gap-3">
+            <InfoPill label="Average score" value={`${summary.average_score}%`} />
+            <InfoPill label="Answered" value={summary.answered_questions} />
+            <InfoPill label="Correct" value={summary.correct_answers} />
+          </div>
+        </Card>
+        <OverallMasteryCard value={summary.math_mastery || summary.average_score || 0} />
+      </div>
       <Section title="Test history summary">
         <div className="quest-card-grid-3">{summary.recent_tests.map((test) => <CompactCard key={test.id} title={test.title} meta={test.topic} href={`/student/results/${test.id}`} action="View result" stats={[`${test.score}%`, test.submitted_at.slice(0, 10)]} />)}</div>
       </Section>
