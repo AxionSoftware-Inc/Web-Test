@@ -29,7 +29,7 @@ import { Badge as UiBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { PackCard, TestCatalogCard } from "@/components/student/student-cards";
-import { AnalyticsBars, Badge, CompactCard, Empty, FilterSelect, MetricTile, NumberField, PageHeader, ProgressRing, Section, StudentShell, TopicActionList, TrendChart } from "@/components/student/student-ui";
+import { AnalyticsBars, Badge, CompactCard, Empty, FilterSelect, MetricTile, NumberField, ProgressRing, Section, StudentShell, TopicActionList, TrendChart } from "@/components/student/student-ui";
 import { apiSessionToAnswerSnapshots, apiSessionsToAnswerSnapshots, buildMasteryReport, clearRuntimeSession, readRuntimeQuestionTimes, readRuntimeReport, writeRuntimeQuestionTimes, writeRuntimeReport } from "@/features/mastery-engine/model";
 import type { MasteryReport } from "@/features/mastery-engine/model";
 import type { ApiExamPack, ApiExamPackItem, ApiMistakesSummary, ApiProfileSummary, ApiSession, ApiTest } from "@/shared/api/questlab-api";
@@ -1045,31 +1045,71 @@ export function StudentMistakesDiagnostic({ initialSummary }: { initialSummary: 
   const overallMastery = topics.length ? Math.round(topics.reduce((sum, topic) => sum + topic.mastery, 0) / topics.length) : 0;
   const groupedMistakes = groupMistakesByTopic(mistakes);
   const recentReviewed = mistakes.filter((item) => item.status !== "new").slice(0, 4);
+  const primaryTopic = [...weakTopics].sort((a, b) => b.priorityScore - a.priorityScore)[0] ?? [...topics].sort((a, b) => b.priorityScore - a.priorityScore)[0];
 
   return (
     <StudentShell variant="wide">
-      <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
-        <PageHeader eyebrow="Mastery Engine" title="Weak Topic / Review Center" copy="Fanlar aralashmaydi: har bir subject uchun topic, skill va mistake signallari alohida ko'rinadi." />
-        <div className="flex flex-wrap gap-2">
-          {subjects.map((subject) => (
-            <Button key={subject} type="button" variant={activeSubject === subject ? "default" : "secondary"} size="sm" onClick={() => setSelectedSubject(subject)}>{subject}</Button>
-          ))}
-        </div>
-      </div>
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_440px]">
+        <Card className="overflow-hidden border-line bg-[radial-gradient(circle_at_90%_0%,rgba(35,103,87,0.12),transparent_32%),linear-gradient(180deg,var(--surface),var(--surface-soft))] p-6 shadow-[var(--shadow-card)]">
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-brand">Mastery Intelligence Console</p>
+          <h1 className="mt-3 max-w-4xl text-4xl font-semibold leading-[0.95] tracking-tight text-ink md:text-6xl">Diagnose the learning gap.</h1>
+          <p className="mt-4 max-w-3xl text-sm leading-6 text-muted md:text-base">
+            Topic dependency, evidence distribution, mastery lanes va answer trace orqali student qaysi fan va skillda toxtab qolganini korsatadi.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {subjects.map((subject) => (
+              <Button key={subject} type="button" variant={activeSubject === subject ? "default" : "secondary"} size="sm" onClick={() => setSelectedSubject(subject)}>{subject}</Button>
+            ))}
+            {!subjects.length ? <Badge>no subject data</Badge> : null}
+          </div>
+        </Card>
+        <PriorityDecisionCard topic={primaryTopic} recommendation={focus} />
+      </section>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <MetricTile label="New mistakes" value={lifecycle.newMistakes} sub="not reviewed" tone="red" />
-        <MetricTile label="Reviewed" value={lifecycle.reviewed} sub="opened" tone="neutral" />
-        <MetricTile label="Practiced" value={lifecycle.practiced} sub="follow-up" tone="green" />
-        <MetricTile label="Mastered" value={lifecycle.mastered} sub="closed" tone="green" />
-        <MetricTile label="High priority" value={lifecycle.highPriorityTopics} sub="topics" tone="red" />
+        <DiagnosticKpi label="New mistakes" value={lifecycle.newMistakes} note="not reviewed" tone="red" />
+        <DiagnosticKpi label="Reviewed" value={lifecycle.reviewed} note="opened" tone="neutral" />
+        <DiagnosticKpi label="Practiced" value={lifecycle.practiced} note="follow-up" tone="green" />
+        <DiagnosticKpi label="Mastered" value={lifecycle.mastered} note="closed" tone="green" />
+        <DiagnosticKpi label="Priority topics" value={lifecycle.highPriorityTopics} note="needs action" tone="amber" />
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
         <main className="grid gap-5">
-          <Section title="Weak topic board">
-            <WeakTopicsBarChart topics={weakTopics.length ? weakTopics : topics.filter((topic) => topic.mastery < 80)} />
-          </Section>
+          <Card className="p-5">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold tracking-tight">Prerequisite basin</h2>
+                <p className="mt-1 text-sm leading-6 text-muted">Weak topic qaysi prerequisite va keyingi topiclarga tasir qilayotganini korsatadi.</p>
+              </div>
+              <Badge>dependency chart</Badge>
+            </div>
+            <PrerequisiteBasin topics={topics} primaryTopic={primaryTopic} />
+          </Card>
+
+          <div className="grid gap-5 2xl:grid-cols-[1fr_0.95fr]">
+            <Card className="p-5">
+              <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-semibold tracking-tight">Evidence distribution</h2>
+                  <p className="mt-1 text-sm leading-6 text-muted">X = expected time, Y = spent time, bubble = priority/difficulty signal.</p>
+                </div>
+                <Badge>signal map</Badge>
+              </div>
+              <MistakeSignalScatter mistakes={mistakes} />
+            </Card>
+            <Card className="p-5">
+              <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-semibold tracking-tight">Mastery lanes</h2>
+                  <p className="mt-1 text-sm leading-6 text-muted">70% threshold bilan topic holati bir qatorda.</p>
+                </div>
+                <Badge>70% threshold</Badge>
+              </div>
+              <MasteryLanes topics={weakTopics.length ? weakTopics : topics} />
+            </Card>
+          </div>
+
           <Section title="Wrong questions by topic">
             <WrongQuestionsByTopic groups={groupedMistakes} />
           </Section>
@@ -1078,18 +1118,13 @@ export function StudentMistakesDiagnostic({ initialSummary }: { initialSummary: 
           </Section>
         </main>
         <aside className="grid h-fit gap-5 xl:sticky xl:top-24">
-          <RecommendationCard recommendation={focus} fallbackHref="/student/tests" />
+          <RecoveryProtocol recommendation={focus} />
+          <PriorityRings topics={topics} />
           <OverallMasteryAnalytics value={overallMastery} label={`${activeSubject || "Subject"} mastery`} />
           <Card className="p-4">
             <h2 className="text-lg font-semibold">Mistake trend</h2>
             <div className="mt-4">
               <MistakeTrendArea mistakes={mistakes} />
-            </div>
-          </Card>
-          <Card className="p-4">
-            <h2 className="text-lg font-semibold">Mistake signal map</h2>
-            <div className="mt-4">
-              <MistakeSignalScatter mistakes={mistakes} />
             </div>
           </Card>
           <Card className="p-4">
@@ -1176,6 +1211,169 @@ type QuestionSignalRow = { questionNumber: number; topic: string; isCorrect: boo
 type ScatterRow = { expected: number; spent: number; priority: number; topic: string; skill: string; quality: string; isCorrect: boolean };
 type TrendRow = { label: string; mistakes: number };
 type TopicMistakeGroup = { topic: string; topicSlug: string; mistakes: MistakeView[] };
+
+function DiagnosticKpi({ label, value, note, tone }: { label: string; value: number | string; note: string; tone: "red" | "green" | "amber" | "neutral" }) {
+  const toneClass = tone === "red" ? "text-danger" : tone === "green" ? "text-success" : tone === "amber" ? "text-warning" : "text-ink";
+  return (
+    <Card className="min-h-[106px] p-4 shadow-[var(--shadow-card)]">
+      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-subtle">{label}</p>
+      <p className={cn("mt-3 text-3xl font-semibold leading-none", toneClass)}>{value}</p>
+      <p className="mt-2 text-sm font-medium text-muted">{note}</p>
+    </Card>
+  );
+}
+
+function PriorityDecisionCard({ topic, recommendation }: { topic?: TopicMasteryView; recommendation?: MasteryReport["recommendedActions"][number] }) {
+  const score = topic ? Math.min(140, Math.round(topic.priorityScore)) : 0;
+  const ringValue = Math.min(100, Math.max(8, score));
+  return (
+    <Card className="overflow-hidden border-white/10 bg-[radial-gradient(circle_at_95%_8%,rgba(143,205,183,0.26),transparent_34%),linear-gradient(145deg,#11130f,#172019)] p-5 text-white shadow-[var(--shadow-card)]">
+      <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-200">Primary decision</p>
+      <h2 className="mt-2 text-3xl font-semibold tracking-tight">{recommendation?.label ?? (topic ? `Practice ${topic.topic}` : "Start diagnostic practice")}</h2>
+      <p className="mt-3 text-sm leading-6 text-white/65">
+        {recommendation?.reason ?? (topic ? `${topic.correct}/${topic.attempts} correct. ${topic.confidence} confidence weakness. Engine bu topicni birinchi o'ringa qo'ydi.` : "Mistake analytics uchun kamida bitta test yakunlang.")}
+      </p>
+      <div className="mt-5 grid grid-cols-[126px_1fr] gap-4">
+        <div className="relative grid size-32 place-items-center rounded-full" style={{ background: `conic-gradient(var(--danger) 0 ${ringValue * 3.6}deg, rgba(255,255,255,0.16) ${ringValue * 3.6}deg 360deg)` }}>
+          <span className="absolute inset-3 rounded-full border border-white/10 bg-[#151a15]" />
+          <b className="relative text-3xl">{score}</b>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <PriorityMetric label="Accuracy" value={topic ? `${topic.accuracy}%` : "-"} />
+          <PriorityMetric label="Mastery" value={topic ? `${topic.mastery}%` : "-"} />
+          <PriorityMetric label="Wrong" value={topic?.wrong ?? "-"} />
+          <PriorityMetric label="Confidence" value={topic?.confidence ?? "-"} />
+        </div>
+      </div>
+      <Button asChild className="mt-5 w-full">
+        <Link href={recommendation?.href ?? "/student/tests"}>{recommendation?.label ?? "Open tests"}</Link>
+      </Button>
+    </Card>
+  );
+}
+
+function PriorityMetric({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-[14px] border border-white/10 bg-white/[0.065] p-3">
+      <span className="block text-[10px] font-black uppercase tracking-[0.15em] text-white/45">{label}</span>
+      <b className="mt-1 block text-lg">{value}</b>
+    </div>
+  );
+}
+
+function PrerequisiteBasin({ topics, primaryTopic }: { topics: TopicMasteryView[]; primaryTopic?: TopicMasteryView }) {
+  const nodes = [...topics].sort((a, b) => b.priorityScore - a.priorityScore).slice(0, 5);
+  if (!primaryTopic || nodes.length < 2) return <Empty text="Dependency basin uchun kamida 2 ta topic signali kerak." />;
+  const left = nodes.find((item) => primaryTopic.prerequisites.includes(item.topicSlug)) ?? nodes.find((item) => item.topicSlug !== primaryTopic.topicSlug);
+  const right = nodes.filter((item) => item.topicSlug !== primaryTopic.topicSlug && item.topicSlug !== left?.topicSlug).slice(0, 2);
+  const stable = nodes.find((item) => item.mastery >= 75 && item.topicSlug !== primaryTopic.topicSlug);
+
+  return (
+    <div className="relative h-[420px] overflow-hidden rounded-[18px] border border-line bg-[linear-gradient(var(--line)_1px,transparent_1px),linear-gradient(90deg,var(--line)_1px,transparent_1px),var(--surface-soft)] bg-[size:100%_25%,12.5%_100%,auto]">
+      <svg className="absolute inset-0 size-full" viewBox="0 0 1000 420" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="qlFlowRisk" x1="0" x2="1"><stop offset="0" stopColor="var(--danger)" stopOpacity=".14" /><stop offset="1" stopColor="var(--danger)" stopOpacity=".52" /></linearGradient>
+          <linearGradient id="qlFlowStable" x1="0" x2="1"><stop offset="0" stopColor="var(--success)" stopOpacity=".12" /><stop offset="1" stopColor="var(--success)" stopOpacity=".38" /></linearGradient>
+        </defs>
+        <path d="M170 248 C310 150, 410 142, 530 206" stroke="url(#qlFlowRisk)" strokeWidth="42" fill="none" strokeLinecap="round" />
+        <path d="M530 206 C650 138, 735 108, 850 112" stroke="url(#qlFlowRisk)" strokeWidth="28" fill="none" strokeLinecap="round" />
+        <path d="M530 206 C650 278, 720 315, 850 312" stroke="url(#qlFlowRisk)" strokeWidth="23" fill="none" strokeLinecap="round" />
+        <path d="M170 248 C340 298, 415 318, 540 335" stroke="url(#qlFlowStable)" strokeWidth="18" fill="none" strokeLinecap="round" />
+      </svg>
+      {left ? <BasinNode className="left-[17%] top-[58%]" topic={left} /> : null}
+      <BasinNode className="left-[53%] top-[48%]" topic={primaryTopic} weak />
+      {right[0] ? <BasinNode className="left-[84%] top-[27%]" topic={right[0]} weak={right[0].mastery < 70} /> : null}
+      {right[1] ? <BasinNode className="left-[84%] top-[74%]" topic={right[1]} weak={right[1].mastery < 70} /> : null}
+      {stable ? <BasinNode className="left-[54%] top-[80%]" topic={stable} /> : null}
+    </div>
+  );
+}
+
+function BasinNode({ topic, weak, className }: { topic: TopicMasteryView; weak?: boolean; className: string }) {
+  return (
+    <div className={cn("absolute min-w-[154px] -translate-x-1/2 -translate-y-1/2 rounded-[14px] border border-line bg-surface/95 px-3 py-2 shadow-[0_12px_28px_rgba(20,23,19,.07)]", weak ? "ring-4 ring-danger/10" : "", className)}>
+      <b className="block text-sm">{topic.topic}</b>
+      <span className="mt-1 block text-xs font-medium text-muted">{topic.mastery}% mastery · {topic.status.replace("_", " ")}</span>
+    </div>
+  );
+}
+
+function MasteryLanes({ topics }: { topics: TopicMasteryView[] }) {
+  const rows = [...topics].sort((a, b) => a.mastery - b.mastery).slice(0, 5);
+  if (!rows.length) return <Empty text="Mastery lanes uchun topic signali yo'q." />;
+  return (
+    <div className="grid gap-3">
+      {rows.map((topic) => (
+        <div key={topic.topicSlug} className="grid gap-3 md:grid-cols-[180px_1fr_70px] md:items-center">
+          <div className="min-w-0">
+            <b className="line-clamp-1 text-sm">{topic.topic}</b>
+            <span className="mt-1 block text-xs font-medium text-muted">{topic.correct}/{topic.attempts} correct</span>
+          </div>
+          <div className="relative h-9 overflow-hidden rounded-xl border border-line bg-surface-soft">
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(20,23,19,.08)_1px,transparent_1px)] bg-[size:10%_100%]" />
+            <span className="absolute bottom-0 top-0 left-[70%] border-l border-dashed border-ink/40" />
+            <span className="absolute bottom-0 left-0 top-0 rounded-xl" style={{ width: `${topic.mastery}%`, background: masteryColor(topic.mastery) }} />
+          </div>
+          <b className={cn("text-right", topic.mastery < 50 ? "text-danger" : topic.mastery < 70 ? "text-warning" : "text-success")}>{topic.mastery}%</b>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RecoveryProtocol({ recommendation }: { recommendation?: MasteryReport["recommendedActions"][number] }) {
+  return (
+    <Card className="border-white/10 bg-[#11130f] p-5 text-white shadow-[var(--shadow-card)]">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-semibold">Recovery protocol</h2>
+          <p className="mt-2 text-sm leading-6 text-white/65">Aniq remediation flow: practice to retest to maintenance.</p>
+        </div>
+        <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-bold text-emerald-200">active</span>
+      </div>
+      <Button asChild className="mt-4 w-full"><Link href={recommendation?.href ?? "/student/tests"}>Generate targeted practice</Link></Button>
+      <div className="mt-4 grid gap-3">
+        <ProtocolStep index={1} title="Practice weak prerequisite" copy="Eng past mastery topicdan 10 adaptive question." />
+        <ProtocolStep index={2} title="Run mini retest" copy="5 unseen variant, target 80%+." />
+        <ProtocolStep index={3} title="Reduce frequency" copy="Pass bo'lsa maintenance savollarga o'tkaziladi." />
+      </div>
+    </Card>
+  );
+}
+
+function ProtocolStep({ index, title, copy }: { index: number; title: string; copy: string }) {
+  return (
+    <div className="grid grid-cols-[38px_1fr] gap-3">
+      <span className="grid size-10 place-items-center rounded-xl bg-white/10 font-black text-emerald-100">{index}</span>
+      <div className="rounded-[14px] border border-white/10 bg-white/[0.06] p-3">
+        <b className="block text-sm">{title}</b>
+        <span className="mt-1 block text-xs leading-5 text-white/60">{copy}</span>
+      </div>
+    </div>
+  );
+}
+
+function PriorityRings({ topics }: { topics: TopicMasteryView[] }) {
+  const rows = [...topics].sort((a, b) => a.mastery - b.mastery).slice(0, 3);
+  if (!rows.length) return <Card className="p-4"><Empty text="Priority ring uchun topic yo'q." /></Card>;
+  return (
+    <Card className="p-4">
+      <h2 className="text-lg font-semibold">Priority rings</h2>
+      <p className="mt-1 text-sm text-muted">Top topics only. Dekorativ chart emas.</p>
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        {rows.map((topic) => (
+          <div key={topic.topicSlug} className="rounded-2xl border border-line bg-surface-soft p-3 text-center">
+            <div className="relative mx-auto grid size-[76px] place-items-center rounded-full" style={{ background: `conic-gradient(${masteryColor(topic.mastery)} 0 ${topic.mastery * 3.6}deg, var(--line) ${topic.mastery * 3.6}deg 360deg)` }}>
+              <span className="absolute inset-2 rounded-full border border-line bg-surface" />
+              <b className="relative text-sm">{topic.mastery}%</b>
+            </div>
+            <span className="mt-2 block truncate text-xs font-semibold text-muted">{topic.topic}</span>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
 
 function OverallMasteryAnalytics({ value, label }: { value: number; label: string }) {
   const data = [{ name: label, value, fill: value >= 85 ? "var(--success)" : value >= 70 ? "var(--chart-1)" : value >= 50 ? "var(--warning)" : "var(--danger)" }];
