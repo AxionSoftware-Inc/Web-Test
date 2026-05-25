@@ -1049,14 +1049,18 @@ export function StudentMistakesDiagnostic({ initialSummary }: { initialSummary: 
 
   return (
     <StudentShell variant="wide">
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_440px]">
-        <Card className="overflow-hidden border-line bg-[radial-gradient(circle_at_90%_0%,rgba(35,103,87,0.12),transparent_32%),linear-gradient(180deg,var(--surface),var(--surface-soft))] p-6 shadow-[var(--shadow-card)]">
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-brand">Mastery Intelligence Console</p>
-          <h1 className="mt-3 max-w-4xl text-4xl font-semibold leading-[0.95] tracking-tight text-ink md:text-6xl">Diagnose the learning gap.</h1>
-          <p className="mt-4 max-w-3xl text-sm leading-6 text-muted md:text-base">
-            Topic dependency, evidence distribution, mastery lanes va answer trace orqali student qaysi fan va skillda toxtab qolganini korsatadi.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-2">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <Card className="border-line bg-surface p-4 shadow-[var(--shadow-card)]">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-brand">Mastery Console</p>
+              <h1 className="mt-1 text-2xl font-semibold tracking-tight text-ink">Weak Topic Center</h1>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <LifecycleSummary lifecycle={lifecycle} />
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
             {subjects.map((subject) => (
               <Button key={subject} type="button" variant={activeSubject === subject ? "default" : "secondary"} size="sm" onClick={() => setSelectedSubject(subject)}>{subject}</Button>
             ))}
@@ -1065,14 +1069,6 @@ export function StudentMistakesDiagnostic({ initialSummary }: { initialSummary: 
         </Card>
         <PriorityDecisionCard topic={primaryTopic} recommendation={focus} />
       </section>
-
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <DiagnosticKpi label="New mistakes" value={lifecycle.newMistakes} note="not reviewed" tone="red" />
-        <DiagnosticKpi label="Reviewed" value={lifecycle.reviewed} note="opened" tone="neutral" />
-        <DiagnosticKpi label="Practiced" value={lifecycle.practiced} note="follow-up" tone="green" />
-        <DiagnosticKpi label="Mastered" value={lifecycle.mastered} note="closed" tone="green" />
-        <DiagnosticKpi label="Priority topics" value={lifecycle.highPriorityTopics} note="needs action" tone="amber" />
-      </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
         <main className="grid gap-5">
@@ -1106,7 +1102,7 @@ export function StudentMistakesDiagnostic({ initialSummary }: { initialSummary: 
                 </div>
                 <Badge>70% threshold</Badge>
               </div>
-              <MasteryLanes topics={weakTopics.length ? weakTopics : topics} />
+              <MasteryTerrain topics={weakTopics.length ? weakTopics : topics} />
             </Card>
           </div>
 
@@ -1119,12 +1115,12 @@ export function StudentMistakesDiagnostic({ initialSummary }: { initialSummary: 
         </main>
         <aside className="grid h-fit gap-5 xl:sticky xl:top-24">
           <RecoveryProtocol recommendation={focus} />
-          <PriorityRings topics={topics} />
-          <OverallMasteryAnalytics value={overallMastery} label={`${activeSubject || "Subject"} mastery`} />
+          <TopicOrbitMap topics={topics} />
+          <MasteryConstellation topics={topics} value={overallMastery} label={`${activeSubject || "Subject"} mastery`} />
           <Card className="p-4">
             <h2 className="text-lg font-semibold">Mistake trend</h2>
             <div className="mt-4">
-              <MistakeTrendArea mistakes={mistakes} />
+              <MistakePulseTimeline mistakes={mistakes} />
             </div>
           </Card>
           <Card className="p-4">
@@ -1211,15 +1207,28 @@ type QuestionSignalRow = { questionNumber: number; topic: string; isCorrect: boo
 type ScatterRow = { expected: number; spent: number; priority: number; topic: string; skill: string; quality: string; isCorrect: boolean };
 type TrendRow = { label: string; mistakes: number };
 type TopicMistakeGroup = { topic: string; topicSlug: string; mistakes: MistakeView[] };
+type MistakeLifecycleSummary = { newMistakes: number; reviewed: number; practiced: number; mastered: number; highPriorityTopics: number };
+
+function LifecycleSummary({ lifecycle }: { lifecycle: MistakeLifecycleSummary }) {
+  return (
+    <div className="grid w-full grid-cols-5 overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface-soft md:w-auto">
+      <DiagnosticKpi label="New" value={lifecycle.newMistakes} note="not reviewed" tone="red" />
+      <DiagnosticKpi label="Reviewed" value={lifecycle.reviewed} note="opened" tone="neutral" />
+      <DiagnosticKpi label="Practiced" value={lifecycle.practiced} note="follow-up" tone="green" />
+      <DiagnosticKpi label="Mastered" value={lifecycle.mastered} note="closed" tone="green" />
+      <DiagnosticKpi label="Priority" value={lifecycle.highPriorityTopics} note="topics" tone="amber" />
+    </div>
+  );
+}
 
 function DiagnosticKpi({ label, value, note, tone }: { label: string; value: number | string; note: string; tone: "red" | "green" | "amber" | "neutral" }) {
   const toneClass = tone === "red" ? "text-danger" : tone === "green" ? "text-success" : tone === "amber" ? "text-warning" : "text-ink";
   return (
-    <Card className="min-h-[106px] p-4 shadow-[var(--shadow-card)]">
-      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-subtle">{label}</p>
-      <p className={cn("mt-3 text-3xl font-semibold leading-none", toneClass)}>{value}</p>
-      <p className="mt-2 text-sm font-medium text-muted">{note}</p>
-    </Card>
+    <div className="min-w-[78px] border-r border-line px-3 py-2 last:border-r-0">
+      <p className="text-[10px] font-black uppercase tracking-[0.12em] text-subtle">{label}</p>
+      <p className={cn("mt-1 text-xl font-semibold leading-none", toneClass)}>{value}</p>
+      <p className="mt-1 truncate text-[11px] font-medium text-muted">{note}</p>
+    </div>
   );
 }
 
@@ -1227,16 +1236,16 @@ function PriorityDecisionCard({ topic, recommendation }: { topic?: TopicMasteryV
   const score = topic ? Math.min(140, Math.round(topic.priorityScore)) : 0;
   const ringValue = Math.min(100, Math.max(8, score));
   return (
-    <Card className="overflow-hidden border-white/10 bg-[radial-gradient(circle_at_95%_8%,rgba(143,205,183,0.26),transparent_34%),linear-gradient(145deg,#11130f,#172019)] p-5 text-white shadow-[var(--shadow-card)]">
-      <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-200">Primary decision</p>
-      <h2 className="mt-2 text-3xl font-semibold tracking-tight">{recommendation?.label ?? (topic ? `Practice ${topic.topic}` : "Start diagnostic practice")}</h2>
-      <p className="mt-3 text-sm leading-6 text-white/65">
+    <Card className="overflow-hidden border-line bg-ink p-4 text-white shadow-[var(--shadow-card)]">
+      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-200">Primary decision</p>
+      <h2 className="mt-2 text-xl font-semibold tracking-tight text-white">{recommendation?.label ?? (topic ? `Practice ${topic.topic}` : "Start diagnostic practice")}</h2>
+      <p className="mt-2 line-clamp-2 text-sm leading-6 text-white/70">
         {recommendation?.reason ?? (topic ? `${topic.correct}/${topic.attempts} correct. ${topic.confidence} confidence weakness. Engine bu topicni birinchi o'ringa qo'ydi.` : "Mistake analytics uchun kamida bitta test yakunlang.")}
       </p>
-      <div className="mt-5 grid grid-cols-[126px_1fr] gap-4">
-        <div className="relative grid size-32 place-items-center rounded-full" style={{ background: `conic-gradient(var(--danger) 0 ${ringValue * 3.6}deg, rgba(255,255,255,0.16) ${ringValue * 3.6}deg 360deg)` }}>
-          <span className="absolute inset-3 rounded-full border border-white/10 bg-[#151a15]" />
-          <b className="relative text-3xl">{score}</b>
+      <div className="mt-4 grid grid-cols-[86px_1fr] gap-3">
+        <div className="relative grid size-[86px] place-items-center rounded-full" style={{ background: `conic-gradient(var(--danger) 0 ${ringValue * 3.6}deg, rgba(255,255,255,0.16) ${ringValue * 3.6}deg 360deg)` }}>
+          <span className="absolute inset-2 rounded-full border border-white/10 bg-[#151a15]" />
+          <b className="relative text-2xl text-white">{score}</b>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <PriorityMetric label="Accuracy" value={topic ? `${topic.accuracy}%` : "-"} />
@@ -1245,7 +1254,7 @@ function PriorityDecisionCard({ topic, recommendation }: { topic?: TopicMasteryV
           <PriorityMetric label="Confidence" value={topic?.confidence ?? "-"} />
         </div>
       </div>
-      <Button asChild className="mt-5 w-full">
+      <Button asChild className="mt-4 w-full bg-white text-ink hover:bg-white/90">
         <Link href={recommendation?.href ?? "/student/tests"}>{recommendation?.label ?? "Open tests"}</Link>
       </Button>
     </Card>
@@ -1256,14 +1265,14 @@ function PriorityMetric({ label, value }: { label: string; value: string | numbe
   return (
     <div className="rounded-[14px] border border-white/10 bg-white/[0.065] p-3">
       <span className="block text-[10px] font-black uppercase tracking-[0.15em] text-white/45">{label}</span>
-      <b className="mt-1 block text-lg">{value}</b>
+      <b className="mt-1 block text-lg text-white">{value}</b>
     </div>
   );
 }
 
 function PrerequisiteBasin({ topics, primaryTopic }: { topics: TopicMasteryView[]; primaryTopic?: TopicMasteryView }) {
   const nodes = [...topics].sort((a, b) => b.priorityScore - a.priorityScore).slice(0, 5);
-  if (!primaryTopic || nodes.length < 2) return <Empty text="Dependency basin uchun kamida 2 ta topic signali kerak." />;
+  if (!primaryTopic || nodes.length < 2) return <CompactChartEmpty text="Dependency basin uchun kamida 2 ta topic signali kerak." />;
   const left = nodes.find((item) => primaryTopic.prerequisites.includes(item.topicSlug)) ?? nodes.find((item) => item.topicSlug !== primaryTopic.topicSlug);
   const right = nodes.filter((item) => item.topicSlug !== primaryTopic.topicSlug && item.topicSlug !== left?.topicSlug).slice(0, 2);
   const stable = nodes.find((item) => item.mastery >= 75 && item.topicSlug !== primaryTopic.topicSlug);
@@ -1298,25 +1307,42 @@ function BasinNode({ topic, weak, className }: { topic: TopicMasteryView; weak?:
   );
 }
 
-function MasteryLanes({ topics }: { topics: TopicMasteryView[] }) {
-  const rows = [...topics].sort((a, b) => a.mastery - b.mastery).slice(0, 5);
-  if (!rows.length) return <Empty text="Mastery lanes uchun topic signali yo'q." />;
+function MasteryTerrain({ topics }: { topics: TopicMasteryView[] }) {
+  const rows = [...topics].sort((a, b) => a.mastery - b.mastery).slice(0, 6);
+  if (!rows.length) return <CompactChartEmpty text="Mastery terrain uchun topic signali yo'q." />;
+  const points = rows.map((topic, index) => {
+    const x = 8 + index * (84 / Math.max(1, rows.length - 1));
+    const y = 86 - topic.mastery * 0.72;
+    return { topic, x, y };
+  });
+  const path = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+  const areaPath = `${path} L ${points.at(-1)?.x ?? 92} 92 L ${points[0]?.x ?? 8} 92 Z`;
+
   return (
-    <div className="grid gap-3">
-      {rows.map((topic) => (
-        <div key={topic.topicSlug} className="grid gap-3 md:grid-cols-[180px_1fr_70px] md:items-center">
-          <div className="min-w-0">
-            <b className="line-clamp-1 text-sm">{topic.topic}</b>
-            <span className="mt-1 block text-xs font-medium text-muted">{topic.correct}/{topic.attempts} correct</span>
+    <div className="relative min-h-[320px] overflow-hidden rounded-[18px] border border-line bg-[linear-gradient(var(--line)_1px,transparent_1px),linear-gradient(90deg,var(--line)_1px,transparent_1px),var(--surface-soft)] bg-[size:100%_25%,16.66%_100%,auto] p-4">
+      <svg className="absolute inset-0 size-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="qlTerrainFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="var(--danger)" stopOpacity=".30" />
+            <stop offset=".55" stopColor="var(--warning)" stopOpacity=".18" />
+            <stop offset="1" stopColor="var(--success)" stopOpacity=".10" />
+          </linearGradient>
+        </defs>
+        <path d={areaPath} fill="url(#qlTerrainFill)" />
+        <path d={path} fill="none" stroke="var(--ink)" strokeOpacity=".58" strokeWidth="0.9" vectorEffect="non-scaling-stroke" />
+        <line x1="0" x2="100" y1="35.6" y2="35.6" stroke="var(--warning)" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
+      </svg>
+      <div className="relative grid h-full grid-cols-2 gap-3 md:grid-cols-3">
+        {points.map(({ topic, x, y }) => (
+          <div key={topic.topicSlug} className="min-h-[92px] rounded-[14px] border border-line bg-surface/90 p-3 shadow-[0_10px_26px_rgba(20,23,19,.06)]" style={{ transform: `translateY(${Math.max(-10, Math.min(16, y - 50))}px)` }}>
+            <div className="flex items-start justify-between gap-2">
+              <b className="line-clamp-2 text-sm">{topic.topic}</b>
+              <span className="rounded-lg px-2 py-1 text-xs font-bold text-white" style={{ background: masteryColor(topic.mastery) }}>{topic.mastery}%</span>
+            </div>
+            <p className="mt-2 text-xs text-muted">{topic.correct}/{topic.attempts} correct · x{x.toFixed(0)} y{y.toFixed(0)}</p>
           </div>
-          <div className="relative h-9 overflow-hidden rounded-xl border border-line bg-surface-soft">
-            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(20,23,19,.08)_1px,transparent_1px)] bg-[size:10%_100%]" />
-            <span className="absolute bottom-0 top-0 left-[70%] border-l border-dashed border-ink/40" />
-            <span className="absolute bottom-0 left-0 top-0 rounded-xl" style={{ width: `${topic.mastery}%`, background: masteryColor(topic.mastery) }} />
-          </div>
-          <b className={cn("text-right", topic.mastery < 50 ? "text-danger" : topic.mastery < 70 ? "text-warning" : "text-success")}>{topic.mastery}%</b>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
@@ -1353,23 +1379,62 @@ function ProtocolStep({ index, title, copy }: { index: number; title: string; co
   );
 }
 
-function PriorityRings({ topics }: { topics: TopicMasteryView[] }) {
-  const rows = [...topics].sort((a, b) => a.mastery - b.mastery).slice(0, 3);
-  if (!rows.length) return <Card className="p-4"><Empty text="Priority ring uchun topic yo'q." /></Card>;
+function TopicOrbitMap({ topics }: { topics: TopicMasteryView[] }) {
+  const rows = [...topics].sort((a, b) => b.priorityScore - a.priorityScore).slice(0, 5);
+  if (!rows.length) return <Card className="p-4"><CompactChartEmpty text="Topic orbit uchun data yo'q." /></Card>;
+  const positions = [
+    { left: 50, top: 50 },
+    { left: 24, top: 29 },
+    { left: 77, top: 32 },
+    { left: 24, top: 73 },
+    { left: 77, top: 72 },
+  ];
+
   return (
     <Card className="p-4">
-      <h2 className="text-lg font-semibold">Priority rings</h2>
-      <p className="mt-1 text-sm text-muted">Top topics only. Dekorativ chart emas.</p>
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        {rows.map((topic) => (
-          <div key={topic.topicSlug} className="rounded-2xl border border-line bg-surface-soft p-3 text-center">
-            <div className="relative mx-auto grid size-[76px] place-items-center rounded-full" style={{ background: `conic-gradient(${masteryColor(topic.mastery)} 0 ${topic.mastery * 3.6}deg, var(--line) ${topic.mastery * 3.6}deg 360deg)` }}>
-              <span className="absolute inset-2 rounded-full border border-line bg-surface" />
-              <b className="relative text-sm">{topic.mastery}%</b>
+      <h2 className="text-lg font-semibold">Topic orbit map</h2>
+      <p className="mt-1 text-sm text-muted">Priority gravitatsiyasi: markazdagi topic eng katta action talab qiladi.</p>
+      <div className="relative mt-4 h-[300px] overflow-hidden rounded-[18px] border border-line bg-[radial-gradient(circle_at_center,var(--surface)_0,transparent_24%),linear-gradient(var(--line)_1px,transparent_1px),linear-gradient(90deg,var(--line)_1px,transparent_1px),var(--surface-soft)] bg-[size:auto,100%_25%,25%_100%,auto]">
+        <span className="absolute left-1/2 top-1/2 size-[220px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-line-strong" />
+        <span className="absolute left-1/2 top-1/2 size-[132px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-line" />
+        {rows.map((topic, index) => {
+          const position = positions[index] ?? positions[0];
+          const size = index === 0 ? 84 : 62;
+          return (
+            <Link
+              key={topic.topicSlug}
+              href="/student/tests"
+              className="absolute grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/70 text-center shadow-[0_14px_34px_rgba(20,23,19,.12)] transition hover:scale-105"
+              style={{ left: `${position.left}%`, top: `${position.top}%`, width: size, height: size, background: masteryColor(topic.mastery), color: "white" }}
+            >
+              <span className="px-2 text-[10px] font-black leading-tight">{topic.mastery}%<br />{topic.topic.slice(0, 10)}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+function MasteryConstellation({ topics, value, label }: { topics: TopicMasteryView[]; value: number; label: string }) {
+  const rows = [...topics].sort((a, b) => a.mastery - b.mastery).slice(0, 9);
+  if (!rows.length) return <Card className="p-4"><CompactChartEmpty text="Constellation uchun topic data yo'q." /></Card>;
+  return (
+    <Card className="p-4">
+      <h2 className="text-lg font-semibold">{label}</h2>
+      <div className="mt-4 grid grid-cols-[120px_1fr] gap-4">
+        <div className="relative grid size-[120px] place-items-center rounded-[28px] border border-line bg-surface-soft">
+          <span className="absolute inset-4 rounded-[22px] border border-dashed border-line-strong" />
+          <b className="relative text-3xl">{value}%</b>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {rows.map((topic, index) => (
+            <div key={topic.topicSlug} className="relative min-h-16 rounded-[14px] border border-line bg-surface-soft p-2">
+              <span className="absolute right-2 top-2 rounded-md px-1.5 py-0.5 text-[10px] font-bold text-white" style={{ background: masteryColor(topic.mastery) }}>{topic.mastery}</span>
+              <span className="block pt-7 text-[11px] font-semibold leading-tight text-muted">{index + 1}. {topic.topic.slice(0, 16)}</span>
             </div>
-            <span className="mt-2 block truncate text-xs font-semibold text-muted">{topic.topic}</span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </Card>
   );
@@ -1437,7 +1502,7 @@ function WeakTopicTooltip({ active, payload }: { active?: boolean; payload?: Arr
 
 function SkillGapMatrix({ skills, compact = false }: { skills: SkillMasteryView[]; compact?: boolean }) {
   const data = [...skills].sort((a, b) => a.mastery - b.mastery).slice(0, 18);
-  if (!data.length) return <Empty text="Bu fan uchun skill signali hali yo'q." />;
+  if (!data.length) return <CompactChartEmpty text="Bu fan uchun skill signali hali yo'q." />;
 
   return (
     <div className={cn("grid gap-2", compact ? "grid-cols-1" : "sm:grid-cols-2 xl:grid-cols-3")}>
@@ -1477,7 +1542,7 @@ function MistakeSignalScatter({ mistakes }: { mistakes: MistakeView[] }) {
     isCorrect: false,
   }));
 
-  if (!data.length) return <Empty text="Bu fan uchun xato signali yo'q." />;
+  if (!data.length) return <CompactChartEmpty text="Bu fan uchun xato signali yo'q." />;
 
   return <SignalScatterChart data={data} />;
 }
@@ -1493,7 +1558,7 @@ function QuestionSignalScatter({ signals }: { signals: QuestionSignalRow[] }) {
     isCorrect: signal.isCorrect,
   }));
 
-  if (!data.length) return <Empty text="Question signal uchun yetarli data yo'q." />;
+  if (!data.length) return <CompactChartEmpty text="Question signal uchun yetarli data yo'q." />;
 
   return <SignalScatterChart data={data} />;
 }
@@ -1531,43 +1596,51 @@ function ScatterTooltip({ active, payload }: { active?: boolean; payload?: Array
   );
 }
 
-function MistakeTrendArea({ mistakes }: { mistakes: MistakeView[] }) {
+function MistakePulseTimeline({ mistakes }: { mistakes: MistakeView[] }) {
   const groups = mistakes.reduce((map, mistake) => {
     const key = shortDate(mistake.createdAt);
     map.set(key, (map.get(key) ?? 0) + 1);
     return map;
   }, new Map<string, number>());
   const data: TrendRow[] = Array.from(groups.entries()).map(([label, value]) => ({ label, mistakes: value })).slice(-8);
-  if (data.length < 2) return <Empty text="Trend uchun kamida 2 ta vaqt nuqtasi kerak." />;
+  if (data.length < 2) return <CompactChartEmpty text="Pulse timeline uchun kamida 2 ta vaqt nuqtasi kerak." />;
+  const max = Math.max(...data.map((item) => item.mistakes), 1);
 
   return (
-    <div className="h-[220px]">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
-          <defs>
-            <linearGradient id="mistakeTrendFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.22} />
-              <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0.02} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
-          <XAxis dataKey="label" tickLine={false} axisLine={false} stroke="var(--muted)" fontSize={12} />
-          <YAxis allowDecimals={false} tickLine={false} axisLine={false} stroke="var(--muted)" fontSize={12} width={28} />
-          <Tooltip content={<TrendTooltip />} />
-          <Area dataKey="mistakes" type="monotone" stroke="var(--chart-1)" strokeWidth={2} fill="url(#mistakeTrendFill)" isAnimationActive animationDuration={800} animationEasing="ease-out" />
-        </AreaChart>
-      </ResponsiveContainer>
+    <div className="relative h-[250px] overflow-hidden rounded-[18px] border border-line bg-[linear-gradient(var(--line)_1px,transparent_1px),linear-gradient(90deg,var(--line)_1px,transparent_1px),var(--surface-soft)] bg-[size:100%_25%,12.5%_100%,auto] p-4">
+      <svg className="absolute inset-0 size-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+        {data.map((item, index) => {
+          const x = 10 + index * (80 / Math.max(1, data.length - 1));
+          const y = 82 - (item.mistakes / max) * 58;
+          const next = data[index + 1];
+          const nextX = 10 + (index + 1) * (80 / Math.max(1, data.length - 1));
+          const nextY = next ? 82 - (next.mistakes / max) * 58 : y;
+          return next ? <path key={`${item.label}-line`} d={`M ${x} ${y} C ${x + 7} ${y}, ${nextX - 7} ${nextY}, ${nextX} ${nextY}`} stroke="var(--danger)" strokeOpacity=".48" strokeWidth="1.1" fill="none" vectorEffect="non-scaling-stroke" /> : null;
+        })}
+      </svg>
+      <div className="relative flex h-full items-end justify-between gap-2">
+        {data.map((item) => {
+          const height = 34 + (item.mistakes / max) * 126;
+          return (
+            <div key={item.label} className="flex min-w-0 flex-1 flex-col items-center gap-2">
+              <div className="relative grid w-full place-items-center" style={{ height }}>
+                <span className="absolute size-11 rounded-full bg-danger/10" />
+                <span className="absolute size-7 rounded-full bg-danger/20" />
+                <span className="relative grid size-5 place-items-center rounded-full bg-danger text-[10px] font-black text-white">{item.mistakes}</span>
+              </div>
+              <span className="max-w-full truncate text-[10px] font-semibold text-muted">{item.label}</span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-function TrendTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: TrendRow }> }) {
-  if (!active || !payload?.length) return null;
-  const row = payload[0].payload;
+function CompactChartEmpty({ text }: { text: string }) {
   return (
-    <div className="rounded-[12px] border border-line bg-surface px-3 py-2 text-xs shadow-[var(--shadow-card)]">
-      <p className="font-semibold text-ink">{row.label}</p>
-      <p className="mt-1 text-muted">{row.mistakes} mistakes</p>
+    <div className="grid min-h-[96px] place-items-center rounded-[var(--radius-card)] border border-dashed border-line-strong bg-surface-soft px-4 py-5 text-center">
+      <p className="max-w-[320px] text-sm font-medium leading-6 text-muted">{text}</p>
     </div>
   );
 }
