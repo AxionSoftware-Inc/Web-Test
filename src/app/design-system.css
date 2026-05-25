@@ -137,17 +137,17 @@
   --shadow-float: 0 18px 44px rgba(21, 23, 19, 0.12);
 
   /* Desktop/laptop layout */
-  --page-max-reading: 1120px;
-  --page-max: 1728px;
+  --page-max-reading: 1920px;
+  --page-max: 1920px;
   --page-max-wide: 1920px;
-  --page-max-table: 2240px;
-  --page-max-test: 2400px;
+  --page-max-table: 1920px;
+  --page-max-test: 1920px;
 
   --sidebar-width: 264px;
   --topbar-height: 64px;
 
-  --page-x: 24px;
-  --page-x-wide: 32px;
+  --page-x: 0px;
+  --page-x-wide: 0px;
   --page-y: 24px;
 
   --section-gap: 24px;
@@ -178,6 +178,13 @@ body {
 }
 
 /* Desktop-first layout primitives */
+/*
+  Mandatory product layout rule:
+  - Do not add page-level headers/hero title blocks inside dashboards.
+  - Do not add top numeric summary rows with 4-6 metric cards under headers.
+  - Use section headers and contextual cards inside the workspace instead.
+  - Page containers must not add side padding; content should fit FullHD laptop/monitor workspaces.
+*/
 .quest-page {
   min-height: 100vh;
   background: var(--background);
@@ -188,35 +195,35 @@ body {
   width: 100%;
   max-width: var(--page-max);
   margin-inline: auto;
-  padding: var(--page-y) var(--page-x);
+  padding: var(--page-y) 0;
 }
 
 .quest-container-reading {
   width: 100%;
   max-width: var(--page-max-reading);
   margin-inline: auto;
-  padding: var(--page-y) var(--page-x);
+  padding: var(--page-y) 0;
 }
 
 .quest-container-wide {
   width: 100%;
   max-width: var(--page-max-wide);
   margin-inline: auto;
-  padding: var(--page-y) var(--page-x);
+  padding: var(--page-y) 0;
 }
 
 .quest-container-table {
   width: 100%;
   max-width: var(--page-max-table);
   margin-inline: auto;
-  padding: var(--page-y) var(--page-x);
+  padding: var(--page-y) 0;
 }
 
 .quest-container-test {
   width: 100%;
   max-width: var(--page-max-test);
   margin-inline: auto;
-  padding: 20px var(--page-x);
+  padding: 20px 0;
 }
 
 @media (min-width: 1536px) {
@@ -225,7 +232,7 @@ body {
   .quest-container-wide,
   .quest-container-table,
   .quest-container-test {
-    padding-inline: var(--page-x-wide);
+    padding-inline: 0;
   }
 }
 
@@ -236,8 +243,13 @@ body {
   .quest-container-wide,
   .quest-container-table,
   .quest-container-test {
-    padding: 16px;
+    padding: 16px 0;
   }
+}
+
+.quest-dashboard-grid > header,
+.quest-metric-grid {
+  display: none !important;
 }
 
 /* Reusable surfaces */

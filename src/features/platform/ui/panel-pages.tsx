@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BarChart3, BookOpenCheck, Building2, FileWarning, GraduationCap, PackageCheck, Settings, UsersRound } from "lucide-react";
 
 import type { ApiClassResults, ApiClassStudent, ApiExamPack, ApiExamPackResults, ApiSchool, ApiTeacherClass, ApiTest } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { SchoolStudentDirectory, type SchoolStudentDirectoryRow } from "@/features/platform/ui/school-student-directory";
 import { LatexText } from "@/shared/ui/latex-text";
-import { PremiumPage, PremiumPanel } from "@/shared/ui/premium-shell";
+import { PremiumPanel } from "@/shared/ui/premium-shell";
 import { CreatorPacksManager } from "@/features/exam-packs/ui/creator-packs-manager";
 import { normalizeAnswer } from "@/features/assessment/lib/assessment-scoring";
 import { TopicBreakdownChart } from "@/components/questlab/charts/topic-breakdown-chart";
@@ -1318,35 +1317,21 @@ function packCard(pack: ApiExamPack, href: string, usage = 0): Card {
   };
 }
 
-function PanelShell({ eyebrow, title, copy, children }: { eyebrow: string; title: string; copy?: string; children: React.ReactNode }) {
+function PanelShell({ eyebrow: _eyebrow, title: _title, copy: _copy, children }: { eyebrow: string; title: string; copy?: string; children: React.ReactNode }) {
+  void _eyebrow;
+  void _title;
+  void _copy;
   return (
-    <PremiumPage>
-      <PremiumPanel>
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">{eyebrow}</p>
-        <h1 className="mt-3 text-4xl font-semibold">{title}</h1>
-        {copy ? <p className="mt-3 max-w-3xl text-sm leading-6 text-black/58">{copy}</p> : null}
-      </PremiumPanel>
-      <div className="mt-6 grid gap-6">{children}</div>
-    </PremiumPage>
+    <QuestPage variant="wide">
+      {children}
+    </QuestPage>
   );
 }
 
-function StatsGrid({ stats }: { stats: Stat[] }) {
-  const icons = [Building2, UsersRound, GraduationCap, BookOpenCheck, PackageCheck, BarChart3, FileWarning, Settings];
-  return (
-    <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      {stats.map((stat, index) => {
-        const Icon = icons[index % icons.length];
-        return (
-          <div key={stat.label} className="rounded-2xl border border-black/8 bg-white p-4 shadow-[0_12px_34px_rgba(21,23,19,0.04)]">
-            <Icon className="size-5 text-brand" />
-            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-black/38">{stat.label}</p>
-            <p className="mt-1 text-2xl font-semibold">{stat.value}</p>
-          </div>
-        );
-      })}
-    </section>
-  );
+function StatsGrid({ stats: _stats }: { stats: Stat[] }) {
+  // Design rule: top numeric summary rows are disabled globally.
+  void _stats;
+  return null;
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
