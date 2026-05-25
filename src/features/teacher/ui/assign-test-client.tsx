@@ -3,13 +3,19 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { PageHeader } from "@/components/questlab/layout/page-header";
+import { QuestPage } from "@/components/questlab/layout/quest-page";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { ApiTest } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { getTeacherManageCode } from "@/shared/model/local-identity";
 
 export function AssignTestClient({ classSlug, tests }: { classSlug: string; tests: ApiTest[] }) {
   const router = useRouter();
-  const [testId, setTestId] = useState(tests[0]?.id ?? 0);
+  const [testId, setTestId] = useState(String(tests[0]?.id ?? ""));
   const [title, setTitle] = useState(tests[0]?.title ?? "");
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -19,7 +25,7 @@ export function AssignTestClient({ classSlug, tests }: { classSlug: string; test
     setSaving(true);
     setError("");
     try {
-      await questApi.createClassAssignment(classSlug, { test: testId, title, is_active: isActive, manage_code: getTeacherManageCode(classSlug) });
+      await questApi.createClassAssignment(classSlug, { test: Number(testId), title, is_active: isActive, manage_code: getTeacherManageCode(classSlug) });
       router.push(`/teacher/classes/${classSlug}`);
       router.refresh();
     } catch (err) {
@@ -30,41 +36,37 @@ export function AssignTestClient({ classSlug, tests }: { classSlug: string; test
   }
 
   return (
-    <section className="mx-auto max-w-2xl rounded-[28px] border border-black/8 bg-white/82 p-6 shadow-[0_24px_70px_rgba(0,0,0,0.08)]">
-      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-black/40">Assign test</p>
-      <h1 className="mt-2 text-3xl font-semibold">Classga test biriktirish</h1>
-      <div className="mt-6 grid gap-4">
-        <label className="grid gap-2 text-sm font-semibold text-black/65">
-          Backend test
-          <select
-            value={testId}
-            onChange={(event) => {
-              const id = Number(event.target.value);
-              setTestId(id);
-              setTitle(tests.find((test) => test.id === id)?.title ?? title);
-            }}
-            className="rounded-2xl border border-black/10 bg-white px-4 py-3"
-          >
-            {tests.map((test) => (
-              <option key={test.id} value={test.id}>
-                {test.title} / {test.difficulty}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="grid gap-2 text-sm font-semibold text-black/65">
-          Assignment title
-          <input value={title} onChange={(event) => setTitle(event.target.value)} className="rounded-2xl border border-black/10 bg-white px-4 py-3" />
-        </label>
-        <label className="flex items-center gap-3 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold">
-          <input type="checkbox" checked={isActive} onChange={(event) => setIsActive(event.target.checked)} />
-          Active
-        </label>
-        <button onClick={save} disabled={saving || !testId} className="rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
-          {saving ? "Saving..." : "Assign test"}
-        </button>
-        {error ? <p className="rounded-2xl bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p> : null}
-      </div>
-    </section>
+    <QuestPage variant="reading">
+      <PageHeader eyebrow="Teacher" title="Assign test" copy="Attach a published test to this class as an active assignment." />
+      <Card className="p-5">
+        <div className="grid gap-4">
+          <label className="grid gap-2 text-sm font-semibold text-muted">
+            Backend test
+            <Select
+              value={testId}
+              onValueChange={(value) => {
+                setTestId(value);
+                setTitle(tests.find((test) => String(test.id) === value)?.title ?? title);
+              }}
+            >
+              <SelectTrigger><SelectValue placeholder="Select test" /></SelectTrigger>
+              <SelectContent>
+                {tests.map((test) => <SelectItem key={test.id} value={String(test.id)}>{test.title} / {test.difficulty}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </label>
+          <label className="grid gap-2 text-sm font-semibold text-muted">
+            Assignment title
+            <Input value={title} onChange={(event) => setTitle(event.target.value)} />
+          </label>
+          <label className="flex items-center gap-3 rounded-[var(--radius-card)] border border-line bg-surface px-4 py-3 text-sm font-semibold">
+            <input type="checkbox" checked={isActive} onChange={(event) => setIsActive(event.target.checked)} />
+            Active assignment
+          </label>
+          <Button onClick={save} disabled={saving || !testId}>{saving ? "Saving..." : "Assign test"}</Button>
+          {error ? <p className="rounded-[var(--radius-card)] bg-danger-soft p-3 text-sm font-semibold text-danger">{error}</p> : null}
+        </div>
+      </Card>
+    </QuestPage>
   );
 }

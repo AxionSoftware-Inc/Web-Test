@@ -23,6 +23,9 @@ import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 
 import { WeakTopicBars } from "@/components/questlab/charts/weak-topic-bars";
+import { QuestPage } from "@/components/questlab/layout/quest-page";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import type { ApiClassAssignment, ApiClassResults, ApiTeacherClass, ApiTest } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { cn } from "@/shared/lib/cn";
@@ -230,9 +233,9 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
   }
 
   return (
-    <main className="min-h-screen bg-background px-5 py-8 text-ink sm:px-8 lg:px-10">
-      <div className="mx-auto max-w-7xl">
-        <header className="overflow-hidden rounded-[32px] border border-black/8 bg-white shadow-[0_24px_80px_rgba(21,23,19,0.09)]">
+    <QuestPage variant="table">
+      <div className="grid gap-6">
+        <header className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface shadow-[var(--shadow-card)]">
           <div className="grid gap-0 lg:grid-cols-[1fr_360px]">
             <div className="p-6 sm:p-8">
               <Eyebrow>Teacher workspace</Eyebrow>
@@ -241,7 +244,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                   <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">{classroom.name}</h1>
                   <p className="mt-4 max-w-2xl text-sm leading-6 text-black/58">{classroom.description || "Class description qo'shilmagan."}</p>
                 </div>
-                <span className="rounded-2xl bg-brand-soft px-4 py-3 text-sm font-semibold capitalize text-brand">{classroom.visibility}</span>
+                <Badge variant="info">{classroom.visibility}</Badge>
               </div>
               <div className="mt-7 flex flex-wrap gap-2">
                 <ActionButton icon={Link2} onClick={copyStudentLink}>Copy student link</ActionButton>
@@ -261,32 +264,34 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
               </div>
               {notice ? <p className="mt-4 rounded-2xl bg-surface-soft px-4 py-3 text-sm font-semibold text-black/62">{notice}</p> : null}
             </div>
-            <div className="border-t border-black/8 bg-ink p-6 text-white lg:border-l lg:border-t-0">
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/45">Class health</p>
+            <div className="border-t border-line bg-surface-soft p-6 lg:border-l lg:border-t-0">
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-subtle">Class health</p>
               <div className="mt-5 grid grid-cols-2 gap-3">
-                <Metric icon={Clipboard} label="Sessions" value={assignments.length} dark />
-                <Metric icon={CheckCircle2} label="Open" value={activeAssignments} dark />
-                <Metric icon={UsersRound} label="Students" value={studentCount} dark />
-                <Metric icon={BarChart3} label="Average" value={`${results.average_score}%`} dark />
+                <Metric icon={Clipboard} label="Sessions" value={assignments.length} />
+                <Metric icon={CheckCircle2} label="Open" value={activeAssignments} />
+                <Metric icon={UsersRound} label="Students" value={studentCount} />
+                <Metric icon={BarChart3} label="Average" value={`${results.average_score}%`} />
               </div>
             </div>
           </div>
         </header>
 
         <section className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-          <div className="rounded-[28px] border border-black/8 bg-white/82 p-5 shadow-[0_18px_55px_rgba(21,23,19,0.07)]">
+          <div className="quest-card p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <Eyebrow>Test sessions</Eyebrow>
                 <h2 className="mt-2 text-2xl font-semibold">Class ichida sessiya ochish</h2>
               </div>
-              <Link href={`/teacher/classes/${classroom.slug}/assign`} className="inline-flex items-center gap-2 rounded-2xl bg-ink px-4 py-3 text-sm font-semibold text-white">
+              <Button asChild>
+                <Link href={`/teacher/classes/${classroom.slug}/assign`}>
                 <Plus className="size-4" />
                 Advanced setup
-              </Link>
+                </Link>
+              </Button>
             </div>
 
-            <div className="mt-5 grid gap-4 rounded-3xl border border-black/8 bg-surface-soft p-4 lg:grid-cols-2 xl:grid-cols-[1fr_1fr_auto] xl:items-end">
+            <div className="mt-5 grid gap-4 rounded-[var(--radius-card)] border border-line bg-surface-soft p-4 lg:grid-cols-2 xl:grid-cols-[1fr_1fr_auto] xl:items-end">
               {!tests.length ? <p className="rounded-2xl bg-white p-4 text-sm font-semibold text-black/55 lg:col-span-2 xl:col-span-3">Published test topilmadi. Avval CRUD orqali test yarating yoki draft testni published qiling.</p> : null}
               <FieldShell label="Backend test">
                 <select
@@ -336,14 +341,14 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
                 <button
                   type="button"
                   onClick={() => setIsActive((value) => !value)}
-                  className={cn("rounded-2xl border border-black/10 px-4 py-3 text-sm font-semibold", isActive ? "bg-brand-soft text-brand" : "bg-white text-black/55")}
+                  className={cn("rounded-[var(--radius-control)] border border-line px-4 py-3 text-sm font-semibold", isActive ? "bg-brand-soft text-brand" : "bg-surface text-muted")}
                 >
                   {isActive ? "Active" : "Paused"}
                 </button>
-                <button onClick={addAssignment} disabled={busy || !selectedTestId || !tests.length} className="inline-flex items-center gap-2 rounded-2xl bg-ink px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">
+                <Button onClick={addAssignment} disabled={busy || !selectedTestId || !tests.length}>
                   <Plus className="size-4" />
                   {mode === "homework" ? "Create homework" : "Open session"}
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -428,7 +433,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
           </aside>
         </section>
 
-        <section className="mt-6 rounded-[28px] border border-black/8 bg-white/82 p-5 shadow-[0_18px_55px_rgba(21,23,19,0.07)]">
+        <section className="mt-6 quest-card p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <Eyebrow>Session analytics</Eyebrow>
@@ -466,7 +471,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
           </div>
         </section>
 
-        <section className="mt-6 rounded-[28px] border border-black/8 bg-white/82 p-5 shadow-[0_18px_55px_rgba(21,23,19,0.07)]">
+        <section className="mt-6 quest-card p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <Eyebrow>Results</Eyebrow>
@@ -499,7 +504,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
           </div>
         </section>
 
-        <section className="mt-6 rounded-[28px] border border-black/8 bg-white/82 p-5 shadow-[0_18px_55px_rgba(21,23,19,0.07)]">
+        <section className="mt-6 quest-card p-5">
           <Eyebrow>Students</Eyebrow>
           <h2 className="mt-2 text-2xl font-semibold">O&apos;quvchi kesimida progress</h2>
           <div className="mt-5 overflow-hidden rounded-3xl border border-black/8 bg-white">
@@ -521,7 +526,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
           </div>
         </section>
       </div>
-    </main>
+    </QuestPage>
   );
 }
 

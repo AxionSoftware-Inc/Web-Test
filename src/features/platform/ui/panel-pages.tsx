@@ -2,11 +2,19 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BarChart3, BookOpenCheck, Building2, FileWarning, GraduationCap, PackageCheck, Settings, UsersRound } from "lucide-react";
 
-import type { ApiExamPack, ApiSchool, ApiTeacherClass, ApiTest } from "@/shared/api/questlab-api";
+import type { ApiClassResults, ApiExamPack, ApiSchool, ApiTeacherClass, ApiTest } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { LatexText } from "@/shared/ui/latex-text";
 import { PremiumPage, PremiumPanel } from "@/shared/ui/premium-shell";
 import { CreatorPacksManager } from "@/features/exam-packs/ui/creator-packs-manager";
+import { TopicBreakdownChart } from "@/components/questlab/charts/topic-breakdown-chart";
+import { WeakTopicBars } from "@/components/questlab/charts/weak-topic-bars";
+import { EmptyState as QuestEmptyState } from "@/components/questlab/feedback/empty-state";
+import { PageHeader as QuestPageHeader } from "@/components/questlab/layout/page-header";
+import { QuestPage } from "@/components/questlab/layout/quest-page";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 type Stat = { label: string; value: string | number };
 type Card = { title: string; href: string; meta?: string; copy?: string; stats?: Stat[]; status?: string };
@@ -418,37 +426,122 @@ export async function SchoolStudentsPage() {
 export async function TeacherHomePage() {
   const classes = await questApi.classes();
   const results = await classResults(classes);
+  const validResults = results.filter((item): item is ApiClassResults => Boolean(item));
   const students = new Set(results.flatMap((item) => item?.student_progress.map((student) => student.student_code) ?? [])).size;
+  const activeSessions = validResults.reduce((sum, item) => sum + item.sessions_open, 0);
+  const avgScore = average(validResults.map((item) => item.average_score));
+  const classRows = validResults
+    .map((item) => ({ label: item.classroom.name, value: item.average_score, meta: `${item.students_submitted}/${item.students_total || item.students_submitted} submitted` }))
+    .sort((a, b) => a.value - b.value)
+    .slice(0, 8);
+  const weakRows = validResults
+    .flatMap((item) => item.weak_skills.slice(0, 2).map((skill) => ({ label: skill.skill, value: skill.percent, meta: `${item.classroom.name} / ${skill.total} questions` })))
+    .sort((a, b) => a.value - b.value)
+    .slice(0, 6);
+  const attentionClasses = [...validResults]
+    .sort((a, b) => a.average_score - b.average_score)
+    .slice(0, 4);
+  const recentResults = validResults
+    .flatMap((item) => item.results.map((row) => ({ ...row, className: item.classroom.name })))
+    .sort((a, b) => new Date(b.submitted_at ?? 0).getTime() - new Date(a.submitted_at ?? 0).getTime())
+    .slice(0, 5);
   return (
-    <PanelShell eyebrow="Teacher" title="Teacher dashboard" copy="Classlar, studentlar, active sessions va weak topiclar.">
-      <StatsGrid stats={[
-        { label: "My classes", value: classes.length },
-        { label: "My students", value: students },
-        { label: "Active sessions", value: results.reduce((sum, item) => sum + (item?.sessions_open ?? 0), 0) },
-        { label: "Average score", value: `${average(results.map((item) => item?.average_score ?? 0))}%` },
-      ]} />
-      <TwoColumns
-        leftTitle="Classes needing attention"
-        left={<CardGrid cards={classes.map((item) => classCard(item, `/teacher/classes/${item.slug}`, results.find((row) => row?.classroom.slug === item.slug)?.average_score ?? 0, results.find((row) => row?.classroom.slug === item.slug)?.weak_skills[0]?.skill)).slice(0, 6)} />}
-        rightTitle="Recent student mistakes"
-        right={<CardGrid cards={results.flatMap((item) => item?.weak_skills.slice(0, 2).map((skill) => ({ title: skill.skill, href: "/mistakes", meta: item.classroom.name, stats: [{ label: "Mastery", value: `${skill.percent}%` }] })) ?? []).slice(0, 6)} />}
+    <QuestPage variant="dashboard">
+      <QuestPageHeader
+        eyebrow="Teacher"
+        title="Teacher dashboard"
+        copy="Class activity, weak topics and recent submissions in one workspace."
+        actions={<Button asChild><Link href="/teacher/classes">Create or manage class</Link></Button>}
       />
-    </PanelShell>
+      <div className="quest-metric-grid">
+        <TeacherMetric label="Classes" value={classes.length} />
+        <TeacherMetric label="Students" value={students} />
+        <TeacherMetric label="Open sessions" value={activeSessions} />
+        <TeacherMetric label="Average score" value={`${avgScore}%`} />
+      </div>
+      <div className="quest-main-aside-grid">
+        <div className="grid gap-5">
+          <Card className="p-5">
+            <TeacherSectionHeader title="Class performance" action={<Button asChild variant="secondary" size="sm"><Link href="/teacher/results">View results</Link></Button>} />
+            <div className="mt-4">
+              <TopicBreakdownChart rows={classRows} color="var(--chart-1)" />
+            </div>
+          </Card>
+          <Card className="p-5">
+            <TeacherSectionHeader title="Classes needing attention" />
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {attentionClasses.map((item) => <TeacherClassSummary key={item.classroom.id} result={item} />)}
+              {!attentionClasses.length ? <QuestEmptyState title="No class data yet" copy="Assigned tests and submitted results will appear here." /> : null}
+            </div>
+          </Card>
+        </div>
+        <aside className="grid h-fit gap-5 xl:sticky xl:top-24">
+          <Card className="p-5">
+            <TeacherSectionHeader title="Weak topics" />
+            <div className="mt-4">{weakRows.length ? <WeakTopicBars rows={weakRows} /> : <QuestEmptyState title="No weak topics yet" />}</div>
+          </Card>
+          <Card className="p-5">
+            <TeacherSectionHeader title="Recent submissions" action={<Button asChild variant="secondary" size="sm"><Link href="/teacher/results">All</Link></Button>} />
+            <div className="mt-4 grid gap-3">
+              {recentResults.map((row) => (
+                <Link key={row.session_id} href={`/results/${row.session_id}`} className="rounded-[var(--radius-card)] border border-line bg-surface p-3 hover:bg-surface-soft">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="line-clamp-1 text-sm font-semibold">{row.student_name}</p>
+                    <Badge variant={row.score >= 70 ? "success" : "warning"}>{row.score}%</Badge>
+                  </div>
+                  <p className="mt-1 line-clamp-1 text-xs text-muted">{row.test_title} / {row.className}</p>
+                </Link>
+              ))}
+              {!recentResults.length ? <QuestEmptyState title="No submissions yet" /> : null}
+            </div>
+          </Card>
+        </aside>
+      </div>
+    </QuestPage>
   );
 }
 
 export async function TeacherResultsPage() {
   const classes = await questApi.classes();
   const results = await classResults(classes);
+  const validResults = results.filter((item): item is ApiClassResults => Boolean(item));
+  const rows = validResults.flatMap((result) => result.results.map((row) => ({ ...row, className: result.classroom.name, weakSkill: result.weak_skills[0]?.skill ?? "No data" })));
+  const classRows = validResults.map((item) => ({ label: item.classroom.name, value: item.average_score, meta: `${item.attempts} attempts` }));
+  const weakRows = validResults.flatMap((item) => item.weak_skills.slice(0, 2).map((skill) => ({ label: skill.skill, value: skill.percent, meta: item.classroom.name }))).slice(0, 8);
   return (
-    <PanelShell eyebrow="Teacher" title="Results" copy="Class, test, student, date va score bo'yicha natijalar.">
-      <CardGrid cards={results.flatMap((result) => result?.results.map((row) => ({
-        title: row.student_name,
-        href: `/results/${row.session_id}`,
-        meta: `${row.test_title} / ${result.classroom.name}`,
-        stats: [{ label: "Score", value: `${row.score}%` }, { label: "Weak topic", value: result.weak_skills[0]?.skill ?? "No data" }],
-      })) ?? [])} />
-    </PanelShell>
+    <QuestPage variant="table">
+      <QuestPageHeader eyebrow="Teacher" title="Results" copy="Class, test, student and score history for report review." />
+      <div className="quest-metric-grid">
+        <TeacherMetric label="Submitted results" value={rows.length} />
+        <TeacherMetric label="Classes" value={classes.length} />
+        <TeacherMetric label="Average score" value={`${average(rows.map((row) => row.score))}%`} />
+        <TeacherMetric label="Weak topics" value={weakRows.length} />
+      </div>
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <Card className="p-5">
+          <TeacherSectionHeader title="Results table" />
+          <div className="mt-4 overflow-hidden rounded-[var(--radius-card)] border border-line">
+            <div className="grid grid-cols-[1.1fr_1fr_1fr_100px_110px] gap-3 border-b border-line bg-surface-soft px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-subtle max-lg:hidden">
+              <span>Student</span><span>Class</span><span>Test</span><span>Correct</span><span>Score</span>
+            </div>
+            {rows.map((row) => (
+              <Link key={row.session_id} href={`/results/${row.session_id}`} className="grid gap-3 border-b border-line px-4 py-4 hover:bg-surface-soft lg:grid-cols-[1.1fr_1fr_1fr_100px_110px] lg:items-center">
+                <div><p className="font-semibold">{row.student_name}</p><p className="mt-1 text-xs text-muted">{row.submitted_at ? new Date(row.submitted_at).toLocaleString() : "Submitted"}</p></div>
+                <p className="text-sm text-muted">{row.className}</p>
+                <p className="line-clamp-1 text-sm text-muted">{row.test_title}</p>
+                <p className="text-sm font-semibold text-muted">{row.correct}/{row.total}</p>
+                <Badge variant={row.score >= 70 ? "success" : "warning"}>{row.score}%</Badge>
+              </Link>
+            ))}
+            {!rows.length ? <div className="p-5"><QuestEmptyState title="No submitted results yet" /></div> : null}
+          </div>
+        </Card>
+        <aside className="grid h-fit gap-5 xl:sticky xl:top-24">
+          <Card className="p-5"><TeacherSectionHeader title="Class average" /><div className="mt-4"><TopicBreakdownChart rows={classRows} color="var(--chart-2)" /></div></Card>
+          <Card className="p-5"><TeacherSectionHeader title="Weak topic mastery" /><div className="mt-4">{weakRows.length ? <WeakTopicBars rows={weakRows} /> : <QuestEmptyState title="No weak topics yet" />}</div></Card>
+        </aside>
+      </div>
+    </QuestPage>
   );
 }
 
@@ -649,6 +742,40 @@ function CardGrid({ cards }: { cards: Card[] }) {
         </Link>
       ))}
     </div>
+  );
+}
+
+function TeacherMetric({ label, value }: { label: string; value: string | number }) {
+  return (
+    <Card className="quest-stat-card">
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-subtle">{label}</p>
+      <p className="mt-2 text-2xl font-semibold text-ink">{value}</p>
+    </Card>
+  );
+}
+
+function TeacherSectionHeader({ title, action }: { title: string; action?: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <h2 className="text-lg font-semibold text-ink">{title}</h2>
+      {action}
+    </div>
+  );
+}
+
+function TeacherClassSummary({ result }: { result: ApiClassResults }) {
+  const weakSkill = result.weak_skills[0];
+  return (
+    <Link href={`/teacher/classes/${result.classroom.slug}`} className="rounded-[var(--radius-card)] border border-line bg-surface p-4 hover:bg-surface-soft">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="line-clamp-1 text-base font-semibold">{result.classroom.name}</h3>
+          <p className="mt-1 text-sm text-muted">{result.students_submitted}/{result.students_total || result.students_submitted} submitted</p>
+        </div>
+        <Badge variant={result.average_score >= 70 ? "success" : "warning"}>{result.average_score}%</Badge>
+      </div>
+      <p className="mt-3 line-clamp-1 text-sm text-muted">Weakest: {weakSkill?.skill ?? "No data"}</p>
+    </Link>
   );
 }
 
