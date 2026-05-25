@@ -79,17 +79,6 @@ export async function AdminHomePage() {
   const packRows = validPackStats.map((item) => ({ label: item.pack.title, value: item.attempts, meta: `${item.students_submitted} students` })).slice(0, 6);
   return (
     <QuestPage variant="dashboard">
-      <QuestPageHeader eyebrow="Admin" title="Platform dashboard" copy="Global schools, classes, tests, packs and session health." />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Schools" value={data.schools.length} />
-        <TeacherMetric label="Teachers" value={teachers} />
-        <TeacherMetric label="Students" value={students} />
-        <TeacherMetric label="Classes" value={data.classes.length} />
-        <TeacherMetric label="Tests" value={data.tests.length} />
-        <TeacherMetric label="Packs" value={data.packs.length} />
-        <TeacherMetric label="Active sessions" value={activeSessions} />
-        <TeacherMetric label="Submitted tests" value={completedToday} />
-      </div>
       <div className="quest-main-aside-grid">
         <div className="grid gap-5">
           <Card className="p-5"><TeacherSectionHeader title="Class performance" action={<Button asChild variant="secondary" size="sm"><Link href="/admin/classes">All classes</Link></Button>} /><div className="mt-4"><TopicBreakdownChart rows={classRows} color="var(--chart-1)" /></div></Card>
@@ -108,13 +97,6 @@ export async function AdminSchoolsPage() {
   const schools = await questApi.schools();
   return (
     <QuestPage variant="wide">
-      <QuestPageHeader eyebrow="Admin" title="Schools" copy="All schools and learning centers on the platform." />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Schools" value={schools.length} />
-        <TeacherMetric label="Public" value={schools.filter((item) => item.visibility === "public").length} />
-        <TeacherMetric label="Private" value={schools.filter((item) => item.visibility === "private").length} />
-        <TeacherMetric label="Teachers" value={schools.reduce((sum, item) => sum + item.teacher_count, 0)} />
-      </div>
       <Card className="p-5"><TeacherSectionHeader title="School directory" /><div className="mt-4 quest-card-grid-3">{schools.map((school) => <AdminSchoolCard key={school.id} school={school} />)}{!schools.length ? <QuestEmptyState title="No schools yet" /> : null}</div></Card>
     </QuestPage>
   );
@@ -131,14 +113,6 @@ export async function AdminSchoolDetailPage({ schoolId }: { schoolId: string }) 
   ]);
   return (
     <QuestPage variant="wide">
-      <QuestPageHeader eyebrow="Admin school" title={school.name} copy={school.description || "School overview, teachers, classes, students and reports."} />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Owner" value={school.owner_name || "No owner"} />
-        <TeacherMetric label="Teachers" value={analytics?.teacher_count ?? teachers.length} />
-        <TeacherMetric label="Students" value={analytics?.students_submitted ?? 0} />
-        <TeacherMetric label="Attempts" value={analytics?.attempts ?? 0} />
-        <TeacherMetric label="Average score" value={`${analytics?.average_score ?? 0}%`} />
-      </div>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
         <Card className="p-5"><TeacherSectionHeader title="Classes" /><div className="mt-4 quest-card-grid-3">{classes.map((item) => <AdminClassCard key={item.id} classroom={item} />)}{!classes.length ? <QuestEmptyState title="No classes yet" /> : null}</div></Card>
         <Card className="h-fit p-5 xl:sticky xl:top-24"><TeacherSectionHeader title="Teachers" /><div className="mt-4 grid gap-3">{teachers.map((teacher) => <SchoolTeacherCard key={teacher.id} teacher={teacher} />)}{!teachers.length ? <QuestEmptyState title="No teachers yet" /> : null}</div></Card>
@@ -153,13 +127,6 @@ export async function AdminClassesPage() {
   const validResults = results.filter((item): item is ApiClassResults => Boolean(item));
   return (
     <QuestPage variant="wide">
-      <QuestPageHeader eyebrow="Admin" title="Classes" copy="Platform class health, teachers and weak topic signals." />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Classes" value={classes.length} />
-        <TeacherMetric label="Students" value={classes.reduce((sum, item) => sum + item.student_count, 0)} />
-        <TeacherMetric label="Assignments" value={classes.reduce((sum, item) => sum + item.assignment_count, 0)} />
-        <TeacherMetric label="Average score" value={`${average(validResults.map((item) => item.average_score))}%`} />
-      </div>
       <Card className="p-5"><TeacherSectionHeader title="Class directory" /><div className="mt-4 quest-card-grid-3">{classes.map((item) => <AdminClassCard key={item.id} classroom={item} result={validResults.find((row) => row.classroom.slug === item.slug)} />)}{!classes.length ? <QuestEmptyState title="No classes yet" /> : null}</div></Card>
     </QuestPage>
   );
@@ -188,14 +155,6 @@ export async function AdminClassDetailPage({ classId }: { classId: string }) {
       }));
   return (
     <QuestPage variant="table">
-      <QuestPageHeader eyebrow="Admin class" title={classroom.name} copy={`${classroom.teacher_name} classi bo'yicha natija va o'quvchilar.`} />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Teacher" value={classroom.teacher_name} />
-        <TeacherMetric label="Students" value={students.length || classroom.student_count} />
-        <TeacherMetric label="Open sessions" value={results?.sessions_open ?? 0} />
-        <TeacherMetric label="Average score" value={`${results?.average_score ?? 0}%`} />
-        <TeacherMetric label="Weakest topic" value={results?.weak_skills[0]?.skill ?? "No data"} />
-      </div>
       <Card className="p-5"><TeacherSectionHeader title="Student list" /><div className="mt-4 quest-card-grid-3">{studentCards.map((card) => <GenericEntityCard key={`${card.href}-${card.title}`} {...card} />)}{!studentCards.length ? <QuestEmptyState title="No students yet" /> : null}</div></Card>
     </QuestPage>
   );
@@ -206,13 +165,6 @@ export async function AdminTestsPage() {
   const results = await classResults(classes);
   return (
     <QuestPage variant="wide">
-      <QuestPageHeader eyebrow="Admin" title="Tests" copy="Test catalog by subject, creator and publish status." />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Tests" value={tests.length} />
-        <TeacherMetric label="Published" value={tests.filter((item) => item.status === "published").length} />
-        <TeacherMetric label="Draft" value={tests.filter((item) => item.status === "draft").length} />
-        <TeacherMetric label="Questions" value={tests.reduce((sum, item) => sum + item.test_questions.length, 0)} />
-      </div>
       <Card className="p-5"><TeacherSectionHeader title="Test directory" /><div className="mt-4 quest-card-grid-3">{tests.map((test) => {
         const used = results.reduce((sum, item) => sum + (item?.assignment_stats.filter((row) => row.test_slug === test.slug).length ?? 0), 0);
         return <AdminTestCard key={test.id} test={test} used={used} />;
@@ -227,14 +179,6 @@ export async function AdminTestDetailPage({ testId }: { testId: string }) {
   if (!test) notFound();
   return (
     <QuestPage variant="wide">
-      <QuestPageHeader eyebrow="Admin test" title={test.title} copy={`${test.subject_slug} / ${test.topic_slug}`} />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Questions" value={test.test_questions.length} />
-        <TeacherMetric label="Difficulty" value={test.difficulty} />
-        <TeacherMetric label="Time limit" value={`${test.estimated_minutes} min`} />
-        <TeacherMetric label="Status" value={test.status} />
-        <TeacherMetric label="Passing score" value={`${test.passing_score}%`} />
-      </div>
       <Card className="p-5"><TeacherSectionHeader title="Questions preview" /><div className="mt-4 quest-card-grid-3">{test.test_questions.slice(0, 12).map((item) => <GenericEntityCard key={item.question.id} title={item.question.prompt.slice(0, 80)} href={`/questions/${item.question.id}`} meta={item.question.difficulty} copy={item.question.explanation} />)}{!test.test_questions.length ? <QuestEmptyState title="No questions yet" /> : null}</div></Card>
     </QuestPage>
   );
@@ -246,13 +190,6 @@ export async function AdminPacksPage() {
   const validResults = results.filter((item): item is ApiExamPackResults => Boolean(item));
   return (
     <QuestPage variant="wide">
-      <QuestPageHeader eyebrow="Admin" title="Packs" copy="Pack usage, publishing status and content health." />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Packs" value={packs.length} />
-        <TeacherMetric label="Published" value={packs.filter((item) => item.is_active).length} />
-        <TeacherMetric label="Attempts" value={validResults.reduce((sum, item) => sum + item.attempts, 0)} />
-        <TeacherMetric label="Average score" value={`${average(validResults.map((item) => item.average_score))}%`} />
-      </div>
       <Card className="p-5"><TeacherSectionHeader title="Pack directory" /><div className="mt-4 quest-card-grid-3">{packs.map((pack) => <AdminPackCard key={pack.id} pack={pack} result={validResults.find((item) => item.pack.slug === pack.slug)} />)}{!packs.length ? <QuestEmptyState title="No packs yet" /> : null}</div></Card>
     </QuestPage>
   );
@@ -268,15 +205,6 @@ export async function PackDetailPage({ packId, base = "/admin/packs" }: { packId
   ]);
   return (
     <QuestPage variant="wide">
-      <QuestPageHeader eyebrow="Pack detail" title={pack.title} copy={pack.description || pack.exam_type} />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Tests" value={items.length} />
-        <TeacherMetric label="Questions" value={items.reduce((sum, item) => sum + item.question_count, 0)} />
-        <TeacherMetric label="Usage" value={results?.attempts ?? 0} />
-        <TeacherMetric label="Students" value={results?.students_submitted ?? 0} />
-        <TeacherMetric label="Average" value={`${results?.average_score ?? 0}%`} />
-        <TeacherMetric label="Status" value={pack.is_active ? "published" : "draft"} />
-      </div>
       <Card className="p-5"><TeacherSectionHeader title="Tests" /><div className="mt-4 quest-card-grid-3">{items.map((item) => <GenericEntityCard key={item.id} title={item.title} href={`${base}/${pack.slug}`} meta={`${item.difficulty} / ${item.question_count} questions`} stats={[{ label: "Order", value: item.order }, { label: "Required", value: item.is_required ? "yes" : "no" }]} />)}{!items.length ? <QuestEmptyState title="No tests in pack" /> : null}</div></Card>
     </QuestPage>
   );
@@ -286,13 +214,6 @@ export function ReportsPage({ role = "Admin" }: { role?: string }) {
   const base = role.toLowerCase();
   return (
     <QuestPage variant="table">
-      <QuestPageHeader eyebrow={role} title="Reports" copy="Performance, moderation and export-ready report workspaces." />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Report types" value={4} />
-        <TeacherMetric label="Exports" value="CSV/PDF" />
-        <TeacherMetric label="Review queue" value="Ready" />
-        <TeacherMetric label="Status" value="Operational" />
-      </div>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
         <Card className="p-5">
           <TeacherSectionHeader title="Report workspaces" />
@@ -324,12 +245,6 @@ export function ReportsPage({ role = "Admin" }: { role?: string }) {
 export function SettingsPage({ role = "Admin" }: { role?: string }) {
   return (
     <QuestPage variant="reading">
-      <QuestPageHeader eyebrow={role} title="Settings" copy="Account, permissions and platform configuration." />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Role" value={role} />
-        <TeacherMetric label="Access" value="Active" />
-        <TeacherMetric label="Exports" value="Enabled" />
-      </div>
       <Card className="p-5">
         <TeacherSectionHeader title="Settings areas" />
         <div className="mt-4 grid gap-3">
@@ -359,20 +274,6 @@ export async function CreatorDashboardPage() {
   const recentPacks = data.packs.slice(0, 5);
   return (
     <QuestPage variant="dashboard">
-      <QuestPageHeader
-        eyebrow="Creator"
-        title="Content dashboard"
-        copy="Pack quality, usage and publish readiness for your assessment content."
-        actions={<Button asChild><Link href="/creator/add-pack">Create pack</Link></Button>}
-      />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Packs" value={data.packs.length} />
-        <TeacherMetric label="Tests" value={data.tests.length} />
-        <TeacherMetric label="Questions" value={data.questions.length} />
-        <TeacherMetric label="Published tests" value={data.tests.filter((item) => item.status === "published").length} />
-        <TeacherMetric label="Draft tests" value={data.tests.filter((item) => item.status === "draft").length} />
-        <TeacherMetric label="Total usage" value={usage} />
-      </div>
       <div className="quest-main-aside-grid">
         <div className="grid gap-5">
           <Card className="p-5">
@@ -422,7 +323,6 @@ export async function CreatorPacksPage() {
   );
   return (
     <QuestPage variant="wide">
-      <QuestPageHeader eyebrow="Creator" title="Packs" copy="Manage pack publishing, usage and editing workflow." actions={<Button asChild><Link href="/creator/add-pack">Create pack</Link></Button>} />
       <CreatorPacksManager initialPacks={packs} usageBySlug={usageBySlug} />
     </QuestPage>
   );
@@ -434,13 +334,6 @@ export async function CreatorTestsPage() {
   const draft = tests.filter((test) => test.status === "draft");
   return (
     <QuestPage variant="wide">
-      <QuestPageHeader eyebrow="Creator" title="Tests" copy="Review draft tests, published tests and edit readiness." />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="All tests" value={tests.length} />
-        <TeacherMetric label="Published" value={published.length} />
-        <TeacherMetric label="Draft" value={draft.length} />
-        <TeacherMetric label="Questions linked" value={tests.reduce((sum, test) => sum + test.test_questions.length, 0)} />
-      </div>
       <Card className="p-5">
         <TeacherSectionHeader title="Test catalog" />
         <div className="mt-4 quest-card-grid-3">
@@ -461,13 +354,6 @@ export async function CreatorQuestionsPage() {
   }, {})).map(([label, value]) => ({ label, value })).slice(0, 8);
   return (
     <QuestPage variant="table">
-      <QuestPageHeader eyebrow="Creator" title="Question bank" copy="Question inventory by topic, skill and difficulty." />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Questions" value={questions.length} />
-        <TeacherMetric label="Topics" value={topicRows.length} />
-        <TeacherMetric label="Skills tagged" value={questions.filter((q) => q.skill_titles.length).length} />
-        <TeacherMetric label="Needs tags" value={questions.filter((q) => !q.skill_titles.length).length} />
-      </div>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
         <Card className="p-5">
           <TeacherSectionHeader title="Questions" />
@@ -504,18 +390,6 @@ export async function CreatorTestEditPage({ testId }: { testId: string }) {
   }, {})).map(([label, value]) => ({ label, value })).slice(0, 8);
   return (
     <QuestPage variant="wide">
-      <QuestPageHeader
-        eyebrow="Creator"
-        title={test.title}
-        copy={`${test.subject_slug} / ${test.topic_slug} / ${test.difficulty}`}
-        actions={<Button asChild variant="secondary"><Link href="/creator/tests">Back to tests</Link></Button>}
-      />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Questions" value={test.test_questions.length} />
-        <TeacherMetric label="Time limit" value={`${test.estimated_minutes} min`} />
-        <TeacherMetric label="Passing score" value={`${test.passing_score}%`} />
-        <TeacherMetric label="Status" value={test.status} />
-      </div>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
         <Card className="p-5">
           <TeacherSectionHeader title="Question preview" />
@@ -548,12 +422,6 @@ export async function CreatorQuestionEditPage({ questionId }: { questionId: stri
   if (!question) notFound();
   return (
     <QuestPage variant="reading">
-      <QuestPageHeader
-        eyebrow="Creator"
-        title="Question editor"
-        copy={`${question.type} / ${question.difficulty}`}
-        actions={<Button asChild variant="secondary"><Link href="/creator/questions">Back to questions</Link></Button>}
-      />
       <Card className="p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <h2 className="text-lg font-semibold">Question preview</h2>
@@ -588,14 +456,6 @@ export async function SchoolHomePage() {
   const teacherRows = (analytics?.teachers ?? []).slice(0, 5);
   return (
     <QuestPage variant="dashboard">
-      <QuestPageHeader eyebrow="School" title={school.name} copy="School performance, class health and teacher activity." />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Classes" value={classes.length} />
-        <TeacherMetric label="Teachers" value={teachers.length} />
-        <TeacherMetric label="Students submitted" value={analytics?.students_submitted ?? 0} />
-        <TeacherMetric label="Average score" value={`${analytics?.average_score ?? 0}%`} />
-        <TeacherMetric label="Sessions" value={analytics?.classes.reduce((sum, item) => sum + item.sessions_total, 0) ?? 0} />
-      </div>
       <div className="quest-main-aside-grid">
         <div className="grid gap-5">
           <Card className="p-5"><TeacherSectionHeader title="Class performance" action={<Button asChild variant="secondary" size="sm"><Link href="/school/classes">All classes</Link></Button>} /><div className="mt-4"><TopicBreakdownChart rows={classRows} color="var(--chart-1)" /></div></Card>
@@ -631,13 +491,6 @@ export async function SchoolClassesPage() {
   const validResults = results.filter((item): item is ApiClassResults => Boolean(item));
   return (
     <QuestPage variant="wide">
-      <QuestPageHeader eyebrow="School" title="Classes" copy="Class roster, score averages and weak topic signals." />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Classes" value={classes.length} />
-        <TeacherMetric label="Students" value={classes.reduce((sum, item) => sum + item.student_count, 0)} />
-        <TeacherMetric label="Assignments" value={classes.reduce((sum, item) => sum + item.assignment_count, 0)} />
-        <TeacherMetric label="Average score" value={`${average(validResults.map((item) => item.average_score))}%`} />
-      </div>
       <Card className="p-5">
         <TeacherSectionHeader title="Class workspaces" />
         <div className="mt-4 overflow-hidden rounded-[var(--radius-card)] border border-line">
@@ -668,13 +521,6 @@ export async function SchoolTeachersPage() {
   const teachers = await questApi.schoolTeachers(school.slug);
   return (
     <QuestPage variant="wide">
-      <QuestPageHeader eyebrow="School" title="Teachers" copy="Teacher roster, activity status and class ownership." />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Teachers" value={teachers.length} />
-        <TeacherMetric label="Active" value={teachers.filter((item) => item.is_active).length} />
-        <TeacherMetric label="Classes owned" value={teachers.reduce((sum, item) => sum + item.class_count, 0)} />
-        <TeacherMetric label="Unassigned" value={teachers.filter((item) => !item.class_count).length} />
-      </div>
       <Card className="p-5"><TeacherSectionHeader title="Teacher directory" /><div className="mt-4 quest-card-grid-3">{teachers.map((teacher) => <SchoolTeacherCard key={teacher.id} teacher={teacher} />)}{!teachers.length ? <QuestEmptyState title="No teachers yet" /> : null}</div></Card>
     </QuestPage>
   );
@@ -714,13 +560,6 @@ export async function SchoolStudentsPage() {
   const students = Array.from(byStudent.values()).sort((a, b) => a.studentName.localeCompare(b.studentName));
   return (
     <QuestPage variant="table">
-      <QuestPageHeader eyebrow="School" title="Students" copy="Student progress across school classes." />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Students" value={students.length} />
-        <TeacherMetric label="Classes" value={classes.length} />
-        <TeacherMetric label="Average score" value={`${average(students.map((item) => item.averageScore))}%`} />
-        <TeacherMetric label="Needs review" value={students.filter((item) => item.status === "needs_review").length} />
-      </div>
       <Card className="p-5">
         <TeacherSectionHeader title="Student table" />
         <SchoolStudentDirectory students={students} />
@@ -757,14 +596,6 @@ export async function SchoolClassDetailPage({ classId }: { classId: string }) {
   const weakRows = (results?.weak_skills ?? []).slice(0, 6).map((item) => ({ label: item.skill, value: item.percent, meta: `${item.correct}/${item.total} correct` }));
   return (
     <QuestPage variant="table">
-      <QuestPageHeader eyebrow="School class" title={classroom.name} copy={`${classroom.teacher_name} classi: teachers, students and test results.`} />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Teachers" value={classTeachers.length || 1} />
-        <TeacherMetric label="Students" value={students.length || classroom.student_count} />
-        <TeacherMetric label="Assignments" value={classroom.assignment_count} />
-        <TeacherMetric label="Average score" value={`${results?.average_score ?? 0}%`} />
-        <TeacherMetric label="Attempts" value={results?.attempts ?? 0} />
-      </div>
       <div className="quest-main-aside-grid">
         <div className="grid gap-5">
           <Card className="p-5">
@@ -831,14 +662,6 @@ export async function SchoolTeacherDetailPage({ teacherId }: { teacherId: string
   const weakRows = results.flatMap((item) => item.weak_skills.slice(0, 2).map((skill) => ({ label: skill.skill, value: skill.percent, meta: item.classroom.name }))).slice(0, 6);
   return (
     <QuestPage variant="table">
-      <QuestPageHeader eyebrow="School teacher" title={teacher.name} copy={teacher.email || teacher.teacher_code || "Teacher profile and class activity."} />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Classes" value={teacherClasses.length} />
-        <TeacherMetric label="Students" value={students} />
-        <TeacherMetric label="Attempts" value={results.reduce((sum, item) => sum + item.attempts, 0)} />
-        <TeacherMetric label="Average score" value={`${average(results.map((item) => item.average_score))}%`} />
-        <TeacherMetric label="Status" value={teacher.is_active ? "active" : "inactive"} />
-      </div>
       <div className="quest-main-aside-grid">
         <div className="grid gap-5">
           <Card className="p-5"><TeacherSectionHeader title="Classes" /><div className="mt-4 quest-card-grid-3">{teacherClasses.map((item) => <SchoolClassCard key={item.id} classroom={item} result={results.find((result) => result.classroom.slug === item.slug)} />)}{!teacherClasses.length ? <QuestEmptyState title="No classes assigned" /> : null}</div></Card>
@@ -881,14 +704,6 @@ export async function SchoolStudentDetailPage({ studentId }: { studentId: string
   const lastSubmit = maxIsoDates(progressRows.map((item) => item.last_submitted_at));
   return (
     <QuestPage variant="table">
-      <QuestPageHeader eyebrow="School student" title={name} copy={`${studentId} bo'yicha classlar, test natijalari va o'zlashtirish.`} />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Classes" value={classesText || "No class"} />
-        <TeacherMetric label="Completed tests" value={completed} />
-        <TeacherMetric label="Average score" value={`${averageScore}%`} />
-        <TeacherMetric label="Last submit" value={lastSubmit ? new Date(lastSubmit).toLocaleDateString() : "No submit"} />
-        <TeacherMetric label="Status" value={averageScore >= 85 ? "strong" : averageScore >= 70 ? "good" : averageScore > 0 ? "needs review" : "no data"} />
-      </div>
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <Card className="p-5">
           <TeacherSectionHeader title="Test result history" />
@@ -945,18 +760,6 @@ export async function TeacherHomePage() {
     .slice(0, 5);
   return (
     <QuestPage variant="wide">
-      <QuestPageHeader
-        eyebrow="Teacher"
-        title="Teacher dashboard"
-        copy="Class activity, weak topics and recent submissions in one workspace."
-        actions={<Button asChild><Link href="/teacher/classes">Create or manage class</Link></Button>}
-      />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Classes" value={classes.length} />
-        <TeacherMetric label="Students" value={students} />
-        <TeacherMetric label="Open sessions" value={activeSessions} />
-        <TeacherMetric label="Average score" value={`${avgScore}%`} />
-      </div>
       <div className="quest-main-aside-grid">
         <div className="grid gap-5">
           <Card className="p-5">
@@ -1047,13 +850,6 @@ export async function TeacherResultsPage() {
   const weakRows = validResults.flatMap((item) => item.weak_skills.slice(0, 2).map((skill) => ({ label: skill.skill, value: skill.percent, meta: item.classroom.name }))).slice(0, 8);
   return (
     <QuestPage variant="table">
-      <QuestPageHeader eyebrow="Teacher" title="Results" copy="Class, test, student and score history for report review." />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Submitted results" value={rows.length} />
-        <TeacherMetric label="Classes" value={classes.length} />
-        <TeacherMetric label="Average score" value={`${average(rows.map((row) => row.score))}%`} />
-        <TeacherMetric label="Weak topics" value={weakRows.length} />
-      </div>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
         <Card className="p-5">
           <TeacherSectionHeader title="Results table" />
@@ -1107,14 +903,6 @@ export async function TeacherResultDetailPage({ resultId }: { resultId: string }
   const weakRows = Array.from(weakSkills.entries()).map(([label, value]) => ({ label, value: Math.max(4, 100 - value * 20), meta: `${value} wrong` })).slice(0, 6);
   return (
     <QuestPage variant="table">
-      <QuestPageHeader eyebrow="Teacher result" title={test.title} copy={`${session.student_name || session.student_code || "Student"} result detail.`} actions={<Button asChild variant="secondary"><Link href="/teacher/results">Back to results</Link></Button>} />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Student" value={session.student_name || session.student_code || "No name"} />
-        <TeacherMetric label="Class" value={classroom?.name ?? "No class"} />
-        <TeacherMetric label="Score" value={`${score}%`} />
-        <TeacherMetric label="Correct" value={`${correct}/${rows.length}`} />
-        <TeacherMetric label="Submitted" value={session.submitted_at ? new Date(session.submitted_at).toLocaleDateString() : "No submit"} />
-      </div>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
         <Card className="p-5">
           <TeacherSectionHeader title="Question results" />
@@ -1159,19 +947,6 @@ export async function TeacherClassAssignmentDetailPage({ classSlug, assignmentId
   const affectedStudents = results.student_progress.filter((student) => submissions.some((row) => row.student_code === student.student_code));
   return (
     <QuestPage variant="table">
-      <QuestPageHeader
-        eyebrow="Teacher assignment"
-        title={assignment.title}
-        copy={`${classroom.name} / ${assignment.test_title}`}
-        actions={<Button asChild variant="secondary"><Link href={`/teacher/classes/${classSlug}`}>Back to class</Link></Button>}
-      />
-      <div className="quest-metric-grid">
-        <TeacherMetric label="Mode" value={assignment.mode} />
-        <TeacherMetric label="Status" value={assignment.is_active ? "active" : "closed"} />
-        <TeacherMetric label="Attempts" value={stats?.attempts ?? submissions.length} />
-        <TeacherMetric label="Students" value={stats?.unique_students ?? affectedStudents.length} />
-        <TeacherMetric label="Average score" value={`${stats?.average_score ?? average(submissions.map((item) => item.score))}%`} />
-      </div>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
         <Card className="p-5">
           <TeacherSectionHeader title="Submissions" />

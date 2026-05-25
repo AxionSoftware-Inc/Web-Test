@@ -57,13 +57,6 @@ export function TeacherStudentsPage({ classes, results, rosters = [] }: { classe
 
   return (
     <QuestPage variant="table">
-      <PageHeader eyebrow="Teacher" title="Students" copy="Student progress across your classes, sorted for quick intervention." />
-      <div className="quest-metric-grid">
-        <Metric label="Classes" value={classes.length} />
-        <Metric label="Students" value={students.length} />
-        <Metric label="Average score" value={`${average}%`} />
-        <Metric label="Needs review" value={students.filter((item) => item.average_score < 70).length} />
-      </div>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
         <Card className="p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">

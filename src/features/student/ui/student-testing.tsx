@@ -23,7 +23,7 @@ import { Badge as UiBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { PackCard, TestCatalogCard } from "@/components/student/student-cards";
-import { AnalyticsBars, Badge, CompactCard, Empty, FilterSelect, MetricTile, NumberField, PageHeader, ProgressRing, Section, StudentShell, SummaryGrid, TopicActionList, TrendChart } from "@/components/student/student-ui";
+import { AnalyticsBars, Badge, CompactCard, Empty, FilterSelect, MetricTile, NumberField, ProgressRing, Section, StudentShell, TopicActionList, TrendChart } from "@/components/student/student-ui";
 import { apiSessionToAnswerSnapshots, apiSessionsToAnswerSnapshots, buildMasteryReport, clearRuntimeSession, readRuntimeQuestionTimes, writeRuntimeQuestionTimes, writeRuntimeReport } from "@/features/mastery-engine/model";
 import type { MasteryReport } from "@/features/mastery-engine/model";
 import type { ApiExamPack, ApiExamPackItem, ApiMistakesSummary, ApiProfileSummary, ApiSession, ApiTest } from "@/shared/api/questlab-api";
@@ -512,13 +512,6 @@ export function StudentTestsWorkspace({ tests, packs, sessions }: { tests: ApiTe
   });
   return (
     <StudentShell variant="table">
-      <PageHeader eyebrow="Student" title="Tests" copy="Fan, topic, difficulty va packlar bo'yicha test katalogi." />
-      <SummaryGrid stats={[
-        ["Available tests", filtered.length],
-        ["Active packs", activePacks.length],
-        ["In progress", inProgress.size],
-        ["Completed", completed.size],
-      ]} />
       <div className="quest-card p-4">
         <div className="flex items-center gap-3 rounded-[var(--radius-control)] border border-line bg-surface-soft px-4 py-3">
           <Search className="size-5 shrink-0 text-subtle" />
@@ -563,15 +556,6 @@ export function StudentPackDetail({ pack, items, results }: { pack: ApiExamPack;
   const averageScore = results?.average_score ?? 0;
   return (
     <StudentShell variant="wide">
-      <PageHeader eyebrow="Pack" title={pack.title} copy={pack.description || "Tayyor test pack."} />
-      <SummaryGrid stats={[
-        ["Subject", pack.exam_type || "General"],
-        ["Level", "Pack"],
-        ["Tests", items.length],
-        ["Completed", completed],
-        ["Average score", `${averageScore}%`],
-        ["Due date", "No due date"],
-      ]} />
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <Section title="Test list">
           <div className="grid gap-4">
@@ -620,17 +604,6 @@ export function StudentTestInstructions({ test, session }: { test: ApiTest; sess
   const skills = testSkills(test);
   return (
     <StudentShell variant="reading">
-      <PageHeader eyebrow="Test bo'limi" title={test.title} copy={`${test.subject_slug} / ${test.topic_slug}`} />
-      <SummaryGrid stats={[
-        ["Subject", test.subject_slug],
-        ["Topic", test.topic_slug],
-        ["Level", test.difficulty],
-        ["Available tests", test.test_questions.length],
-        ["Default time", `${test.estimated_minutes} min`],
-        ["Attempt limit", "1+"],
-        ["Due date", "No due date"],
-        ["Status", status],
-      ]} />
       <div className="quest-main-aside-grid">
         <Section title="Bo'lim haqida">
           <div className="quest-card p-5">
@@ -749,7 +722,6 @@ export function StudentActiveSession({ initialSession, test }: { initialSession:
 
   return (
     <StudentShell variant="test">
-      <PageHeader eyebrow="Active test" title={test.title} copy="Javobni tanlang, flag qiling va submit qiling. To'g'ri javoblar submitdan oldin ko'rsatilmaydi." />
       <div className="quest-card p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap items-center gap-2">
@@ -869,7 +841,6 @@ export function StudentResult({ session, test }: { session: ApiSession; test: Ap
   const resultTone = stats.score >= test.passing_score ? "Passed" : "Needs review";
   return (
     <StudentShell>
-      <PageHeader eyebrow="Result" title={test.title} copy="Score, breakdown, weak skills va keyingi qadamlar." />
       <section className="quest-main-aside-grid">
         <div className="quest-card p-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -970,13 +941,6 @@ export function StudentMistakes({ initialSummary }: { initialSummary: ApiMistake
   const focus = report?.recommendedActions[0];
   return (
     <StudentShell variant="table">
-      <PageHeader eyebrow="Mastery Engine" title="Weak Topic / Review Center" copy="Xatolar test arxivi emas: topic mastery, confidence, priority va keyingi qadam engine orqali hisoblanadi." />
-      <SummaryGrid stats={[
-        ["Total mistakes", engineMistakes.length || summary.mistakes.length],
-        ["Weak topics", weakTopics.length],
-        ["High priority", weakTopics.filter((item) => item.priorityScore >= 70).length],
-        ["Recommended", focus?.label ?? "No data"],
-      ]} />
       <div className="quest-main-aside-grid">
         <Section title="Skill weakness index">
           <AnalyticsBars rows={skillRows} tone="critical" empty="Skill data hali yo'q." />
@@ -1026,11 +990,10 @@ export function StudentMistakeDetail({ initialSummary, mistakeId }: { initialSum
   }, []);
   const mistake = report?.mistakes.find((item) => item.id === mistakeId) ?? report?.mistakes[0];
   const fallback = summary.mistakes.find((item) => `${item.session_id}-${item.question_id}` === mistakeId) ?? summary.mistakes[0];
-  if (!mistake && !fallback) return <StudentShell variant="reading"><PageHeader eyebrow="Mistake" title="Mistake not found" /><Empty text="Bu xato topilmadi." /></StudentShell>;
+  if (!mistake && !fallback) return <StudentShell variant="reading"><Empty text="Bu xato topilmadi." /></StudentShell>;
   if (!mistake && fallback) {
     return (
       <StudentShell variant="reading">
-        <PageHeader eyebrow="Mistake detail" title={fallback.test_title} copy={fallback.topic} />
         <Section title="Question">
           <div className="quest-card p-4">
             <LatexText text={fallback.prompt} />
@@ -1046,7 +1009,6 @@ export function StudentMistakeDetail({ initialSummary, mistakeId }: { initialSum
   if (!mistake) return null;
   return (
     <StudentShell variant="reading">
-      <PageHeader eyebrow="Mistake detail" title={mistake.questionTitle ?? mistake.topic} copy={`${mistake.topic} · ${mistake.priority} priority`} />
       <Section title="Question">
         <div className="quest-card p-4">
           <LatexText text={mistake.questionPreview} />
@@ -1096,8 +1058,6 @@ export function StudentProgress({ summary }: { summary: ApiProfileSummary }) {
   }));
   return (
     <StudentShell variant="wide">
-      <PageHeader eyebrow="Student analytics" title="Progress" copy="Overall progress, topic mastery, score trend va kuchli/zaif mavzular." />
-      <SummaryGrid stats={[["Average score", `${summary.average_score}%`], ["Completed tests", summary.tests_taken], ["Answered", summary.answered_questions], ["Correct", summary.correct_answers]]} />
       <div className="quest-main-aside-grid">
         <Section title="Score trend">
           <TrendChart rows={scoreRows} />
@@ -1145,8 +1105,6 @@ export function StudentProfile({ summary }: { summary: ApiProfileSummary }) {
 
   return (
     <StudentShell variant="wide">
-      <PageHeader eyebrow="Student" title={summary.name || "Profile"} copy="Your learning profile, progress trend and next focus area." />
-      <SummaryGrid stats={[["Level", summary.level || "Student"], ["Tests", summary.tests_taken], ["Average score", `${summary.average_score}%`], ["Answered", summary.answered_questions], ["Correct", summary.correct_answers], ["Mastery", `${summary.math_mastery || summary.average_score || 0}%`]]} />
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="grid gap-5">
           <Card className="p-5">

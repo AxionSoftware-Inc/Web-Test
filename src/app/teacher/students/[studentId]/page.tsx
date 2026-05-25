@@ -4,10 +4,8 @@ import { notFound } from "next/navigation";
 import { TopicBreakdownChart } from "@/components/questlab/charts/topic-breakdown-chart";
 import { WeakTopicBars } from "@/components/questlab/charts/weak-topic-bars";
 import { EmptyState } from "@/components/questlab/feedback/empty-state";
-import { PageHeader } from "@/components/questlab/layout/page-header";
 import { QuestPage } from "@/components/questlab/layout/quest-page";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { ApiClassResults } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
@@ -34,7 +32,6 @@ export default async function Page({ params }: PageProps) {
   const submissions = results
     .flatMap((result) => result.results.filter((row) => row.student_code === studentId).map((row) => ({ ...row, className: result.classroom.name, classSlug: result.classroom.slug })))
     .sort((a, b) => new Date(b.submitted_at ?? 0).getTime() - new Date(a.submitted_at ?? 0).getTime());
-  const average = submissions.length ? Math.round(submissions.reduce((sum, row) => sum + row.score, 0) / submissions.length) : profile.average_score;
   const classRows = studentRows.map((row) => ({
     label: row.classroom.name,
     value: row.average_score,
@@ -52,18 +49,6 @@ export default async function Page({ params }: PageProps) {
 
   return (
     <QuestPage variant="table">
-      <PageHeader
-        eyebrow="Teacher"
-        title={profile.student_name}
-        copy="Student performance profile across your classes."
-        actions={<Button asChild variant="secondary"><Link href="/teacher/students">Back to students</Link></Button>}
-      />
-      <div className="quest-metric-grid">
-        <Metric label="Classes" value={studentRows.length} />
-        <Metric label="Completed tests" value={profile.completed} />
-        <Metric label="Average score" value={`${average}%`} />
-        <Metric label="Last submit" value={profile.last_submitted_at ? new Date(profile.last_submitted_at).toLocaleDateString() : "No submit"} />
-      </div>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="grid gap-5">
           <Card className="p-5">
@@ -105,14 +90,5 @@ export default async function Page({ params }: PageProps) {
         </aside>
       </div>
     </QuestPage>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: string | number }) {
-  return (
-    <Card className="quest-stat-card">
-      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-subtle">{label}</p>
-      <p className="mt-2 line-clamp-2 text-2xl font-semibold">{value}</p>
-    </Card>
   );
 }

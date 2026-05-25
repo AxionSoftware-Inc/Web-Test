@@ -65,13 +65,6 @@ export function TeacherClassesClient({ initialClasses }: { initialClasses: ApiTe
 
   return (
     <QuestPage variant="wide">
-      <PageHeader eyebrow="Teacher" title="Classes" copy="Create classes, assign tests and monitor class progress." />
-      <div className="quest-metric-grid">
-        <Metric label="Classes" value={classes.length} />
-        <Metric label="Students" value={classes.reduce((sum, item) => sum + item.student_count, 0)} />
-        <Metric label="Assignments" value={classes.reduce((sum, item) => sum + item.assignment_count, 0)} />
-        <Metric label="Private classes" value={classes.filter((item) => item.visibility === "private").length} />
-      </div>
       <div className="grid gap-5 xl:grid-cols-[420px_minmax(0,1fr)]">
         <Card className="h-fit p-5 xl:sticky xl:top-24">
           <h2 className="text-lg font-semibold">Create class</h2>

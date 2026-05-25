@@ -37,7 +37,6 @@ export function AssignTestClient({ classSlug, tests }: { classSlug: string; test
 
   return (
     <QuestPage variant="reading">
-      <PageHeader eyebrow="Teacher" title="Assign test" copy="Attach a published test to this class as an active assignment." />
       <Card className="p-5">
         <div className="grid gap-4">
           <label className="grid gap-2 text-sm font-semibold text-muted">

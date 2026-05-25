@@ -1,10 +1,8 @@
 import Link from "next/link";
 
 import { EmptyState } from "@/components/questlab/feedback/empty-state";
-import { PageHeader } from "@/components/questlab/layout/page-header";
 import { QuestPage } from "@/components/questlab/layout/quest-page";
 import { SectionHeader } from "@/components/questlab/layout/section-header";
-import { StatCard } from "@/components/questlab/cards/stat-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { questApi } from "@/shared/api/questlab-api";
@@ -14,22 +12,9 @@ export const dynamic = "force-dynamic";
 export default async function Page() {
   const tests = await questApi.tests().catch(() => []);
   const draftTests = tests.filter((test) => test.status === "draft");
-  const publishedTests = tests.filter((test) => test.status === "published");
 
   return (
     <QuestPage variant="wide">
-      <PageHeader
-        eyebrow="Teacher"
-        title="Add test"
-        copy="Create, review and publish assessment content before assigning it to classes."
-        actions={<Button asChild><Link href="/crud">Open question editor</Link></Button>}
-      />
-      <div className="quest-metric-grid">
-        <StatCard label="Tests" value={tests.length} />
-        <StatCard label="Published" value={publishedTests.length} />
-        <StatCard label="Draft" value={draftTests.length} />
-        <StatCard label="Questions linked" value={tests.reduce((sum, test) => sum + test.test_questions.length, 0)} />
-      </div>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
         <Card className="p-5">
           <SectionHeader title="Authoring workflow" />
