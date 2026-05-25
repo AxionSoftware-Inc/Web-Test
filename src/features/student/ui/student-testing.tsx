@@ -1236,7 +1236,7 @@ function PriorityDecisionCard({ topic, recommendation }: { topic?: TopicMasteryV
   const score = topic ? Math.min(140, Math.round(topic.priorityScore)) : 0;
   const ringValue = Math.min(100, Math.max(8, score));
   return (
-    <Card className="overflow-hidden border-line bg-ink p-4 text-white shadow-[var(--shadow-card)]">
+    <Card className="overflow-hidden border-[#263029] bg-[#11130f] p-4 text-white shadow-[var(--shadow-card)]">
       <p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-200">Primary decision</p>
       <h2 className="mt-2 text-xl font-semibold tracking-tight text-white">{recommendation?.label ?? (topic ? `Practice ${topic.topic}` : "Start diagnostic practice")}</h2>
       <p className="mt-2 line-clamp-2 text-sm leading-6 text-white/70">
@@ -1254,7 +1254,7 @@ function PriorityDecisionCard({ topic, recommendation }: { topic?: TopicMasteryV
           <PriorityMetric label="Confidence" value={topic?.confidence ?? "-"} />
         </div>
       </div>
-      <Button asChild className="mt-4 w-full bg-white text-ink hover:bg-white/90">
+      <Button asChild className="mt-4 w-full bg-white text-[#11130f] hover:bg-white/90">
         <Link href={recommendation?.href ?? "/student/tests"}>{recommendation?.label ?? "Open tests"}</Link>
       </Button>
     </Card>

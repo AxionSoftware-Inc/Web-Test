@@ -173,6 +173,8 @@ export type ApiTeacherClass = {
   id: number;
   name: string;
   slug: string;
+  school: number | null;
+  school_slug: string;
   teacher_name: string;
   visibility: "public" | "private";
   join_code: string;
@@ -359,6 +361,7 @@ export type ApiSchool = {
   primary_color: string;
   accent_color: string;
   student_invite_code: string;
+  teacher_invite_code: string;
   teacher_count: number;
   teachers: ApiSchoolTeacher[];
   created_at: string;
@@ -662,10 +665,11 @@ export const questApi = {
     primary_color?: string;
     accent_color?: string;
     student_invite_code?: string;
+    teacher_invite_code?: string;
   }) => apiPost<ApiSchool>("/schools/", payload),
   updateSchool: (
     slug: string,
-    payload: Partial<Pick<ApiSchool, "name" | "owner_name" | "visibility" | "description" | "portal_subdomain" | "portal_domain" | "logo_url" | "primary_color" | "accent_color" | "student_invite_code">> & { manage_code?: string },
+    payload: Partial<Pick<ApiSchool, "name" | "owner_name" | "visibility" | "description" | "portal_subdomain" | "portal_domain" | "logo_url" | "primary_color" | "accent_color" | "student_invite_code" | "teacher_invite_code">> & { manage_code?: string },
   ) => apiPatch<ApiSchool>(`/schools/${slug}/`, payload),
   schoolAnalytics: (slug: string) => apiGet<ApiSchoolAnalytics>(`/schools/${slug}/analytics/`),
   schoolClasses: (slug: string) => apiGet<ApiTeacherClass[]>(`/schools/${slug}/classes/`),
@@ -682,8 +686,12 @@ export const questApi = {
   schoolStudents: (slug: string) => apiGet<ApiClassStudent[]>(`/schools/${slug}/students/`),
   schoolTeachers: (slug: string) => apiGet<ApiSchoolTeacher[]>(`/schools/${slug}/teachers/`),
   schoolTeacher: (slug: string, teacherId: number) => apiGet<ApiSchoolTeacher>(`/schools/${slug}/teachers/${teacherId}/`),
+  joinSchoolTeacher: (slug: string, payload: { name: string; teacher_code: string; teacher_invite_code: string; email?: string }) =>
+    apiPost<ApiSchoolTeacher>(`/schools/${slug}/join-teacher/`, payload),
   createSchoolTeacher: (slug: string, payload: { name: string; email?: string; teacher_code?: string; classes?: number[]; manage_code?: string }) =>
     apiPost<ApiSchoolTeacher>(`/schools/${slug}/teachers/`, payload),
+  joinSchoolStudent: (slug: string, payload: { student_name: string; student_code: string; student_invite_code: string; class_slug?: string; class_id?: number }) =>
+    apiPost<ApiClassStudent>(`/schools/${slug}/join-student/`, payload),
   updateSchoolTeacher: (slug: string, teacherId: number, payload: Partial<Pick<ApiSchoolTeacher, "name" | "email" | "teacher_code" | "is_active">> & { classes?: number[]; manage_code?: string }) =>
     apiPatch<ApiSchoolTeacher>(`/schools/${slug}/teachers/${teacherId}/`, payload),
   deleteSchoolTeacher: (slug: string, teacherId: number, manageCode?: string) =>
