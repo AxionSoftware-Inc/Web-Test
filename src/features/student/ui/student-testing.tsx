@@ -2,20 +2,27 @@
 
 import { ArrowLeft, ArrowRight, Flag, Search, Timer } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Area,
   AreaChart,
   CartesianGrid,
   PolarAngleAxis,
+  PolarGrid,
+  PolarRadiusAxis,
   RadialBar,
   RadialBarChart,
+  Radar,
+  RadarChart,
   ReferenceLine,
   ResponsiveContainer,
+  Scatter,
+  ScatterChart,
   Tooltip,
   XAxis,
   YAxis,
+  ZAxis,
 } from "recharts";
 
 import { Button } from "@/components/ui/button";
@@ -24,7 +31,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { PackCard, TestCatalogCard } from "@/components/student/student-cards";
 import { AnalyticsBars, Badge, CompactCard, Empty, FilterSelect, MetricTile, NumberField, ProgressRing, Section, StudentShell, TopicActionList, TrendChart } from "@/components/student/student-ui";
-import { apiSessionToAnswerSnapshots, apiSessionsToAnswerSnapshots, buildMasteryReport, clearRuntimeSession, readRuntimeQuestionTimes, writeRuntimeQuestionTimes, writeRuntimeReport } from "@/features/mastery-engine/model";
+import { apiSessionToAnswerSnapshots, apiSessionsToAnswerSnapshots, buildMasteryReport, clearRuntimeSession, readRuntimeQuestionTimes, readRuntimeReport, writeRuntimeQuestionTimes, writeRuntimeReport } from "@/features/mastery-engine/model";
 import type { MasteryReport } from "@/features/mastery-engine/model";
 import type { ApiExamPack, ApiExamPackItem, ApiMistakesSummary, ApiProfileSummary, ApiSession, ApiTest } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
@@ -557,7 +564,7 @@ export function StudentPackDetail({ pack, items, results }: { pack: ApiExamPack;
   return (
     <StudentShell variant="wide">
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <Section title="Test list">
+        <Section title={pack.title}>
           <div className="grid gap-4">
             {items.map((item) => {
               const stat = results?.item_stats.find((row) => row.item_id === item.id);
@@ -829,15 +836,12 @@ export function StudentResult({ session, test }: { session: ApiSession; test: Ap
   const stats = scoreSession(session, test);
   const answerMap = new Map(session.answers.map((answer) => [answer.question, answer.value]));
   const questions = test.test_questions.map((item) => item.question);
-  const mistakes = questions.filter((question) => normalize(question.answer) !== normalize(answerMap.get(question.id) ?? ""));
-  const correctQuestions = questions.filter((question) => normalize(question.answer) === normalize(answerMap.get(question.id) ?? ""));
-  const skills = Array.from(new Set(mistakes.flatMap((question) => question.skill_titles))).slice(0, 6);
-  const skillRows = topCounts(mistakes.flatMap((question) => question.skill_titles.length ? question.skill_titles : ["Untagged skill"]), 6);
-  const answerRows = [
-    { label: "Correct", value: stats.correct, meta: `${stats.correct}/${stats.total}` },
-    { label: "Wrong", value: stats.wrong, meta: `${stats.wrong}/${stats.total}` },
-    { label: "Skipped", value: stats.skipped, meta: `${stats.skipped}/${stats.total}` },
-  ];
+  const fallbackReport = useMemo(() => buildMasteryReport(getStudentCode(), apiSessionToAnswerSnapshots({ session, test, studentId: getStudentCode() })), [session, test]);
+  const report = useMemo(() => readRuntimeReport<MasteryReport>(session.id) ?? fallbackReport, [fallbackReport, session.id]);
+  const subjectTopics = report.topics.filter((topic) => topic.subject === test.subject_slug || topic.topicSlug === test.topic_slug);
+  const subjectSkills = report.skills.filter((skill) => subjectTopics.some((topic) => topic.topicSlug === skill.topicSlug));
+  const subjectMistakes = report.mistakes.filter((mistake) => mistake.subject === test.subject_slug || mistake.topicSlug === test.topic_slug);
+  const recommendation = report.recommendedActions.find((action) => subjectTopics.some((topic) => topic.topicSlug === action.topicSlug)) ?? report.recommendedActions[0];
   const resultTone = stats.score >= test.passing_score ? "Passed" : "Needs review";
   return (
     <StudentShell>
@@ -859,29 +863,38 @@ export function StudentResult({ session, test }: { session: ApiSession; test: Ap
         </div>
         <aside className="quest-card p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-subtle">Next actions</p>
-          <h2 className="mt-2 text-xl font-semibold">{skills[0] ?? (stats.score >= test.passing_score ? "Keep momentum" : "Review mistakes")}</h2>
+          <h2 className="mt-2 text-xl font-semibold">{recommendation?.label ?? (stats.score >= test.passing_score ? "Keep momentum" : "Review mistakes")}</h2>
           <p className="mt-2 text-sm leading-6 text-muted">
-            {skills[0] ? `${skills[0]} bo'yicha xatolar bor. Avval mistake review, keyin shu topicdagi testni qayta ishlang.` : "Natija yaxshi. Keyingi topic yoki packga o'ting."}
+            {recommendation?.reason ?? "Natija yaxshi. Keyingi topic yoki packga o'ting."}
           </p>
           <div className="mt-4 grid gap-2">
-            <Button asChild><Link href="/student/mistakes">Review mistakes</Link></Button>
+            <Button asChild><Link href={`/student/mistakes?subject=${encodeURIComponent(test.subject_slug)}`}>Review diagnostics</Link></Button>
             <Button asChild variant="secondary"><Link href={`/student/tests/${test.slug}/start`}>Start</Link></Button>
             <Button asChild variant="secondary"><Link href="/student/tests">Practice</Link></Button>
           </div>
         </aside>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Section title="Answer breakdown">
-          <AnalyticsBars rows={answerRows} empty="Breakdown yo'q." />
+      <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <Section title={`${test.subject_slug} mastery radar`}>
+          <MasteryRadarChart topics={subjectTopics} />
         </Section>
-        <Section title="Weak skill distribution">
-          <AnalyticsBars rows={skillRows} tone="critical" empty="Weak skill topilmadi." />
+        <Section title="Skill gap matrix">
+          <SkillGapMatrix skills={subjectSkills} />
         </Section>
       </div>
 
-      <Section title="Question review">
-        <div className="grid gap-3">
+      <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+        <Section title="Mistake signal map">
+          <MistakeSignalScatter mistakes={subjectMistakes} />
+        </Section>
+        <Section title="What to study next">
+          <DiagnosticActionPanel report={report} subject={test.subject_slug} />
+        </Section>
+      </div>
+
+      <Section title="Question evidence">
+        <div className="grid gap-3 lg:grid-cols-2">
           {questions.map((question, index) => {
             const userAnswer = answerMap.get(question.id) ?? "";
             const isCorrect = normalize(question.answer) === normalize(userAnswer);
@@ -899,28 +912,17 @@ export function StudentResult({ session, test }: { session: ApiSession; test: Ap
           })}
         </div>
       </Section>
-
-      {correctQuestions.length ? (
-        <Section title="Strong signals">
-          <div className="quest-card-grid-3">
-            {Array.from(new Set(correctQuestions.flatMap((question) => question.skill_titles))).slice(0, 6).map((skill) => (
-              <CompactCard key={skill} title={skill} meta="Answered correctly" href="/student/tests" action="Practice" stats={["strong"]} />
-            ))}
-          </div>
-        </Section>
-      ) : null}
     </StudentShell>
   );
 }
 
-export function StudentMistakes({ initialSummary }: { initialSummary: ApiMistakesSummary }) {
-  const [summary, setSummary] = useState(initialSummary);
+export function StudentMistakes({ initialSummary: _initialSummary }: { initialSummary: ApiMistakesSummary }) {
+  void _initialSummary;
   const [report, setReport] = useState<MasteryReport | null>(null);
   const [query, setQuery] = useState("");
   useEffect(() => {
-    Promise.all([questApi.mistakesSummary(getStudentCode()), questApi.sessions(), questApi.tests()]).then(([next, sessions, tests]) => {
+    Promise.all([questApi.sessions(), questApi.tests()]).then(([sessions, tests]) => {
       const studentId = getStudentCode();
-      setSummary(next);
       setReport(buildMasteryReport(studentId, apiSessionsToAnswerSnapshots({ sessions, tests, studentId })));
     }).catch(() => undefined);
   }, []);
@@ -972,6 +974,74 @@ export function StudentMistakes({ initialSummary }: { initialSummary: ApiMistake
         <div className="quest-card-grid-3">
           {mistakes.map((mistake) => <EngineMistakeCard key={mistake.id} mistake={mistake} />)}
           {!mistakes.length ? <Empty text="Xato topilmadi." /> : null}
+        </div>
+      </Section>
+    </StudentShell>
+  );
+}
+
+export function StudentMistakesDiagnostic({ initialSummary }: { initialSummary: ApiMistakesSummary }) {
+  const [, setSummary] = useState(initialSummary);
+  const [report, setReport] = useState<MasteryReport | null>(null);
+  const searchParams = useSearchParams();
+  const [selectedSubject, setSelectedSubject] = useState(searchParams.get("subject") ?? "");
+
+  useEffect(() => {
+    Promise.all([questApi.mistakesSummary(getStudentCode()), questApi.sessions(), questApi.tests()]).then(([next, sessions, tests]) => {
+      const studentId = getStudentCode();
+      setSummary(next);
+      setReport(buildMasteryReport(studentId, apiSessionsToAnswerSnapshots({ sessions, tests, studentId })));
+    }).catch(() => undefined);
+  }, []);
+
+  const subjects = Array.from(new Set([...(report?.topics.map((item) => item.subject) ?? []), ...(report?.mistakes.map((item) => item.subject) ?? [])])).filter(Boolean);
+  const activeSubject = selectedSubject || subjects[0] || "";
+  const topics = (report?.topics ?? []).filter((item) => !activeSubject || item.subject === activeSubject);
+  const weakTopics = (report?.weakTopics ?? []).filter((item) => !activeSubject || item.subject === activeSubject);
+  const skills = (report?.skills ?? []).filter((item) => topics.some((topic) => topic.topicSlug === item.topicSlug));
+  const mistakes = (report?.mistakes ?? []).filter((item) => !activeSubject || item.subject === activeSubject);
+  const focus = report?.recommendedActions.find((action) => topics.some((topic) => topic.topicSlug === action.topicSlug)) ?? report?.recommendedActions[0];
+
+  return (
+    <StudentShell variant="table">
+      <div className="quest-card p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand">Mastery Engine</p>
+            <h1 className="mt-2 text-2xl font-semibold">Weak Topic / Review Center</h1>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {subjects.map((subject) => (
+              <button key={subject} onClick={() => setSelectedSubject(subject)} className={cn("rounded-[var(--radius-control)] border px-3 py-2 text-sm font-semibold", activeSubject === subject ? "border-brand bg-brand text-white" : "border-line bg-surface text-muted")}>{subject}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+        <Section title="Topic mastery radar">
+          <MasteryRadarChart topics={topics} />
+        </Section>
+        <Section title="Recommended next action">
+          <div className="quest-card p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-subtle">Priority</p>
+            <h3 className="mt-2 text-xl font-semibold">{focus?.label ?? "Avval test ishlang"}</h3>
+            <p className="mt-2 text-sm leading-6 text-muted">{focus?.reason ?? "Mistake analytics uchun kamida bitta test submit qiling."}</p>
+            <Button asChild className="mt-4"><Link href={focus?.href ?? "/student/tests"}>Practice topic</Link></Button>
+          </div>
+        </Section>
+      </div>
+      <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+        <Section title="Skill gap matrix">
+          <SkillGapMatrix skills={skills} />
+        </Section>
+        <Section title="Mistake signal map">
+          <MistakeSignalScatter mistakes={mistakes} />
+        </Section>
+      </div>
+      <Section title="Topic action board">
+        <div className="grid gap-3 lg:grid-cols-2">
+          {weakTopics.map((topic) => <TopicDiagnosticCard key={topic.topicSlug} topic={topic} />)}
+          {!weakTopics.length ? <Empty text="Bu fan uchun high-priority weak topic topilmadi." /> : null}
         </div>
       </Section>
     </StudentShell>
@@ -1039,6 +1109,196 @@ function EngineMistakeCard({ mistake }: { mistake: NonNullable<MasteryReport["mi
         <p className="line-clamp-1">{mistake.skills.join(", ") || "general"}</p>
       </div>
     </Link>
+  );
+}
+
+type TopicMasteryView = MasteryReport["topics"][number];
+type SkillMasteryView = MasteryReport["skills"][number];
+type MistakeView = MasteryReport["mistakes"][number];
+type RadarRow = { topic: string; mastery: number; accuracy: number; urgency: number; fullTopic: string };
+type ScatterRow = { expected: number; spent: number; priority: number; topic: string; skill: string; quality: string; href: string };
+
+function MasteryRadarChart({ topics }: { topics: TopicMasteryView[] }) {
+  const data: RadarRow[] = [...topics]
+    .sort((a, b) => b.priorityScore - a.priorityScore)
+    .slice(0, 8)
+    .map((topic) => ({
+      topic: topic.topic.length > 18 ? `${topic.topic.slice(0, 18)}...` : topic.topic,
+      fullTopic: topic.topic,
+      mastery: topic.mastery,
+      accuracy: topic.accuracy,
+      urgency: Math.min(100, Math.round(topic.priorityScore)),
+    }));
+
+  if (!data.length) return <Empty text="Bu fan uchun engine signali hali yo'q." />;
+
+  return (
+    <div className="h-[360px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <RadarChart data={data} outerRadius="76%" margin={{ top: 16, right: 24, bottom: 12, left: 24 }}>
+          <PolarGrid stroke="var(--chart-grid)" />
+          <PolarAngleAxis dataKey="topic" tick={{ fill: "var(--muted)", fontSize: 11 }} />
+          <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
+          <Tooltip content={<RadarTooltip />} />
+          <Radar name="Mastery" dataKey="mastery" stroke="var(--success)" fill="var(--success)" fillOpacity={0.18} strokeWidth={2} />
+          <Radar name="Accuracy" dataKey="accuracy" stroke="var(--chart-1)" fill="var(--chart-1)" fillOpacity={0.12} strokeWidth={2} />
+          <Radar name="Urgency" dataKey="urgency" stroke="var(--danger)" fill="var(--danger)" fillOpacity={0.08} strokeWidth={2} />
+        </RadarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function RadarTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: RadarRow; name: string; value: number }> }) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0].payload;
+  return (
+    <div className="rounded-[12px] border border-line bg-surface px-3 py-2 text-xs shadow-[var(--shadow-card)]">
+      <p className="font-semibold text-ink">{row.fullTopic}</p>
+      {payload.map((item) => <p key={item.name} className="mt-1 text-muted">{item.name}: {item.value}%</p>)}
+    </div>
+  );
+}
+
+function SkillGapMatrix({ skills }: { skills: SkillMasteryView[] }) {
+  const data = [...skills].sort((a, b) => a.mastery - b.mastery).slice(0, 18);
+  if (!data.length) return <Empty text="Bu fan uchun skill signali hali yo'q." />;
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+      {data.map((skill) => {
+        const gap = Math.max(0, 100 - skill.mastery);
+        return (
+          <div key={`${skill.topicSlug}-${skill.skillSlug}`} className="rounded-[var(--radius-control)] border border-line bg-surface p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="line-clamp-1 text-sm font-semibold text-ink">{skill.skill}</p>
+                <p className="mt-1 text-xs text-muted">{skill.correct}/{skill.attempts} correct · {skill.confidence}</p>
+              </div>
+              <span className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-white" style={{ background: masteryColor(skill.mastery) }}>{skill.mastery}%</span>
+            </div>
+            <div className="mt-3 grid h-9 grid-cols-10 gap-1">
+              {Array.from({ length: 10 }).map((_, index) => {
+                const filled = index < Math.ceil(gap / 10);
+                return <span key={index} className={cn("rounded-[4px]", filled ? "bg-danger" : "bg-success/20")} />;
+              })}
+            </div>
+            <p className="mt-2 text-xs text-subtle">{skill.status.replace("_", " ")} · gap {gap}%</p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function MistakeSignalScatter({ mistakes }: { mistakes: MistakeView[] }) {
+  const data: ScatterRow[] = mistakes.map((mistake) => ({
+    expected: Math.max(1, mistake.estimatedSeconds || 1),
+    spent: Math.max(1, mistake.timeSpentSeconds || mistake.estimatedSeconds || 1),
+    priority: mistake.priority === "high" ? 180 : mistake.priority === "medium" ? 110 : 70,
+    topic: mistake.topic,
+    skill: mistake.skills[0] ?? "general",
+    quality: mistake.timeQuality,
+    href: `/student/mistakes/${mistake.id}`,
+  }));
+
+  if (!data.length) return <Empty text="Bu fan uchun xato signali yo'q." />;
+
+  return (
+    <div className="h-[340px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <ScatterChart margin={{ top: 18, right: 22, bottom: 20, left: 0 }}>
+          <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
+          <XAxis dataKey="expected" name="Expected" unit="s" tickLine={false} axisLine={false} stroke="var(--muted)" fontSize={12} />
+          <YAxis dataKey="spent" name="Spent" unit="s" tickLine={false} axisLine={false} stroke="var(--muted)" fontSize={12} />
+          <ZAxis dataKey="priority" range={[80, 260]} />
+          <ReferenceLine segment={[{ x: 0, y: 0 }, { x: 180, y: 180 }]} stroke="var(--warning)" strokeDasharray="4 4" />
+          <Tooltip cursor={{ strokeDasharray: "3 3" }} content={<ScatterTooltip />} />
+          <Scatter data={data} fill="var(--danger)" fillOpacity={0.78} isAnimationActive animationDuration={800} />
+        </ScatterChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function ScatterTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: ScatterRow }> }) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0].payload;
+  return (
+    <div className="rounded-[12px] border border-line bg-surface px-3 py-2 text-xs shadow-[var(--shadow-card)]">
+      <p className="font-semibold text-ink">{row.topic}</p>
+      <p className="mt-1 text-muted">{row.skill}</p>
+      <p className="mt-1 text-muted">expected {row.expected}s · spent {row.spent}s</p>
+      <p className="mt-1 text-subtle">{row.quality}</p>
+    </div>
+  );
+}
+
+function DiagnosticActionPanel({ report, subject }: { report: MasteryReport; subject: string }) {
+  const subjectTopics = report.topics.filter((topic) => topic.subject === subject);
+  const subjectTopicSlugs = new Set(subjectTopics.map((topic) => topic.topicSlug));
+  const actions = report.recommendedActions.filter((action) => !action.topicSlug || subjectTopicSlugs.has(action.topicSlug)).slice(0, 3);
+  const blueprint = report.practiceBlueprint.filter((item) => subjectTopicSlugs.has(item.topicSlug)).slice(0, 4);
+
+  return (
+    <div className="grid gap-3">
+      {actions.map((action) => (
+        <Link key={`${action.type}-${action.topicSlug ?? action.label}`} href={action.href} className="rounded-[var(--radius-card)] border border-line bg-surface p-4 transition hover:bg-surface-soft">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">{action.priority} priority</p>
+              <h3 className="mt-2 text-base font-semibold">{action.label}</h3>
+            </div>
+            <Badge>{action.type}</Badge>
+          </div>
+          <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">{action.reason}</p>
+        </Link>
+      ))}
+      {blueprint.length ? (
+        <div className="rounded-[var(--radius-card)] border border-line bg-surface p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-subtle">Practice mix</p>
+          <div className="mt-3 grid gap-2">
+            {blueprint.map((item) => (
+              <div key={`${item.topicSlug}-${item.reason}`} className="grid grid-cols-[1fr_auto] items-center gap-3 text-sm">
+                <span className="line-clamp-1 font-semibold">{item.topic}</span>
+                <span className="text-muted">{Math.round(item.ratio * 100)}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {!actions.length && !blueprint.length ? <Empty text="Bu fan uchun keyingi action hali yo'q." /> : null}
+    </div>
+  );
+}
+
+function TopicDiagnosticCard({ topic }: { topic: TopicMasteryView }) {
+  return (
+    <article className="quest-card p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-subtle">{topic.subject}</p>
+          <h3 className="mt-2 line-clamp-1 text-lg font-semibold">{topic.topic}</h3>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {topic.isFundamental ? <Badge>fundamental</Badge> : null}
+          <Badge>{topic.confidence}</Badge>
+        </div>
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <InfoPill label="Correct" value={`${topic.correct}/${topic.attempts}`} />
+        <InfoPill label="Accuracy" value={`${topic.accuracy}%`} />
+        <InfoPill label="Mastery" value={`${topic.mastery}%`} />
+        <InfoPill label="Status" value={topic.status.replace("_", " ")} />
+      </div>
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-neutral-soft">
+        <div className="h-full rounded-full" style={{ width: `${topic.mastery}%`, background: masteryColor(topic.mastery) }} />
+      </div>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-muted">{topic.wrong} wrong · priority {Math.round(topic.priorityScore)}</p>
+        <Button asChild size="sm"><Link href="/student/tests">Practice</Link></Button>
+      </div>
+    </article>
   );
 }
 

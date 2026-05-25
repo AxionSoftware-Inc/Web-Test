@@ -27,6 +27,15 @@ export function writeRuntimeReport(sessionId: string | number, value: unknown) {
   window.sessionStorage.setItem(runtimeReportKey(sessionId), JSON.stringify(value));
 }
 
+export function readRuntimeReport<T>(sessionId: string | number) {
+  if (typeof window === "undefined") return null;
+  try {
+    return JSON.parse(window.sessionStorage.getItem(runtimeReportKey(sessionId)) ?? "null") as T | null;
+  } catch {
+    return null;
+  }
+}
+
 export function clearRuntimeSession(sessionId: string | number) {
   if (typeof window === "undefined") return;
   window.sessionStorage.removeItem(runtimeTimingKey(sessionId));
