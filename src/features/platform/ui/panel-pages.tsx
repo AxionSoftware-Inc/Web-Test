@@ -441,12 +441,20 @@ export async function TeacherHomePage() {
   const attentionClasses = [...validResults]
     .sort((a, b) => a.average_score - b.average_score)
     .slice(0, 4);
+  const studentsNeedingReview = validResults
+    .flatMap((item) => item.student_progress.map((student) => ({ ...student, className: item.classroom.name, classSlug: item.classroom.slug })))
+    .sort((a, b) => a.average_score - b.average_score)
+    .slice(0, 6);
+  const activeAssignments = validResults
+    .flatMap((item) => item.assignment_stats.filter((assignment) => assignment.is_active).map((assignment) => ({ ...assignment, className: item.classroom.name, classSlug: item.classroom.slug })))
+    .sort((a, b) => b.unique_students - a.unique_students)
+    .slice(0, 6);
   const recentResults = validResults
     .flatMap((item) => item.results.map((row) => ({ ...row, className: item.classroom.name })))
     .sort((a, b) => new Date(b.submitted_at ?? 0).getTime() - new Date(a.submitted_at ?? 0).getTime())
     .slice(0, 5);
   return (
-    <QuestPage variant="dashboard">
+    <QuestPage variant="wide">
       <QuestPageHeader
         eyebrow="Teacher"
         title="Teacher dashboard"
@@ -468,6 +476,28 @@ export async function TeacherHomePage() {
             </div>
           </Card>
           <Card className="p-5">
+            <TeacherSectionHeader title="Active assignments" action={<Button asChild variant="secondary" size="sm"><Link href="/teacher/classes">Manage</Link></Button>} />
+            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {activeAssignments.map((assignment) => (
+                <Link key={`${assignment.classSlug}-${assignment.assignment_id}`} href={`/teacher/classes/${assignment.classSlug}`} className="rounded-[var(--radius-card)] border border-line bg-surface p-4 hover:bg-surface-soft">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="line-clamp-2 text-sm font-semibold">{assignment.assignment_title}</h3>
+                      <p className="mt-1 line-clamp-1 text-xs text-muted">{assignment.className} / {assignment.test_title}</p>
+                    </div>
+                    <Badge variant={assignment.average_score >= 70 ? "success" : "warning"}>{assignment.average_score}%</Badge>
+                  </div>
+                  <div className="mt-3 grid grid-cols-3 gap-2 text-xs font-semibold text-muted">
+                    <span className="rounded-lg bg-surface-soft px-2 py-1">{assignment.attempts} attempts</span>
+                    <span className="rounded-lg bg-surface-soft px-2 py-1">{assignment.unique_students} students</span>
+                    <span className="rounded-lg bg-surface-soft px-2 py-1">{assignment.late_submissions} late</span>
+                  </div>
+                </Link>
+              ))}
+              {!activeAssignments.length ? <QuestEmptyState title="No active assignments" copy="Assignments opened for classes will appear here." /> : null}
+            </div>
+          </Card>
+          <Card className="p-5">
             <TeacherSectionHeader title="Classes needing attention" />
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {attentionClasses.map((item) => <TeacherClassSummary key={item.classroom.id} result={item} />)}
@@ -479,6 +509,23 @@ export async function TeacherHomePage() {
           <Card className="p-5">
             <TeacherSectionHeader title="Weak topics" />
             <div className="mt-4">{weakRows.length ? <WeakTopicBars rows={weakRows} /> : <QuestEmptyState title="No weak topics yet" />}</div>
+          </Card>
+          <Card className="p-5">
+            <TeacherSectionHeader title="Students needing review" action={<Button asChild variant="secondary" size="sm"><Link href="/teacher/students">All</Link></Button>} />
+            <div className="mt-4 grid gap-3">
+              {studentsNeedingReview.map((student) => (
+                <Link key={`${student.classSlug}-${student.student_code}`} href={`/teacher/students/${student.student_code}`} className="rounded-[var(--radius-card)] border border-line bg-surface p-3 hover:bg-surface-soft">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="line-clamp-1 text-sm font-semibold">{student.student_name}</p>
+                      <p className="mt-1 line-clamp-1 text-xs text-muted">{student.className} / {student.completed} tests</p>
+                    </div>
+                    <Badge variant={student.average_score >= 70 ? "success" : "warning"}>{student.average_score}%</Badge>
+                  </div>
+                </Link>
+              ))}
+              {!studentsNeedingReview.length ? <QuestEmptyState title="No student data yet" /> : null}
+            </div>
           </Card>
           <Card className="p-5">
             <TeacherSectionHeader title="Recent submissions" action={<Button asChild variant="secondary" size="sm"><Link href="/teacher/results">All</Link></Button>} />
@@ -747,9 +794,9 @@ function CardGrid({ cards }: { cards: Card[] }) {
 
 function TeacherMetric({ label, value }: { label: string; value: string | number }) {
   return (
-    <Card className="quest-stat-card">
+    <Card className="quest-stat-card flex items-center justify-between gap-3">
       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-subtle">{label}</p>
-      <p className="mt-2 text-2xl font-semibold text-ink">{value}</p>
+      <p className="text-xl font-semibold text-ink">{value}</p>
     </Card>
   );
 }

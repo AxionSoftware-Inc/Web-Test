@@ -64,7 +64,7 @@ export function TeacherStudentsPage({ classes, results }: { classes: ApiTeacherC
               <span>Student</span><span>Class</span><span>Completed</span><span>Average</span><span>Last submit</span>
             </div>
             {filtered.map((student) => (
-              <Link key={`${student.class_slug}-${student.student_code}`} href={`/teacher/classes/${student.class_slug}`} className="grid gap-3 border-b border-line px-4 py-4 hover:bg-surface-soft lg:grid-cols-[1fr_1fr_120px_120px_180px] lg:items-center">
+              <Link key={`${student.class_slug}-${student.student_code}`} href={`/teacher/students/${student.student_code}`} className="grid gap-3 border-b border-line px-4 py-4 hover:bg-surface-soft lg:grid-cols-[1fr_1fr_120px_120px_180px] lg:items-center">
                 <div>
                   <p className="font-semibold">{student.student_name}</p>
                   <p className="mt-1 text-xs text-muted">{student.student_code}</p>
@@ -91,9 +91,9 @@ export function TeacherStudentsPage({ classes, results }: { classes: ApiTeacherC
 
 function Metric({ label, value }: { label: string; value: string | number }) {
   return (
-    <Card className="quest-stat-card">
+    <Card className="quest-stat-card flex items-center justify-between gap-3">
       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-subtle">{label}</p>
-      <p className="mt-2 text-2xl font-semibold">{value}</p>
+      <p className="text-xl font-semibold">{value}</p>
     </Card>
   );
 }

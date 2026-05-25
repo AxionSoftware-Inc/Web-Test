@@ -157,7 +157,7 @@
   --card-p-lg: 20px;
   --panel-p: 24px;
 
-  --stat-card-h: 104px;
+  --stat-card-h: 72px;
   --entity-card-h: 156px;
   --compact-row-h: 64px;
 }
@@ -275,7 +275,7 @@ body {
 /* Standard card sizing */
 .quest-stat-card {
   min-height: var(--stat-card-h);
-  padding: var(--card-p);
+  padding: 12px 14px;
 }
 
 .quest-entity-card {
