@@ -2,7 +2,7 @@
 
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, ClipboardPaste, FileUp, Plus, Sparkles, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import { Button } from "@/components/ui/button";
 import type { ApiSkill, ApiSubject, ApiTest, ApiTopic, StrictPackImportSource } from "@/shared/api/questlab-api";
@@ -70,13 +70,20 @@ function normalizeQuestionBody(value: string) {
   return value.toLocaleLowerCase().replace(/\s+/g, " ").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
 
-function readTeacherDraft(): TeacherDraft | null {
+function getDraftSnapshot() {
   if (typeof window === "undefined") return null;
   try {
-    const saved = window.localStorage.getItem(draftStorageKey);
-    return saved ? JSON.parse(saved) as TeacherDraft : null;
+    return window.localStorage.getItem(draftStorageKey);
   } catch {
-    window.localStorage.removeItem(draftStorageKey);
+    return null;
+  }
+}
+
+function parseTeacherDraft(saved: string | null): TeacherDraft | null {
+  if (!saved) return null;
+  try {
+    return JSON.parse(saved) as TeacherDraft;
+  } catch {
     return null;
   }
 }
@@ -129,10 +136,16 @@ function teacherSourceFromManual(title: string, topic: ApiTopic | undefined, dif
   };
 }
 
-export function TeacherTestStudio({ subjects, topics }: Props) {
+export function TeacherTestStudio(props: Props) {
+  const isClient = useSyncExternalStore(() => () => undefined, () => true, () => false);
+  const draftSnapshot = useSyncExternalStore(() => () => undefined, getDraftSnapshot, () => null);
+  if (!isClient) return <div className="mx-auto min-h-[420px] max-w-6xl rounded-[32px] border border-black/8 bg-white/70" aria-busy="true" />;
+  return <TeacherTestStudioForm key={draftSnapshot ?? "empty"} {...props} savedDraft={parseTeacherDraft(draftSnapshot)} />;
+}
+
+function TeacherTestStudioForm({ subjects, topics, savedDraft }: Props & { savedDraft: TeacherDraft | null }) {
   const defaultSubject = subjects.find((subject) => subject.slug === "mathematics") ?? subjects[0];
   const defaultTopic = topics.find((topic) => topic.slug === "algebra") ?? topics.find((topic) => topic.subject === defaultSubject?.id) ?? topics[0];
-  const [savedDraft] = useState<TeacherDraft | null>(() => readTeacherDraft());
   const [step, setStep] = useState<StudioStep>(savedDraft?.step === "review" ? "review" : "source");
   const [sourceMode, setSourceMode] = useState<SourceMode>(savedDraft?.sourceMode ?? "paste");
   const [title, setTitle] = useState(savedDraft?.title ?? "Yangi test");
