@@ -17,16 +17,16 @@ export default async function Page() {
     <QuestPage variant="wide">
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
         <Card className="p-5">
-          <SectionHeader title="Authoring workflow" />
+          <SectionHeader title="Test qo&apos;shish" copy="Sizga qulay usulni tanlang — tayyor matnni joylash eng tez yo&apos;l." />
           <div className="mt-4 quest-card-grid-3">
-            <ActionCard title="Create questions" copy="Add question body, answer options, solution and skills." href="/crud" action="Open editor" />
-            <ActionCard title="Review drafts" copy="Check incomplete tests before assigning them to a class." href="/teacher/tests" action="Review" />
-            <ActionCard title="Assign to class" copy="Open a live session or homework after publishing." href="/teacher/classes" action="Assign" />
+            <ActionCard title="Tayyor matndan qo&apos;shish" copy="Word, Telegram yoki AI’dan savollarni ko&apos;chiring — tizim o&apos;zi ajratadi." href="/crud" action="Boshlash" />
+            <ActionCard title="Qoralamalarni tekshirish" copy="Tugallanmagan testlarni ko&apos;rib chiqing va kerak bo&apos;lsa tahrirlang." href="/teacher/tests" action="Ko&apos;rish" />
+            <ActionCard title="Sinfga biriktirish" copy="Tayyor testni sinfga yuboring yoki mashq sifatida bering." href="/teacher/classes" action="Biriktirish" />
           </div>
         </Card>
         <aside className="grid h-fit gap-5 xl:sticky xl:top-24">
           <Card className="p-5">
-            <SectionHeader title="Draft tests" />
+            <SectionHeader title="Qoralama testlar" />
             <div className="mt-4 grid gap-3">
               {draftTests.slice(0, 5).map((test) => (
                 <Link key={test.id} href={`/teacher/tests/${test.slug}/edit`} className="rounded-[var(--radius-card)] border border-line bg-surface p-3 hover:bg-surface-soft">
@@ -34,7 +34,7 @@ export default async function Page() {
                   <p className="mt-1 text-xs text-muted">{test.subject_slug} / {test.topic_slug} / {test.test_questions.length} questions</p>
                 </Link>
               ))}
-              {!draftTests.length ? <EmptyState title="No draft tests" /> : null}
+              {!draftTests.length ? <EmptyState title="Qoralama test yo&apos;q" /> : null}
             </div>
           </Card>
         </aside>

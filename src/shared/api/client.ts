@@ -3,6 +3,7 @@ const LOCAL_API_BASE_URL = "http://127.0.0.1:8000/api/v1";
 
 function getApiBaseUrl() {
   if (process.env.NEXT_PUBLIC_API_BASE_URL) return process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (process.env.NODE_ENV !== "production") return "http://127.0.0.1:8001/api/v1";
   if (typeof window !== "undefined" && window.location.port === "3001") {
     return window.location.protocol + "//" + window.location.hostname + ":8001/api/v1";
   }

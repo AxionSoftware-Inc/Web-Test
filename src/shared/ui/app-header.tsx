@@ -17,12 +17,12 @@ const roleNavItems: Record<UserRole, Array<{ label: string; href: string; icon: 
     { label: "Progress", href: "/student/progress", icon: BarChart3 },
   ],
   teacher: [
-    { label: "Home", href: "/teacher/home", icon: Home },
-    { label: "Classes", href: "/teacher/classes", icon: GraduationCap },
-    { label: "Students", href: "/teacher/students", icon: UsersRound },
-    { label: "Add Test", href: "/teacher/add-test", icon: Plus },
-    { label: "Packs", href: "/teacher/packs", icon: PackageCheck },
-    { label: "Results", href: "/teacher/results", icon: BarChart3 },
+    { label: "Bosh sahifa", href: "/teacher/home", icon: Home },
+    { label: "Sinflar", href: "/teacher/classes", icon: GraduationCap },
+    { label: "O'quvchilar", href: "/teacher/students", icon: UsersRound },
+    { label: "Test qo'shish", href: "/teacher/add-test", icon: Plus },
+    { label: "Bazalar", href: "/teacher/packs", icon: PackageCheck },
+    { label: "Natijalar", href: "/teacher/results", icon: BarChart3 },
   ],
   school: [
     { label: "Home", href: "/school/home", icon: Home },
@@ -182,7 +182,7 @@ export function AppHeader() {
               )}
             >
               <Info className="size-4" />
-              <span className="hidden md:inline">About</span>
+              <span className="hidden md:inline">Haqida</span>
             </Link>
           </nav>
         ) : null}

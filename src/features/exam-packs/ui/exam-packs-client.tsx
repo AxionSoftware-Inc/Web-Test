@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { ApiExamPack, ApiTest, StrictPackImportSource } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
-import { firstArray, inferPackTitle, importShapeSummary, isRecord, normalizeDifficulty, normalizeJsonTextareaBackslashes, normalizeQuestion, normalizeTest, parseCsv, parsePastedValue, readNumber, readQuestions, readString, slugify, templateCsv } from "../lib/import-parser";
-import type { DraftItem, ImportLayer, ImportMode, ImportQuestion, ImportTest, LooseImportSource, PackUsage } from "../lib/import-parser";
+import { firstArray, importShapeSummary, isRecord, normalizeJsonTextareaBackslashes, parseCsv, parsePastedValue, readNumber, readString, slugify, templateCsv } from "../lib/import-parser";
+import { normalizeImportSource } from "../lib/teacher-import-parser";
+import type { DraftItem, ImportLayer, ImportMode, PackUsage } from "../lib/import-parser";
 import { cn } from "@/shared/lib/cn";
 import { getPackManageCode, savePackManageCode } from "@/shared/model/local-identity";
 import { Eyebrow, FieldShell, premiumInputClass } from "@/shared/ui/premium-shell";
@@ -86,109 +87,6 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
     const nextDescription = [branch, level, source.pack.language].filter(Boolean).join(" / ");
     if (nextExamType && (overwriteFilled || !examType.trim())) setExamType(nextExamType);
     if (nextDescription && (overwriteFilled || !description.trim())) setDescription(nextDescription);
-  }
-
-  function normalizeImportSource(raw: unknown): StrictPackImportSource | null {
-    const fallbackPack = {
-      title: inferPackTitle(raw, title || "Imported pack"),
-      subject: examType.toLowerCase().includes("math") ? "math" : slugify(examType || "general"),
-      branch: slugify(examType || title || "general"),
-      level: "mixed",
-      language: "uz",
-    };
-    if (Array.isArray(raw)) {
-      const tests = raw
-        .map((item, index) => normalizeTest(item, `${title} ${index + 1}`, fallbackPack.branch))
-        .filter((item): item is ImportTest => Boolean(item));
-      if (tests.length) return { version: "1.0", pack: fallbackPack, tests };
-      const questions = raw
-        .map((item) => normalizeQuestion(item, "easy"))
-        .filter((item): item is ImportQuestion => Boolean(item));
-      if (questions.length) {
-        return {
-          version: "1.0",
-          pack: fallbackPack,
-          tests: [{ title, topic: fallbackPack.branch, difficulty: "easy", time_limit_minutes: 15, questions }],
-        };
-      }
-      return null;
-    }
-    if (!raw || typeof raw !== "object") return null;
-    const source = raw as LooseImportSource;
-    const sourceRecord = raw as Record<string, unknown>;
-    const packRecord = isRecord(source.pack)
-      ? source.pack
-      : isRecord(source.examPack)
-        ? source.examPack
-        : isRecord(source.exam_pack)
-          ? source.exam_pack
-          : isRecord(source.packInfo)
-            ? source.packInfo
-            : sourceRecord;
-    const pack = {
-      title: readString(packRecord, ["title", "name", "nom"], fallbackPack.title),
-      subject: readString(packRecord, ["subject", "subject_slug"], fallbackPack.subject),
-      branch: readString(packRecord, ["branch", "category", "topic", "exam_type", "bolim", "bo'lim"], fallbackPack.branch),
-      level: readString(packRecord, ["level", "difficulty"], fallbackPack.level),
-      language: readString(packRecord, ["language", "lang"], fallbackPack.language),
-    };
-    const sourceTests = Array.isArray(source.tests)
-      ? source.tests
-      : Array.isArray(source.testlar)
-        ? source.testlar
-        : [];
-    if (sourceTests.length) {
-      const tests = sourceTests
-        .map((item, index) => normalizeTest(item, `${pack.title} ${index + 1}`, pack.branch))
-        .filter((item): item is ImportTest => Boolean(item));
-      if (tests.length) return { version: "1.0", pack, tests };
-      const questions = sourceTests
-        .map((item) => normalizeQuestion(item, normalizeDifficulty(readString(sourceRecord, ["difficulty", "level"], "easy"))))
-        .filter((item): item is ImportQuestion => Boolean(item));
-      if (questions.length) {
-        return {
-          version: "1.0",
-          pack,
-          tests: [{
-            title: readString(sourceRecord, ["title", "name"], pack.title),
-            topic: readString(sourceRecord, ["topic", "category", "branch", "subject"], pack.branch),
-            difficulty: normalizeDifficulty(readString(sourceRecord, ["difficulty", "level"], "easy")),
-            time_limit_minutes: readNumber(sourceRecord, ["time_limit_minutes", "estimated_minutes", "estimatedMinutes", "minutes", "duration"], 15),
-            questions,
-          }],
-        };
-      }
-    }
-    if (source.test) {
-      const test = normalizeTest(source.test, pack.title, pack.branch);
-      if (test) return { version: "1.0", pack, tests: [test] };
-    }
-    const directQuestions = readQuestions(sourceRecord)
-      .map((question) => normalizeQuestion(question, normalizeDifficulty(readString(sourceRecord, ["difficulty", "level"], "easy"))))
-      .filter((item): item is ImportQuestion => Boolean(item));
-    if (directQuestions.length) {
-      return {
-        version: "1.0",
-        pack,
-        tests: [{
-          title: readString(sourceRecord, ["title", "name"], pack.title),
-          topic: readString(sourceRecord, ["topic", "category", "branch"], pack.branch),
-          difficulty: normalizeDifficulty(readString(sourceRecord, ["difficulty", "level"], "easy")),
-          time_limit_minutes: readNumber(sourceRecord, ["time_limit_minutes", "estimated_minutes", "estimatedMinutes", "minutes", "duration"], 15),
-          questions: directQuestions,
-        }],
-      };
-    }
-    if (Array.isArray(source.items)) {
-      const tests = source.items
-        .map((item, index) => {
-          const candidate = isRecord(item) && isRecord(item.test) ? item.test : item;
-          return normalizeTest(candidate, `${pack.title} ${index + 1}`, pack.branch);
-        })
-        .filter((item): item is ImportTest => Boolean(item));
-      if (tests.length) return { version: "1.0", pack, tests };
-    }
-    return null;
   }
 
   function normalizeDraftItems(raw: unknown): DraftItem[] {
@@ -332,7 +230,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
     if (importMode === "md" && mdValue.trim()) {
       try {
         const parsed = parsePastedValue(mdValue);
-        const source = normalizeImportSource(parsed);
+        const source = normalizeImportSource(parsed, { title, examType });
         if (source) {
           await importStrictSource(source);
           return;
@@ -353,7 +251,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
     if (value) {
       try {
         const parsed = parsePastedValue(value);
-        const source = normalizeImportSource(parsed);
+        const source = normalizeImportSource(parsed, { title, examType });
         if (source) {
           await importStrictSource(source);
           return;
@@ -375,7 +273,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
     try {
       const text = normalizeJsonTextareaBackslashes(await file.text());
       const parsed = parsePastedValue(text);
-      const source = normalizeImportSource(parsed);
+      const source = normalizeImportSource(parsed, { title, examType });
       if (source) {
         setLoadedFileName(file.name);
         await importStrictSource(source);
@@ -427,7 +325,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
     setNotice(value.trim() ? "Paste qilingan JSON hali DBga saqlanmagan. Saqlash uchun chapdagi Create pack bosing." : "");
     setError("");
     try {
-      const source = normalizeImportSource(parsePastedValue(normalized));
+      const source = normalizeImportSource(parsePastedValue(normalized), { title, examType });
       if (source) applyPackInfoFromSource(source, true);
     } catch {
       // Import may be incomplete while typing; save keeps the real validation path.
@@ -437,7 +335,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
   function previewJsonPackInfo() {
     if (!pasteValue.trim()) return;
     try {
-      const source = normalizeImportSource(parsePastedValue(pasteValue));
+      const source = normalizeImportSource(parsePastedValue(pasteValue), { title, examType });
       if (source) applyPackInfoFromSource(source, true);
     } catch {
       // Full validation runs on save; preview should not interrupt typing.
@@ -465,18 +363,18 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
   }
 
   const createLabel = saving
-    ? "Creating..."
+    ? "Saqlanmoqda..."
     : jsonSource
-      ? `Create imported pack (${jsonSource.tests.length} tests)`
+      ? `Import qilingan bazani saqlash (${jsonSource.tests.length} ta test)`
       : importMode === "csv" && csvValue.trim()
-        ? "Create pack from CSV"
+        ? "CSV’dan bazani saqlash"
         : importMode === "md" && mdValue.trim()
-          ? "Create pack from MD"
+          ? "MD’dan bazani saqlash"
       : itemsToCreate.length
-        ? `Create pack with ${itemsToCreate.length} tests`
+        ? `${itemsToCreate.length} ta test bilan bazani saqlash`
         : pasteValue.trim()
-          ? "Create pack from pasted JSON"
-          : "Create pack";
+          ? "Joylangan JSON’ni saqlash"
+          : "Yangi baza yaratish";
 
   return (
     <div className="grid gap-4">
@@ -485,23 +383,31 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
           {error || notice}
         </div>
       ) : null}
+      <Card className="flex flex-wrap items-center justify-between gap-4 border-brand/20 bg-accent/10 p-5">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand">Oddiy usul</p>
+          <p className="mt-1 font-semibold text-ink">Bitta yoki bir nechta savolni tez qo&apos;shmoqchimisiz?</p>
+          <p className="mt-1 text-sm text-muted">Tayyor matnni qo&apos;ying — tizim savollarni o&apos;zi ajratadi.</p>
+        </div>
+        <Button asChild variant="secondary"><Link href="/crud"><Plus className="size-4" /> Oson qo&apos;shish</Link></Button>
+      </Card>
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
       <Card className="p-5">
-        <Eyebrow>Pack info</Eyebrow>
-        <h1 className="mt-2 text-3xl font-semibold">Create pack</h1>
-        <p className="mt-3 text-sm leading-6 text-muted">Nom, narx va ko&apos;rinishni kiriting. Import/paste qilingan kontent faqat shu tugma bosilganda DBga saqlanadi.</p>
+        <Eyebrow>Yangi baza</Eyebrow>
+        <h1 className="mt-2 text-3xl font-semibold">Kengaytirilgan baza</h1>
+        <p className="mt-3 text-sm leading-6 text-muted">Bir nechta testni bitta bazaga yig&apos;ing. Texnik fayl import qilayotgan bo&apos;lsangiz shu oynadan foydalaning.</p>
         <div className="mt-6 grid gap-4">
-          <Input label="Pack title" value={title} onChange={setTitle} />
-          <Input label="Exam type" value={examType} onChange={setExamType} />
-          <Input label="Price label" value={priceLabel} onChange={setPriceLabel} />
-          <FieldShell label="Visibility">
+          <Input label="Baza nomi" value={title} onChange={setTitle} />
+          <Input label="Fan yoki yo&apos;nalish" value={examType} onChange={setExamType} />
+          <Input label="Narx (ixtiyoriy)" value={priceLabel} onChange={setPriceLabel} />
+          <FieldShell label="Ko&apos;rinish">
             <select value={visibility} onChange={(event) => setVisibility(event.target.value as "public" | "private")} className={premiumInputClass}>
-              <option value="public">Public</option>
-              <option value="private">Private</option>
+              <option value="public">Hamma uchun</option>
+              <option value="private">Faqat men uchun</option>
             </select>
           </FieldShell>
-          {visibility === "private" ? <Input label="Access code" value={accessCode} onChange={setAccessCode} /> : null}
-          <FieldShell label="Description">
+          {visibility === "private" ? <Input label="Kirish kodi" value={accessCode} onChange={setAccessCode} /> : null}
+          <FieldShell label="Izoh">
             <textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={4} className={premiumInputClass} />
           </FieldShell>
           <Button onClick={createPack} disabled={saving}>
@@ -514,8 +420,8 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
 
       <Card className="p-4">
         <div>
-          <Eyebrow>Import</Eyebrow>
-          <h2 className="mt-2 text-2xl font-semibold">Pack import</h2>
+          <Eyebrow>Fayldan qo&apos;shish</Eyebrow>
+          <h2 className="mt-2 text-2xl font-semibold">Tayyor bazani import qilish</h2>
         </div>
 
         <div className="mt-4 grid grid-cols-4 gap-2">

@@ -117,6 +117,8 @@ CORS_ALLOWED_ORIGINS = env_list(
     [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
         "http://169.58.123.200:3001",
     ] if DEBUG else [],
 )
