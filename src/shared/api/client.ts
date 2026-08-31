@@ -1,5 +1,5 @@
 const API_TIMEOUT_MS = Number(process.env.NEXT_PUBLIC_API_TIMEOUT_MS ?? 12_000);
-const LOCAL_API_BASE_URL = "http://127.0.0.1:8000/api/v1";
+const LOCAL_API_BASE_URL = "http://127.0.0.1:8001/api/v1";
 
 function getApiBaseUrl() {
   if (process.env.NEXT_PUBLIC_API_BASE_URL) return process.env.NEXT_PUBLIC_API_BASE_URL;
