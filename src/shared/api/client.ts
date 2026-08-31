@@ -1,5 +1,13 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1";
 const API_TIMEOUT_MS = Number(process.env.NEXT_PUBLIC_API_TIMEOUT_MS ?? 12_000);
+const LOCAL_API_BASE_URL = "http://127.0.0.1:8000/api/v1";
+
+function getApiBaseUrl() {
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) return process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (typeof window !== "undefined" && window.location.port === "3001") {
+    return window.location.protocol + "//" + window.location.hostname + ":8001/api/v1";
+  }
+  return LOCAL_API_BASE_URL;
+}
 
 function isPaginatedPayload(payload: unknown): payload is { count: number; results: unknown[] } {
   return Boolean(
@@ -38,7 +46,7 @@ async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, ret
 
 export async function apiGet<T>(path: string): Promise<T> {
   try {
-    const res = await fetchWithTimeout(`${API_BASE_URL}${path}`, { cache: "no-store" }, true);
+    const res = await fetchWithTimeout(getApiBaseUrl() + path, { cache: "no-store" }, true);
     if (!res.ok) throw new Error(`API GET ${path} failed: ${res.status}`);
     return unwrapApiPayload<T>(await res.json());
   } catch (error) {
@@ -47,7 +55,7 @@ export async function apiGet<T>(path: string): Promise<T> {
 }
 
 export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
-  const res = await fetchWithTimeout(`${API_BASE_URL}${path}`, {
+  const res = await fetchWithTimeout(getApiBaseUrl() + path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
@@ -58,7 +66,7 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
 }
 
 export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetchWithTimeout(`${API_BASE_URL}${path}`, {
+  const res = await fetchWithTimeout(getApiBaseUrl() + path, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -69,7 +77,7 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
 }
 
 export async function apiDelete<T>(path: string): Promise<T> {
-  const res = await fetchWithTimeout(`${API_BASE_URL}${path}`, { method: "DELETE", cache: "no-store" });
+  const res = await fetchWithTimeout(getApiBaseUrl() + path, { method: "DELETE", cache: "no-store" });
   if (!res.ok) throw new Error(await apiErrorMessage(res, `API DELETE ${path} failed: ${res.status}`));
   if (res.status === 204) return undefined as T;
   return unwrapApiPayload<T>(await res.json());

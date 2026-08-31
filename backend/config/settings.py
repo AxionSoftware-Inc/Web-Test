@@ -28,7 +28,7 @@ def env_list(key: str, default: list[str]) -> list[str]:
 
 ALLOWED_HOSTS = env_list(
     "DJANGO_ALLOWED_HOSTS",
-    ["localhost", "127.0.0.1", "testserver", "91.108.121.56"] if DEBUG else [],
+    ["localhost", "127.0.0.1", "testserver", "169.58.123.200"] if DEBUG else [],
 )
 if not DEBUG and not ALLOWED_HOSTS:
     raise RuntimeError("DJANGO_ALLOWED_HOSTS must be configured when DJANGO_DEBUG=false.")
@@ -117,7 +117,7 @@ CORS_ALLOWED_ORIGINS = env_list(
     [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "http://91.108.121.56",
+        "http://169.58.123.200:3001",
     ] if DEBUG else [],
 )
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", CORS_ALLOWED_ORIGINS)
