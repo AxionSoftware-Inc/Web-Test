@@ -102,13 +102,13 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
         .filter((item): item is ImportTest => Boolean(item));
       if (tests.length) return { version: "1.0", pack: fallbackPack, tests };
       const questions = raw
-        .map((item) => normalizeQuestion(item, "beginner"))
+        .map((item) => normalizeQuestion(item, "easy"))
         .filter((item): item is ImportQuestion => Boolean(item));
       if (questions.length) {
         return {
           version: "1.0",
           pack: fallbackPack,
-          tests: [{ title, topic: fallbackPack.branch, difficulty: "beginner", time_limit_minutes: 15, questions }],
+          tests: [{ title, topic: fallbackPack.branch, difficulty: "easy", time_limit_minutes: 15, questions }],
         };
       }
       return null;
@@ -143,7 +143,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
         .filter((item): item is ImportTest => Boolean(item));
       if (tests.length) return { version: "1.0", pack, tests };
       const questions = sourceTests
-        .map((item) => normalizeQuestion(item, normalizeDifficulty(readString(sourceRecord, ["difficulty", "level"], "beginner"))))
+        .map((item) => normalizeQuestion(item, normalizeDifficulty(readString(sourceRecord, ["difficulty", "level"], "easy"))))
         .filter((item): item is ImportQuestion => Boolean(item));
       if (questions.length) {
         return {
@@ -152,7 +152,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
           tests: [{
             title: readString(sourceRecord, ["title", "name"], pack.title),
             topic: readString(sourceRecord, ["topic", "category", "branch", "subject"], pack.branch),
-            difficulty: normalizeDifficulty(readString(sourceRecord, ["difficulty", "level"], "beginner")),
+            difficulty: normalizeDifficulty(readString(sourceRecord, ["difficulty", "level"], "easy")),
             time_limit_minutes: readNumber(sourceRecord, ["time_limit_minutes", "estimated_minutes", "estimatedMinutes", "minutes", "duration"], 15),
             questions,
           }],
@@ -164,7 +164,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
       if (test) return { version: "1.0", pack, tests: [test] };
     }
     const directQuestions = readQuestions(sourceRecord)
-      .map((question) => normalizeQuestion(question, normalizeDifficulty(readString(sourceRecord, ["difficulty", "level"], "beginner"))))
+      .map((question) => normalizeQuestion(question, normalizeDifficulty(readString(sourceRecord, ["difficulty", "level"], "easy"))))
       .filter((item): item is ImportQuestion => Boolean(item));
     if (directQuestions.length) {
       return {
@@ -173,7 +173,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
         tests: [{
           title: readString(sourceRecord, ["title", "name"], pack.title),
           topic: readString(sourceRecord, ["topic", "category", "branch"], pack.branch),
-          difficulty: normalizeDifficulty(readString(sourceRecord, ["difficulty", "level"], "beginner")),
+          difficulty: normalizeDifficulty(readString(sourceRecord, ["difficulty", "level"], "easy")),
           time_limit_minutes: readNumber(sourceRecord, ["time_limit_minutes", "estimated_minutes", "estimatedMinutes", "minutes", "duration"], 15),
           questions: directQuestions,
         }],

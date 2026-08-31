@@ -5,7 +5,7 @@ from django.utils.text import slugify
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import decorators, response, status, viewsets
+from rest_framework import decorators, mixins, response, status, viewsets
 
 from learning.models import (
     Answer,
@@ -24,6 +24,24 @@ from learning.models import (
     TestQuestion,
     TestSession,
     Topic,
+)
+from learning.api_schemas import (
+    AnswerRequestSerializer,
+    AssignmentWriteRequestSerializer,
+    BulkAssignmentsRequestSerializer,
+    BulkPackItemsRequestSerializer,
+    ClassJoinRequestSerializer,
+    ClassStudentWriteRequestSerializer,
+    MistakesSummarySerializer,
+    PackItemWriteRequestSerializer,
+    ProfileSummarySerializer,
+    SchoolClassWriteRequestSerializer,
+    SchoolTeacherWriteRequestSerializer,
+    StartClassSessionRequestSerializer,
+    StartPackSessionRequestSerializer,
+    StartSessionRequestSerializer,
+    TestPackImportRequestSerializer,
+    TestPackImportResultSerializer,
 )
 from learning.serializers import (
     AnswerSerializer,
@@ -48,7 +66,7 @@ from learning.serializers import (
 )
 from learning.services.analytics import class_results_payload, exam_pack_results_payload
 from learning.services.audit import record_event
-from learning.services.scoring import build_session_result
+from learning.services.scoring import build_session_result, is_answer_correct, score_session
 
 
 ASSIGNMENTS_WITH_COUNTS = ClassTestAssignment.objects.select_related("test").annotate(
@@ -434,6 +452,7 @@ class TestViewSet(viewsets.ModelViewSet):
         record_event(request, action="test.deleted", resource_type="test", resource_id=test.id, metadata={"slug": test.slug})
         return super().destroy(request, *args, **kwargs)
 
+    @extend_schema(request=TestPackImportRequestSerializer, responses={201: TestPackImportResultSerializer})
     @decorators.action(detail=False, methods=["post"], url_path="import-pack")
     @transaction.atomic
     def import_pack(self, request):
@@ -598,6 +617,7 @@ class TestViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @extend_schema(request=StartSessionRequestSerializer, responses={201: TestSessionSerializer})
     @decorators.action(detail=True, methods=["post"])
     def start(self, request, slug=None):
         test = self.get_object()
@@ -618,10 +638,11 @@ class TestViewSet(viewsets.ModelViewSet):
         return response.Response(TestSessionSerializer(session).data, status=status.HTTP_201_CREATED)
 
 
-class TestSessionViewSet(viewsets.ModelViewSet):
+class TestSessionViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     queryset = TestSession.objects.select_related("test", "user").prefetch_related("answers").all().order_by("-created_at")
     serializer_class = TestSessionSerializer
 
+    @extend_schema(request=AnswerRequestSerializer, responses={200: TestSessionSerializer})
     @decorators.action(detail=True, methods=["post"])
     @transaction.atomic
     def answer(self, request, pk=None):
@@ -643,6 +664,7 @@ class TestSessionViewSet(viewsets.ModelViewSet):
         )
         return response.Response(TestSessionSerializer(session).data)
 
+    @extend_schema(responses={200: TestSessionSerializer})
     @decorators.action(detail=True, methods=["post"])
     @transaction.atomic
     def submit(self, request, pk=None):
@@ -679,6 +701,7 @@ class TeacherClassViewSet(viewsets.ModelViewSet):
     serializer_class = TeacherClassSerializer
     lookup_field = "slug"
 
+    @extend_schema(request=ClassJoinRequestSerializer, responses={200: ClassStudentSerializer})
     @decorators.action(detail=True, methods=["post"])
     def join(self, request, slug=None):
         classroom = self.get_object()
@@ -701,6 +724,7 @@ class TeacherClassViewSet(viewsets.ModelViewSet):
             student.save(update_fields=["name", "updated_at"])
         return response.Response(ClassStudentSerializer(student).data)
 
+    @extend_schema(request=ClassStudentWriteRequestSerializer, responses={200: ClassStudentSerializer(many=True), 201: ClassStudentSerializer})
     @decorators.action(detail=True, methods=["get", "post"])
     def students(self, request, slug=None):
         classroom = self.get_object()
@@ -716,6 +740,7 @@ class TeacherClassViewSet(viewsets.ModelViewSet):
         student = serializer.save(classroom=classroom)
         return response.Response(ClassStudentSerializer(student).data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(request=AssignmentWriteRequestSerializer, responses={200: ClassTestAssignmentSerializer(many=True), 201: ClassTestAssignmentSerializer})
     @decorators.action(detail=True, methods=["get", "post"])
     def assignments(self, request, slug=None):
         classroom = self.get_object()
@@ -731,6 +756,7 @@ class TeacherClassViewSet(viewsets.ModelViewSet):
         assignment = serializer.save(classroom=classroom)
         return response.Response(ClassTestAssignmentSerializer(assignment).data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(request=BulkAssignmentsRequestSerializer, responses={201: OpenApiTypes.OBJECT})
     @decorators.action(detail=True, methods=["post"], url_path="assignments/bulk")
     @transaction.atomic
     def bulk_assignments(self, request, slug=None):
@@ -796,8 +822,22 @@ class TeacherClassViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    @extend_schema(parameters=[OpenApiParameter("assignment_id", OpenApiTypes.INT, OpenApiParameter.PATH)])
-    @decorators.action(detail=True, methods=["get", "patch", "delete"], url_path=r"assignments/(?P<assignment_id>[^/.]+)")
+    @extend_schema(
+        operation_id="classes_assignment_delete",
+        methods=["DELETE"],
+        parameters=[OpenApiParameter(name="assignment_id", type=OpenApiTypes.INT, location=OpenApiParameter.PATH, required=True)],
+    )
+    @extend_schema(
+        operation_id="classes_assignment_update",
+        methods=["PATCH"],
+        parameters=[OpenApiParameter(name="assignment_id", type=OpenApiTypes.INT, location=OpenApiParameter.PATH, required=True)],
+    )
+    @extend_schema(
+        operation_id="classes_assignment_retrieve",
+        methods=["GET"],
+        parameters=[OpenApiParameter(name="assignment_id", type=OpenApiTypes.INT, location=OpenApiParameter.PATH, required=True)],
+    )
+    @decorators.action(detail=True, methods=["get", "patch", "delete"], url_path=r"assignments/(?P<assignment_id>[0-9]+)")
     def assignment_detail(self, request, slug=None, assignment_id: int | None = None):
         classroom = self.get_object()
         assignment = get_object_or_404(ASSIGNMENTS_WITH_COUNTS, id=assignment_id, classroom=classroom)
@@ -820,7 +860,11 @@ class TeacherClassViewSet(viewsets.ModelViewSet):
         assignment = serializer.save(classroom=classroom)
         return response.Response(ClassTestAssignmentSerializer(assignment).data)
 
-    @decorators.action(detail=True, methods=["post"], url_path=r"assignments/(?P<assignment_id>[^/.]+)/start")
+    @extend_schema(
+        parameters=[OpenApiParameter(name="assignment_id", type=OpenApiTypes.INT, location=OpenApiParameter.PATH, required=True)],
+    )
+    @extend_schema(request=StartClassSessionRequestSerializer, responses={201: TestSessionSerializer})
+    @decorators.action(detail=True, methods=["post"], url_path=r"assignments/(?P<assignment_id>[0-9]+)/start")
     @transaction.atomic
     def start_assignment(self, request, slug=None, assignment_id=None):
         classroom = self.get_object()
@@ -893,6 +937,7 @@ class SchoolViewSet(viewsets.ModelViewSet):
             return denied
         return super().destroy(request, *args, **kwargs)
 
+    @extend_schema(request=SchoolTeacherWriteRequestSerializer, responses={200: SchoolTeacherSerializer(many=True), 201: SchoolTeacherSerializer})
     @decorators.action(detail=True, methods=["get", "post"])
     def teachers(self, request, slug=None):
         school = self.get_object()
@@ -911,8 +956,22 @@ class SchoolViewSet(viewsets.ModelViewSet):
             teacher.classes.set(TeacherClass.objects.filter(id__in=class_ids))
         return response.Response(SchoolTeacherSerializer(teacher).data, status=status.HTTP_201_CREATED)
 
-    @extend_schema(parameters=[OpenApiParameter("teacher_id", OpenApiTypes.INT, OpenApiParameter.PATH)])
-    @decorators.action(detail=True, methods=["get", "patch", "delete"], url_path=r"teachers/(?P<teacher_id>[^/.]+)")
+    @extend_schema(
+        operation_id="schools_teacher_delete",
+        methods=["DELETE"],
+        parameters=[OpenApiParameter(name="teacher_id", type=OpenApiTypes.INT, location=OpenApiParameter.PATH, required=True)],
+    )
+    @extend_schema(
+        operation_id="schools_teacher_update",
+        methods=["PATCH"],
+        parameters=[OpenApiParameter(name="teacher_id", type=OpenApiTypes.INT, location=OpenApiParameter.PATH, required=True)],
+    )
+    @extend_schema(
+        operation_id="schools_teacher_retrieve",
+        methods=["GET"],
+        parameters=[OpenApiParameter(name="teacher_id", type=OpenApiTypes.INT, location=OpenApiParameter.PATH, required=True)],
+    )
+    @decorators.action(detail=True, methods=["get", "patch", "delete"], url_path=r"teachers/(?P<teacher_id>[0-9]+)")
     def teacher_detail(self, request, slug=None, teacher_id: int | None = None):
         school = self.get_object()
         teacher = get_object_or_404(SchoolTeacher.objects.prefetch_related("classes"), id=teacher_id, school=school)
@@ -934,6 +993,7 @@ class SchoolViewSet(viewsets.ModelViewSet):
             teacher.classes.set(TeacherClass.objects.filter(id__in=class_ids))
         return response.Response(SchoolTeacherSerializer(teacher).data)
 
+    @extend_schema(request=SchoolClassWriteRequestSerializer, responses={200: TeacherClassSerializer(many=True), 201: TeacherClassSerializer})
     @decorators.action(detail=True, methods=["get", "post"])
     def classes(self, request, slug=None):
         school = self.get_object()
@@ -1083,6 +1143,7 @@ class ExamPackViewSet(viewsets.ModelViewSet):
         pack.delete()
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
+    @extend_schema(request=PackItemWriteRequestSerializer, responses={200: ExamPackItemSerializer(many=True), 201: ExamPackItemSerializer})
     @decorators.action(detail=True, methods=["get", "post"])
     def items(self, request, slug=None):
         pack = self.get_object()
@@ -1098,6 +1159,7 @@ class ExamPackViewSet(viewsets.ModelViewSet):
         item = serializer.save(pack=pack)
         return response.Response(ExamPackItemSerializer(item).data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(request=BulkPackItemsRequestSerializer, responses={201: OpenApiTypes.OBJECT})
     @decorators.action(detail=True, methods=["post"], url_path="items/bulk")
     @transaction.atomic
     def bulk_items(self, request, slug=None):
@@ -1209,6 +1271,7 @@ class ExamPackViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @extend_schema(request=TestPackImportRequestSerializer, responses={201: TestPackImportResultSerializer})
     @decorators.action(detail=True, methods=["post"], url_path="items/import-tests")
     @transaction.atomic
     def import_tests(self, request, slug=None):
@@ -1363,8 +1426,22 @@ class ExamPackViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    @extend_schema(parameters=[OpenApiParameter("item_id", OpenApiTypes.INT, OpenApiParameter.PATH)])
-    @decorators.action(detail=True, methods=["get", "patch", "delete"], url_path=r"items/(?P<item_id>[^/.]+)")
+    @extend_schema(
+        operation_id="exam_packs_item_delete",
+        methods=["DELETE"],
+        parameters=[OpenApiParameter(name="item_id", type=OpenApiTypes.INT, location=OpenApiParameter.PATH, required=True)],
+    )
+    @extend_schema(
+        operation_id="exam_packs_item_update",
+        methods=["PATCH"],
+        parameters=[OpenApiParameter(name="item_id", type=OpenApiTypes.INT, location=OpenApiParameter.PATH, required=True)],
+    )
+    @extend_schema(
+        operation_id="exam_packs_item_retrieve",
+        methods=["GET"],
+        parameters=[OpenApiParameter(name="item_id", type=OpenApiTypes.INT, location=OpenApiParameter.PATH, required=True)],
+    )
+    @decorators.action(detail=True, methods=["get", "patch", "delete"], url_path=r"items/(?P<item_id>[0-9]+)")
     def item_detail(self, request, slug=None, item_id: int | None = None):
         pack = self.get_object()
         item = get_object_or_404(PACK_ITEMS_WITH_COUNTS, id=item_id, pack=pack)
@@ -1387,7 +1464,11 @@ class ExamPackViewSet(viewsets.ModelViewSet):
         item = serializer.save(pack=pack)
         return response.Response(ExamPackItemSerializer(item).data)
 
-    @decorators.action(detail=True, methods=["post"], url_path=r"items/(?P<item_id>[^/.]+)/start")
+    @extend_schema(
+        parameters=[OpenApiParameter(name="item_id", type=OpenApiTypes.INT, location=OpenApiParameter.PATH, required=True)],
+    )
+    @extend_schema(request=StartPackSessionRequestSerializer, responses={201: TestSessionSerializer})
+    @decorators.action(detail=True, methods=["post"], url_path=r"items/(?P<item_id>[0-9]+)/start")
     def start_item(self, request, slug=None, item_id=None):
         pack = self.get_object()
         item = get_object_or_404(ExamPackItem.objects.select_related("test"), id=item_id, pack=pack)
@@ -1420,7 +1501,7 @@ class ExamPackViewSet(viewsets.ModelViewSet):
         return response.Response(exam_pack_results_payload(pack))
 
 
-@extend_schema(responses={200: OpenApiTypes.OBJECT})
+@extend_schema(responses={200: ProfileSummarySerializer})
 @decorators.api_view(["GET"])
 def profile_summary(request):
     student_code = request.query_params.get("student_code", "").strip()
@@ -1440,11 +1521,7 @@ def profile_summary(request):
     question_total = 0
 
     for session in submitted_sessions:
-        questions = [item.question for item in session.test.testquestion_set.all()]
-        answer_map = {answer.question_id: answer.value.strip() for answer in session.answers.all()}
-        correct = sum(1 for question in questions if answer_map.get(question.id, "") == question.answer.strip())
-        total = len(questions)
-        percent = round((correct / total) * 100) if total else 0
+        questions, _answer_map, correct, total, percent = score_session(session)
         correct_total += correct
         question_total += total
 
@@ -1532,7 +1609,7 @@ def profile_summary(request):
     )
 
 
-@extend_schema(responses={200: OpenApiTypes.OBJECT})
+@extend_schema(responses={200: MistakesSummarySerializer})
 @decorators.api_view(["GET"])
 def mistakes_summary(request):
     student_code = request.query_params.get("student_code", "").strip()
@@ -1547,11 +1624,10 @@ def mistakes_summary(request):
     mistakes = []
     skill_totals = {}
     for session in sessions:
-        answer_map = {answer.question_id: answer.value.strip() for answer in session.answers.all()}
-        for item in session.test.testquestion_set.all():
-            question = item.question
+        questions, answer_map, _correct, _total, _score = score_session(session)
+        for question in questions:
             user_answer = answer_map.get(question.id, "")
-            is_correct = user_answer == question.answer.strip()
+            is_correct = is_answer_correct(question, user_answer)
             skills = list(question.skills.all())
             for skill in skills:
                 data = skill_totals.setdefault(skill.title, {"skill": skill.title, "correct": 0, "total": 0})

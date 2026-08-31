@@ -62,4 +62,4 @@ backend/.venv/bin/python backend/manage.py makemigrations --check --dry-run
 backend/.venv/bin/python backend/manage.py test learning
 ```
 
-CI repeats these checks for pull requests and pushes to `main`.
+GitHub Actions is intentionally disabled. These gates are run locally or from the deployment host before a release.

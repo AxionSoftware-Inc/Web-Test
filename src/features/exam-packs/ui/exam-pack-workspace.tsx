@@ -43,6 +43,20 @@ function slugify(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50);
 }
 
+function normalizeDifficulty(value: string): PackImportTest["difficulty"] {
+  const normalized = value.toLowerCase().trim();
+  if (["hard", "advanced"].includes(normalized)) return "hard";
+  if (["medium", "intermediate"].includes(normalized)) return "medium";
+  return "easy";
+}
+
+function normalizeQuestionType(value: string): PackImportQuestion["type"] {
+  const normalized = value.toLowerCase().replace("-", "_");
+  if (normalized === "multiple_choice") return "multiple_choice";
+  if (normalized === "short_answer") return "short_answer";
+  return "single_choice";
+}
+
 function normalizeJsonTextareaBackslashes(text: string) {
   return text.replace(/\\+/g, (slashes) => slashes.length % 2 === 0 ? slashes : `${slashes}\\`);
 }
@@ -110,13 +124,13 @@ function normalizeQuestion(raw: unknown, fallbackDifficulty: PackImportTest["dif
   const body = readString(raw, ["body", "prompt", "question", "text", "savol", "matn"]);
   if (!body && !options.length && !correct) return null;
   return {
-    type: readString(raw, ["type"], options.length ? "single_choice" : "short_answer") as PackImportQuestion["type"],
+    type: normalizeQuestionType(readString(raw, ["type"], options.length ? "single_choice" : "short_answer")),
     body,
     options,
     answer: { correct },
     explanation: readString(raw, ["explanation", "solution", "commentary", "yechim", "izoh"]),
     skills: ["general"],
-    difficulty: readString(raw, ["difficulty", "level"], fallbackDifficulty) as PackImportQuestion["difficulty"],
+    difficulty: normalizeDifficulty(readString(raw, ["difficulty", "level"], fallbackDifficulty)),
   };
 }
 
@@ -146,7 +160,7 @@ function normalizeImportSource(raw: unknown, pack: ApiExamPack): StrictPackImpor
         ? (item.questions ?? item.test_questions ?? item.savollar) as unknown[]
         : null;
       if (questionRows) {
-        const difficulty = readString(item, ["difficulty", "level"], "beginner") as PackImportTest["difficulty"];
+        const difficulty = normalizeDifficulty(readString(item, ["difficulty", "level"], "easy"));
         const questions = questionRows.map((question) => normalizeQuestion(question, difficulty)).filter((question): question is PackImportQuestion => Boolean(question));
         return questions.length ? {
           title: readString(item, ["title", "name", "nom"], `${pack.title} ${index + 1}`),
@@ -160,9 +174,9 @@ function normalizeImportSource(raw: unknown, pack: ApiExamPack): StrictPackImpor
     })
     .filter((item): item is PackImportTest => Boolean(item));
   if (tests.length) return { version: "1.0", pack: fallbackPack, tests };
-  const questions = rows.map((item) => normalizeQuestion(item, "beginner")).filter((item): item is PackImportQuestion => Boolean(item));
+  const questions = rows.map((item) => normalizeQuestion(item, "easy")).filter((item): item is PackImportQuestion => Boolean(item));
   return questions.length
-    ? { version: "1.0", pack: fallbackPack, tests: [{ title: readString(record, ["title", "name"], pack.title), topic: fallbackPack.branch, difficulty: "beginner", time_limit_minutes: 15, questions }] }
+    ? { version: "1.0", pack: fallbackPack, tests: [{ title: readString(record, ["title", "name"], pack.title), topic: fallbackPack.branch, difficulty: "easy", time_limit_minutes: 15, questions }] }
     : null;
 }
 
@@ -207,7 +221,7 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
     .map((test) => ({
       title: test.title,
       topic: test.topic_slug,
-      difficulty: test.difficulty,
+      difficulty: normalizeDifficulty(test.difficulty),
       time_limit_minutes: test.estimated_minutes,
       questions: test.test_questions.map((item) => ({
         type: item.question.type,
@@ -216,7 +230,7 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
         answer: { correct: item.question.answer ?? "" },
         explanation: item.question.explanation ?? "",
         skills: item.question.skill_titles.length ? item.question.skill_titles : ["general"],
-        difficulty: item.question.difficulty,
+        difficulty: normalizeDifficulty(item.question.difficulty),
       })),
     }));
 

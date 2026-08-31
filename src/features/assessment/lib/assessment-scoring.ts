@@ -2,6 +2,9 @@ import type {
   GeneratedQuestion,
   TestAnswerMap,
 } from "@/features/test-generator/model/test-generator-types";
+import { isAnswerCorrectForType } from "@/shared/model/answer-scoring";
+
+export { normalizeAnswer } from "@/shared/model/answer-scoring";
 
 export function getSessionResult(questions: GeneratedQuestion[], answers: TestAnswerMap) {
   const correct = questions.filter((question) => isAnswerCorrect(question, answers[question.id] ?? "")).length;
@@ -18,14 +21,5 @@ export function isAnswerCorrect(question: GeneratedQuestion, answer: string) {
     return false;
   }
 
-  return normalizeAnswer(question.answer) === normalizeAnswer(answer);
-}
-
-export function normalizeAnswer(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/\s+/g, "")
-    .replace(/[()]/g, "")
-    .replace(/\\cdot/g, "*")
-    .replace(/\\/g, "");
+  return isAnswerCorrectForType(question.type, question.answer, answer);
 }

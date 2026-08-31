@@ -1,5 +1,5 @@
-import { normalizeAnswer } from "@/features/assessment/lib/assessment-scoring";
 import type { ApiSession, ApiTest } from "@/shared/api/questlab-api";
+import { isAnswerCorrectForType } from "@/shared/model/answer-scoring";
 import type { QuestionDifficulty, SessionAnswerSnapshot } from "./types";
 
 type SessionVisibility = "personal" | "class" | "school";
@@ -21,7 +21,7 @@ export function apiSessionToAnswerSnapshots(input: {
   return input.test.test_questions.map((row) => {
     const answer = answerByQuestionId.get(row.question.id);
     const selectedAnswer = answer?.value ?? "";
-    const isCorrect = normalizeAnswer(selectedAnswer) === normalizeAnswer(row.question.answer ?? "");
+    const isCorrect = isAnswerCorrectForType(row.question.type, row.question.answer ?? "", selectedAnswer);
     const difficulty = mapApiDifficulty(row.question.difficulty);
     const timeSpentSeconds = input.timeSpentByQuestionId?.[row.question.id] ?? input.timeSpentByQuestionId?.[String(row.question.id)] ?? estimatedSecondsPerQuestion;
 

@@ -48,6 +48,13 @@ class LearningApiContractTests(APITestCase):
         self.assertEqual(solution_response.status_code, 200)
         self.assertEqual(solution_response.data["answer"], "4")
 
+        direct_session_create = self.client.post(
+            "/api/sessions/",
+            {"test": self.test.id, "student_name": "Not allowed", "student_code": "direct"},
+            format="json",
+        )
+        self.assertEqual(direct_session_create.status_code, 405)
+
         start_response = self.client.post(
             "/api/tests/algebra-smoke-test/start/",
             {"student_name": "Student", "student_code": "student-1"},
@@ -90,3 +97,33 @@ class LearningApiContractTests(APITestCase):
         response = self.client.get("/api/health/")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, {"status": "ok", "database": "ok"})
+
+    def test_multiple_choice_scoring_is_shared_with_profile_and_mistakes(self):
+        self.question.type = Question.QuestionType.MULTIPLE_CHOICE
+        self.question.options = ["A", "B", "C"]
+        self.question.answer = "A, B"
+        self.question.save(update_fields=["type", "options", "answer", "updated_at"])
+
+        start_response = self.client.post(
+            "/api/tests/algebra-smoke-test/start/",
+            {"student_name": "Student", "student_code": "student-multi"},
+            format="json",
+        )
+        session_id = start_response.data["id"]
+        answer_response = self.client.post(
+            f"/api/sessions/{session_id}/answer/",
+            {"question": self.question.id, "value": " B, A "},
+            format="json",
+        )
+        self.assertEqual(answer_response.status_code, 200)
+        submit_response = self.client.post(f"/api/sessions/{session_id}/submit/", format="json")
+        self.assertEqual(submit_response.status_code, 200)
+
+        result_response = self.client.get(f"/api/sessions/{session_id}/result/")
+        profile_response = self.client.get("/api/profile/summary/?student_code=student-multi")
+        mistakes_response = self.client.get("/api/mistakes/summary/?student_code=student-multi")
+
+        self.assertEqual(result_response.data["summary"]["score"], 100)
+        self.assertTrue(result_response.data["questions"][0]["is_correct"])
+        self.assertEqual(profile_response.data["average_score"], 100)
+        self.assertEqual(mistakes_response.data["mistakes"], [])

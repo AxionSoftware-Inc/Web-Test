@@ -10,7 +10,7 @@ Foydalanuvchi faqat savol yechib ketmaydi. Har bir javob, xato, hint ishlatish, 
 
 ## Hozirgi Bosqich
 
-Hozir web platformaning boshlang'ich Next.js loyihasi yaratildi. Landing page komponentlarga ajratilgan va platforma keyinchalik monolit bo'lib qolmasligi uchun feature-based arxitektura qo'yildi.
+Hozir web platforma ishlaydigan frontend-backend vertical slice bosqichida. Landing page komponentlarga ajratilgan, test/session flow PostgreSQL-ready Django API bilan ulangan va keyingi o'sish uchun feature-based arxitektura qo'yilgan.
 
 Hozir mavjud asosiy qismlar:
 
@@ -23,6 +23,8 @@ Hozir mavjud asosiy qismlar:
 - Shared config
 - Shared utility helper
 - Product site map
+- Django REST API with versioned `/api/v1/` contract
+- Server scoring, immutable result snapshots, analytics and audit events
 
 ## Arxitektura Yo'nalishi
 
@@ -32,7 +34,7 @@ Kod feature-based modular arxitektura bilan yuradi:
 src/
   app/
   features/
-  entities/
+  entities/ (planned shared domain boundary)
   shared/
 ```
 
@@ -56,9 +58,9 @@ Mahsulot modullari shu yerda bo'ladi. Masalan:
 
 Har feature o'zining `ui`, `model`, `lib`, `api` qismlariga ega bo'lishi mumkin.
 
-### `entities`
+### `entities` (planned extraction boundary)
 
-Platformadagi asosiy domen obyektlari:
+Platformadagi asosiy domen obyektlari shu qatlamga chiqariladi. Hozirgi vertical slice'da ularning transport turlari `src/shared/api`, feature modellari esa tegishli feature papkalarida turibdi:
 
 - user
 - subject
@@ -122,14 +124,12 @@ src/features/landing/model/landing-content.ts
 
 ## Keyingi Ish Tartibi
 
-1. `entities` papkasini ochish va asosiy domain typelarni yozish.
-2. `features/subjects` modulini yaratish.
-3. `features/problems` modulini yaratish.
-4. `features/practice` modulini yaratish.
-5. Public route skeletonlarini qo'yish.
-6. Learner dashboard skeletonini qo'yish.
-7. Seed data bilan birinchi real UI oqimini qurish.
-8. Keyin backend persistence va auth qo'shish.
+1. Canonical API/schema va scoring contractini barcha yangi modullarga qo'llash.
+2. `learning` backend app'ini content, assessment, classroom, organization va import bounded contextlariga ajratish.
+3. `entities` papkasini API turlari va domen mapperlari uchun bosqichma-bosqich ochish.
+4. Topic graph, mastery policy va evidence eventlarini server-owned, versioned modelga ko'chirish.
+5. Physics, Programming va keyingi fanlarni mathematics vertical slice patterni bilan qo'shish.
+6. Auth/RBAC va production authorizationni alohida security workstream sifatida yakunlash.
 
 ## Muhim Qoidalar
 

@@ -168,4 +168,10 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "QuestLab API",
     "DESCRIPTION": "Skill-based testing and learning API.",
     "VERSION": "0.1.0",
+    "PREPROCESSING_HOOKS": ["config.schema.exclude_legacy_api_alias"],
+    "ENUM_NAME_OVERRIDES": {
+        "TestPublishStatusEnum": "learning.models.Test.PublishStatus",
+        "TestSessionStatusEnum": "learning.models.TestSession.Status",
+        "VisibilityEnum": "learning.models.TeacherClass.Visibility",
+    },
 }

@@ -108,9 +108,9 @@ function normalizeQuestionType(value: string): ImportQuestion["type"] {
 
 export function normalizeDifficulty(value: string): ImportTest["difficulty"] {
   const normalized = value.toLowerCase();
-  if (["hard", "advanced"].includes(normalized)) return "advanced";
-  if (["medium", "intermediate"].includes(normalized)) return "intermediate";
-  return "beginner";
+  if (["hard", "advanced"].includes(normalized)) return "hard";
+  if (["medium", "intermediate"].includes(normalized)) return "medium";
+  return "easy";
 }
 
 function normalizeOptions(raw: unknown) {
@@ -152,7 +152,7 @@ export function normalizeQuestion(raw: unknown, fallbackDifficulty: ImportTest["
 
 export function normalizeTest(raw: unknown, fallbackTitle: string, fallbackTopic: string): ImportTest | null {
   if (!isRecord(raw)) return null;
-  const difficulty = normalizeDifficulty(readString(raw, ["difficulty", "level"], "beginner"));
+  const difficulty = normalizeDifficulty(readString(raw, ["difficulty", "level"], "easy"));
   const questions = readQuestions(raw).map((question) => normalizeQuestion(question, difficulty)).filter((question): question is ImportQuestion => Boolean(question));
   if (!questions.length) return null;
   return {

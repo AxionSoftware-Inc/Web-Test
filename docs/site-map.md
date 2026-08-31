@@ -1099,15 +1099,11 @@ Responsible for hint generation, mistake diagnosis, explanation variants and per
 - Judge reliability
 - Page performance
 
-## First Build Order
+## Long-term Build Order From Current Baseline
 
-1. Define design system and app shell.
-2. Build public subject and problem discovery.
-3. Create local seed data for subjects, skills and problems.
-4. Build problem solving page.
-5. Build practice session engine in frontend.
-6. Add progress model.
-7. Add creator draft builder.
-8. Add backend persistence.
-9. Add real answer checking and judge service.
-10. Add AI tutor and organization features.
+1. Keep the current design system and app shell consistent across new modules.
+2. Extend the canonical `/api/v1/` contract and contract tests for every new resource.
+3. Extract backend bounded contexts from the current `learning` app.
+4. Move mastery evidence and topic graphs to durable, versioned server projections.
+5. Add real answer checking and a separate sandboxed judge service for code tasks.
+6. Add content review, calibration, AI tutor and organization features.

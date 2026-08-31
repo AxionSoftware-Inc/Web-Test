@@ -9,6 +9,9 @@ The full site map, product modules, user roles, MVP scope and long-term architec
 - [docs/project-overview.md](docs/project-overview.md)
 - [docs/site-map.md](docs/site-map.md)
 - [docs/expansion-plan.md](docs/expansion-plan.md)
+- [docs/architecture-audit.md](docs/architecture-audit.md)
+- [docs/api-reference.md](docs/api-reference.md)
+- [docs/schemas/test-pack-v1.schema.json](docs/schemas/test-pack-v1.schema.json)
 
 ## Development
 
@@ -29,13 +32,15 @@ npm run lint
 npm run build
 ```
 
-The backend checks and deployment runbook are in [docs/operations.md](docs/operations.md). CI runs on every push and pull request.
+The backend checks and deployment runbook are in [docs/operations.md](docs/operations.md). GitHub Actions is intentionally disabled; run the release gates locally or from the deployment host.
 
 ## Authentication
 
 Development authentication uses a local identity stored in the browser. The login and register screens create or update a `RoleProfile` through the backend API; no external account provider is required. This is suitable for the current prototype, but production authentication should add server-managed sessions or tokens and real authorization checks.
 
 ## Content Import Question JSON Structure
+
+The canonical pack-level contract is [docs/schemas/test-pack-v1.schema.json](docs/schemas/test-pack-v1.schema.json), with endpoint and transformation details in [docs/api-reference.md](docs/api-reference.md). The example below is the legacy question-level authoring shape still accepted by the compatibility parser.
 
 Creators and import tools should use this structure for questions. It is an authoring/import format, not the public runtime API contract. `topic_slug` is mandatory because it is the primary grouping key for mastery, mistakes and recommendations.
 

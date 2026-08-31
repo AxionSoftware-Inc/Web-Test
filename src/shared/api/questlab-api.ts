@@ -102,6 +102,8 @@ export type CreateTestPayload = {
   questions: CreateTestQuestionPayload[];
 };
 
+export type TestPackDifficulty = "easy" | "medium" | "hard";
+
 export type StrictPackImportSource = {
   version: "1.0";
   pack: {
@@ -114,7 +116,7 @@ export type StrictPackImportSource = {
   tests: Array<{
     title: string;
     topic: string;
-    difficulty: "easy" | "medium" | "hard" | "beginner" | "intermediate" | "advanced";
+    difficulty: TestPackDifficulty;
     time_limit_minutes: number;
     questions: Array<{
       type: ApiQuestion["type"];
@@ -123,7 +125,7 @@ export type StrictPackImportSource = {
       answer: { correct: string } | string;
       explanation?: string;
       skills: string[];
-      difficulty?: "easy" | "medium" | "hard" | "beginner" | "intermediate" | "advanced";
+      difficulty?: TestPackDifficulty;
     }>;
   }>;
 };

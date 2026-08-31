@@ -9,7 +9,11 @@ SCORING_VERSION = 1
 
 
 def normalize_answer(value):
-    return re.sub(r"\s+", "", str(value or "").casefold().replace("\\cdot", "*").replace("\\", ""))
+    return re.sub(
+        r"\s+",
+        "",
+        str(value or "").casefold().replace("\\cdot", "*").replace("\\", "").replace("(", "").replace(")", ""),
+    )
 
 
 def _answer_values(value):
@@ -29,7 +33,9 @@ def _answer_values(value):
 
 def is_answer_correct(question: Question, submitted):
     if question.type == Question.QuestionType.MULTIPLE_CHOICE:
-        return _answer_values(submitted) == _answer_values(question.answer)
+        submitted_values = _answer_values(submitted)
+        expected_values = _answer_values(question.answer)
+        return bool(expected_values) and submitted_values == expected_values
     return bool(normalize_answer(submitted)) and normalize_answer(submitted) == normalize_answer(question.answer)
 
 
@@ -37,6 +43,9 @@ def session_question_items(session):
     items = getattr(session.test, "analytics_test_questions", None)
     if items is not None:
         return list(items)
+    prefetched_items = getattr(session.test, "_prefetched_objects_cache", {}).get("testquestion_set")
+    if prefetched_items is not None:
+        return list(prefetched_items)
     return list(
         session.test.testquestion_set.select_related("question")
         .prefetch_related("question__skills")

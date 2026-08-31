@@ -54,3 +54,5 @@ Docs:
 GET /api/docs/
 GET /api/schema/
 ```
+
+The human-readable contract, request examples, public-vs-management rules, and import format are in [../docs/api-reference.md](../docs/api-reference.md). The canonical test pack schema is [../docs/schemas/test-pack-v1.schema.json](../docs/schemas/test-pack-v1.schema.json). Use `/api/v1/` for new clients; `/api/` remains a compatibility alias.
