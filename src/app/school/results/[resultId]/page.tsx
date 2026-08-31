@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { ResultDetailPage } from "@/features/platform/ui/panel-pages";
 
 export default async function Page({ params }: { params: Promise<{ resultId: string }> }) {
-  redirect(`/results/${(await params).resultId}`);
+  return <ResultDetailPage resultId={(await params).resultId} role="school" />;
 }

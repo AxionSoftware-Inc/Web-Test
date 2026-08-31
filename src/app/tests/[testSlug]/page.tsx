@@ -23,7 +23,6 @@ export default async function Page({ params }: PageProps) {
   const test = await questApi.test(testSlug);
   const questions = test.test_questions.map((item) => item.question);
   const questionTypes = Array.from(new Set(questions.map((question) => question.type)));
-  const topicSlug = test.topic_slug;
 
   return (
     <TestShell
@@ -104,9 +103,8 @@ export default async function Page({ params }: PageProps) {
           <div className="rounded-lg border border-black/10 bg-white p-5">
             <h2 className="text-xl font-semibold">Recommended path</h2>
             <div className="mt-4 grid gap-3">
-              <SecondaryLink href={`/practice/${topicSlug}`}>Practice this topic</SecondaryLink>
+              <SecondaryLink href="/practice">Practice this topic</SecondaryLink>
               <SecondaryLink href="/questions">Open question bank</SecondaryLink>
-              <SecondaryLink href="/results">View previous results</SecondaryLink>
             </div>
           </div>
 

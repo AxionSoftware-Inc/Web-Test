@@ -6,6 +6,7 @@ import { useState } from "react";
 import type { ApiTest } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { getPackManageCode } from "@/shared/model/local-identity";
+import { PremiumPanel } from "@/shared/ui/premium-shell";
 
 export function PackItemClient({ packSlug, tests }: { packSlug: string; tests: ApiTest[] }) {
   const router = useRouter();
@@ -31,7 +32,7 @@ export function PackItemClient({ packSlug, tests }: { packSlug: string; tests: A
   }
 
   return (
-    <section className="mx-auto max-w-2xl rounded-[28px] border border-black/8 bg-white/82 p-6 shadow-[0_24px_70px_rgba(0,0,0,0.08)]">
+    <PremiumPanel className="mx-auto max-w-2xl p-6">
       <p className="text-sm font-semibold uppercase tracking-[0.18em] text-black/40">Pack item</p>
       <h1 className="mt-2 text-3xl font-semibold">Packga test qo‘shish</h1>
       <div className="mt-6 grid gap-4">
@@ -70,6 +71,6 @@ export function PackItemClient({ packSlug, tests }: { packSlug: string; tests: A
         </button>
         {error ? <p className="rounded-2xl bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p> : null}
       </div>
-    </section>
+    </PremiumPanel>
   );
 }

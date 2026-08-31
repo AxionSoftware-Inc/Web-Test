@@ -1,16 +1,10 @@
 import type { Metadata } from "next";
-
-import { MistakesClient } from "@/features/mistakes/ui/mistakes-client";
-import { questApi } from "@/shared/api/questlab-api";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Mistake Bank | QuestLab",
 };
 
-export const dynamic = "force-dynamic";
-
-export default async function Page() {
-  const summary = await questApi.mistakesSummary();
-
-  return <MistakesClient initialSummary={summary} />;
+export default function Page() {
+  redirect("/student/mistakes");
 }

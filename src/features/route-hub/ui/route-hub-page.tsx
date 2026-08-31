@@ -23,10 +23,7 @@ export function RouteHubPage({
     <main className="min-h-screen bg-background text-ink">
       <Container className="py-8">
         <header className="border-b border-black/10 pb-6">
-          <Link href="/" className="text-sm font-semibold text-brand">
-            QuestLab home
-          </Link>
-          <p className="mt-8 text-sm font-semibold uppercase tracking-[0.14em] text-brand">
+          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-brand">
             {eyebrow}
           </p>
           <h1 className="mt-3 max-w-4xl text-4xl font-semibold leading-tight md:text-5xl">

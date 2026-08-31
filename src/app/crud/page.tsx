@@ -1,5 +1,6 @@
 import { UnifiedTestModule } from "@/features/crud/ui/unified-test-module";
 import { questApi } from "@/shared/api/questlab-api";
+import { PremiumPage } from "@/shared/ui/premium-shell";
 
 export const dynamic = "force-dynamic";
 
@@ -11,11 +12,5 @@ export default async function CrudPage() {
     questApi.skills(),
   ]);
 
-  return (
-    <main className="min-h-screen bg-background px-5 py-8 sm:px-8 lg:px-10">
-      <div className="mx-auto max-w-7xl">
-        <UnifiedTestModule subjects={subjects} topics={topics} tests={tests} skills={skills} />
-      </div>
-    </main>
-  );
+  return <PremiumPage><UnifiedTestModule subjects={subjects} topics={topics} tests={tests} skills={skills} /></PremiumPage>;
 }

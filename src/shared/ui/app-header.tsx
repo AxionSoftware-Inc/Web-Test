@@ -1,13 +1,11 @@
 "use client";
 
-import { BarChart3, Building2, GraduationCap, Home, Info, LayoutDashboard, PackageCheck, Plus, Settings, TriangleAlert, UserRound, UsersRound } from "lucide-react";
+import { BarChart3, BookOpen, Building2, GraduationCap, Home, Info, LayoutDashboard, PackageCheck, Plus, Settings, Target, TriangleAlert, UserRound, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { cn } from "@/shared/lib/cn";
-import { questApi } from "@/shared/api/questlab-api";
-import { getStudentCode } from "@/shared/model/local-identity";
 import { roles, type UserRole } from "@/shared/model/roles";
 import { RoleSwitcher } from "@/shared/ui/role-switcher";
 
@@ -52,42 +50,61 @@ const roleNavItems: Record<UserRole, Array<{ label: string; href: string; icon: 
   ],
 };
 
+const publicNavItems: Array<{ label: string; href: string; icon: typeof Home }> = [
+  { label: "Tests", href: "/tests", icon: LayoutDashboard },
+  { label: "Subjects", href: "/subjects", icon: BookOpen },
+  { label: "Practice", href: "/practice", icon: Target },
+  { label: "Questions", href: "/questions", icon: BookOpen },
+];
+
+function subscribeToAuth(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener("questlab-role-change", callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener("questlab-role-change", callback);
+  };
+}
+
+function getAuthSnapshot() {
+  return Boolean(window.localStorage.getItem("questlab-auth-identity"));
+}
+
+function getServerAuthSnapshot() {
+  return false;
+}
+
+function getAdminSnapshot() {
+  return window.localStorage.getItem("questlab-is-admin") === "1";
+}
+
+function getServerAdminSnapshot() {
+  return false;
+}
+
 export function AppHeader() {
   const pathname = usePathname();
+  const isAuthRoute = pathname.startsWith("/auth/");
+  const isAuthed = useSyncExternalStore(subscribeToAuth, getAuthSnapshot, getServerAuthSnapshot);
+  const isAdmin = useSyncExternalStore(subscribeToAuth, getAdminSnapshot, getServerAdminSnapshot);
   const [roleId, setRoleId] = useState<UserRole>(() => {
     if (typeof window === "undefined") return "student";
     const stored = window.localStorage.getItem("questlab-role") as UserRole | null;
     return stored && roles.some((role) => role.id === stored) ? stored : "student";
   });
-  const [canSwitchRoles, setCanSwitchRoles] = useState(() => {
-    return false;
-  });
-  const isAuthed = typeof window !== "undefined" && Boolean(window.localStorage.getItem("questlab-auth-identity"));
 
   useEffect(() => {
-    let cancelled = false;
-    questApi.roleProfile(getStudentCode())
-      .then((profile) => {
-        if (cancelled) return;
-        setRoleId(profile.active_role);
-        window.localStorage.setItem("questlab-role", profile.active_role);
-        const isAdmin = profile.available_roles.includes("admin");
-        setCanSwitchRoles(isAdmin);
-        window.localStorage.setItem("questlab-is-admin", isAdmin ? "1" : "0");
-      })
-      .catch(() => undefined);
     function onRoleChange(event: Event) {
       const nextRole = (event as CustomEvent<UserRole>).detail;
       if (roles.some((role) => role.id === nextRole)) setRoleId(nextRole);
     }
+
     window.addEventListener("questlab-role-change", onRoleChange);
-    return () => {
-      cancelled = true;
-      window.removeEventListener("questlab-role-change", onRoleChange);
-    };
+    return () => window.removeEventListener("questlab-role-change", onRoleChange);
   }, []);
 
-  const navItems = roleNavItems[roleId] ?? roleNavItems.student;
+  const navItems = isAuthed ? (roleNavItems[roleId] ?? roleNavItems.student) : publicNavItems;
+  const canSwitchRoles = isAuthed && isAdmin;
   const normalizedPathname = pathname.replace(/\/$/, "") || "/";
 
   function isActive(href: string) {
@@ -98,7 +115,7 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-black/8 bg-surface-soft/96 supports-[backdrop-filter]:bg-surface-soft/88 supports-[backdrop-filter]:backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-8 lg:px-10">
+      <div className="quest-header-container flex items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-3">
           <span className="grid size-10 place-items-center rounded-xl bg-ink text-sm font-bold text-white shadow-sm">
             Q
@@ -109,54 +126,58 @@ export function AppHeader() {
           </span>
         </Link>
 
-        <nav className="flex max-w-[66vw] items-center gap-1 overflow-x-auto rounded-2xl border border-black/8 bg-white p-1 shadow-[0_10px_30px_rgba(0,0,0,0.04)] md:max-w-none">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.href);
+        {!isAuthRoute ? (
+          <nav className="flex max-w-[66vw] items-center gap-1 overflow-x-auto rounded-2xl border border-black/8 bg-white p-1 shadow-[0_10px_30px_rgba(0,0,0,0.04)] md:max-w-none">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.href);
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-black/58 hover:bg-[#f3f3ec]",
-                  active && "bg-ink text-white shadow-sm hover:bg-ink",
-                )}
-              >
-                <Icon className="size-4" />
-                <span className="hidden md:inline">{item.label}</span>
-              </Link>
-            );
-          })}
-          <Link
-            href="/about"
-            className={cn(
-              "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-black/58 hover:bg-[#f3f3ec]",
-              isActive("/about") && "bg-ink text-white shadow-sm hover:bg-ink",
-            )}
-          >
-            <Info className="size-4" />
-            <span className="hidden md:inline">About</span>
-          </Link>
-        </nav>
-
-        <div className="flex items-center gap-2">
-          {canSwitchRoles ? <RoleSwitcher /> : null}
-          {isAuthed ? (
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-black/58 hover:bg-[#f3f3ec]",
+                    active && "bg-ink text-white shadow-sm hover:bg-ink",
+                  )}
+                >
+                  <Icon className="size-4" />
+                  <span className="hidden md:inline">{item.label}</span>
+                </Link>
+              );
+            })}
             <Link
-              href="/profile"
-              aria-label="Open profile"
+              href="/about"
               className={cn(
-                "grid size-10 place-items-center rounded-xl border border-black/8 bg-white text-black/65 shadow-[0_10px_30px_rgba(0,0,0,0.04)]",
-                pathname.startsWith("/profile") && "bg-ink text-white",
+                "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-black/58 hover:bg-[#f3f3ec]",
+                isActive("/about") && "bg-ink text-white shadow-sm hover:bg-ink",
               )}
             >
-              <UserRound className="size-5" />
+              <Info className="size-4" />
+              <span className="hidden md:inline">About</span>
             </Link>
-          ) : (
-            <Link href="/auth/login" className="rounded-xl bg-ink px-4 py-2 text-sm font-semibold text-white">Login</Link>
-          )}
-        </div>
+          </nav>
+        ) : null}
+
+        {!isAuthRoute ? (
+          <div className="flex items-center gap-2">
+            {canSwitchRoles ? <RoleSwitcher /> : null}
+            {isAuthed ? (
+              <Link
+                href="/profile"
+                aria-label="Open profile"
+                className={cn(
+                  "grid size-10 place-items-center rounded-xl border border-black/8 bg-white text-black/65 shadow-[0_10px_30px_rgba(0,0,0,0.04)]",
+                  pathname.startsWith("/profile") && "bg-ink text-white",
+                )}
+              >
+                <UserRound className="size-5" />
+              </Link>
+            ) : (
+              <Link href="/auth/login" className="rounded-xl bg-ink px-4 py-2 text-sm font-semibold text-white">Login</Link>
+            )}
+          </div>
+        ) : null}
       </div>
     </header>
   );

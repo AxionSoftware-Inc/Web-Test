@@ -361,7 +361,6 @@ export type ApiSchool = {
   primary_color: string;
   accent_color: string;
   student_invite_code: string;
-  teacher_invite_code: string;
   teacher_count: number;
   teachers: ApiSchoolTeacher[];
   created_at: string;
@@ -423,14 +422,6 @@ export type ApiRoleProfile = {
   available_roles: ApiRoleProfile["active_role"][];
   created_at: string;
   updated_at: string;
-};
-
-export type ApiGoogleAuth = {
-  profile: ApiRoleProfile;
-  is_new: boolean;
-  email: string;
-  name: string;
-  picture: string;
 };
 
 export async function apiGet<T>(path: string): Promise<T> {
@@ -538,8 +529,6 @@ export const questApi = {
   searchRoleProfiles: (query: string, role?: ApiRoleProfile["active_role"]) => apiGet<ApiRoleProfile[]>(`/profile/role-search/?q=${encodeURIComponent(query)}${role ? `&role=${role}` : ""}`),
   updateRoleProfile: (identityCode: string, payload: { active_role?: ApiRoleProfile["active_role"]; display_name?: string; phone?: string }) =>
     apiPatch<ApiRoleProfile>("/profile/role/", { ...payload, identity_code: identityCode }),
-  googleAuth: (payload: { credential: string; active_role?: ApiRoleProfile["active_role"] }) =>
-    apiPost<ApiGoogleAuth>("/auth/google/", payload),
   profileSummary: (studentCode?: string) => apiGet<ApiProfileSummary>(`/profile/summary/${studentCode ? `?student_code=${encodeURIComponent(studentCode)}` : ""}`),
   mistakesSummary: (studentCode?: string) => apiGet<ApiMistakesSummary>(`/mistakes/summary/${studentCode ? `?student_code=${encodeURIComponent(studentCode)}` : ""}`),
   classes: () => apiGet<ApiTeacherClass[]>("/classes/"),
@@ -665,11 +654,10 @@ export const questApi = {
     primary_color?: string;
     accent_color?: string;
     student_invite_code?: string;
-    teacher_invite_code?: string;
   }) => apiPost<ApiSchool>("/schools/", payload),
   updateSchool: (
     slug: string,
-    payload: Partial<Pick<ApiSchool, "name" | "owner_name" | "visibility" | "description" | "portal_subdomain" | "portal_domain" | "logo_url" | "primary_color" | "accent_color" | "student_invite_code" | "teacher_invite_code">> & { manage_code?: string },
+    payload: Partial<Pick<ApiSchool, "name" | "owner_name" | "visibility" | "description" | "portal_subdomain" | "portal_domain" | "logo_url" | "primary_color" | "accent_color" | "student_invite_code">> & { manage_code?: string },
   ) => apiPatch<ApiSchool>(`/schools/${slug}/`, payload),
   schoolAnalytics: (slug: string) => apiGet<ApiSchoolAnalytics>(`/schools/${slug}/analytics/`),
   schoolClasses: (slug: string) => apiGet<ApiTeacherClass[]>(`/schools/${slug}/classes/`),
@@ -686,12 +674,8 @@ export const questApi = {
   schoolStudents: (slug: string) => apiGet<ApiClassStudent[]>(`/schools/${slug}/students/`),
   schoolTeachers: (slug: string) => apiGet<ApiSchoolTeacher[]>(`/schools/${slug}/teachers/`),
   schoolTeacher: (slug: string, teacherId: number) => apiGet<ApiSchoolTeacher>(`/schools/${slug}/teachers/${teacherId}/`),
-  joinSchoolTeacher: (slug: string, payload: { name: string; teacher_code: string; teacher_invite_code: string; email?: string }) =>
-    apiPost<ApiSchoolTeacher>(`/schools/${slug}/join-teacher/`, payload),
   createSchoolTeacher: (slug: string, payload: { name: string; email?: string; teacher_code?: string; classes?: number[]; manage_code?: string }) =>
     apiPost<ApiSchoolTeacher>(`/schools/${slug}/teachers/`, payload),
-  joinSchoolStudent: (slug: string, payload: { student_name: string; student_code: string; student_invite_code: string; class_slug?: string; class_id?: number }) =>
-    apiPost<ApiClassStudent>(`/schools/${slug}/join-student/`, payload),
   updateSchoolTeacher: (slug: string, teacherId: number, payload: Partial<Pick<ApiSchoolTeacher, "name" | "email" | "teacher_code" | "is_active">> & { classes?: number[]; manage_code?: string }) =>
     apiPatch<ApiSchoolTeacher>(`/schools/${slug}/teachers/${teacherId}/`, payload),
   deleteSchoolTeacher: (slug: string, teacherId: number, manageCode?: string) =>

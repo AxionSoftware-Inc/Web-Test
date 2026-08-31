@@ -10,7 +10,7 @@ export function TopicBreakdownChart({ rows, color = "var(--chart-2)" }: { rows: 
   if (!rows.length) return <EmptyState title="No topic data" />;
   return (
     <div className="quest-card h-[280px] p-4">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} initialDimension={{ width: 1, height: 1 }}>
         <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 18, bottom: 4, left: 12 }}>
           <CartesianGrid stroke="var(--chart-grid)" horizontal={false} />
           <XAxis type="number" stroke="var(--chart-axis)" tickLine={false} axisLine={false} fontSize={12} />

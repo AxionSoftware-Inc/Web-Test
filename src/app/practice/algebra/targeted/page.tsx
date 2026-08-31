@@ -34,7 +34,7 @@ export default function Page() {
             ))}
           </div>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/test-session/demo-math-quadratic-beginner/question/1" className="rounded-xl bg-ink px-5 py-3 text-sm font-semibold text-white">
+            <Link href="/tests/math-quadratic-beginner/start" className="rounded-xl bg-ink px-5 py-3 text-sm font-semibold text-white">
               Retake Algebra test
             </Link>
             <Link href="/learn/algebra-foundations/quadratics/factoring-basics" className="rounded-xl border border-black/10 bg-white/70 px-5 py-3 text-sm font-semibold">

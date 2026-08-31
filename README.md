@@ -29,6 +29,10 @@ npm run lint
 npm run build
 ```
 
+## Authentication
+
+Development authentication uses a local identity stored in the browser. The login and register screens create or update a `RoleProfile` through the backend API; no external account provider is required. This is suitable for the current prototype, but production authentication should add server-managed sessions or tokens and real authorization checks.
+
 ## Public Question JSON Structure
 
 Creators and import tools should use this structure for questions. `topic_slug` is mandatory because it is the primary grouping key for mastery, mistakes and recommendations.

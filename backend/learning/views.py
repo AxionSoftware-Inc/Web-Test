@@ -1,11 +1,5 @@
-import json
-from urllib.error import URLError
-from urllib.parse import urlencode
-from urllib.request import urlopen
-
-from django.conf import settings
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Prefetch, Q
 from django.utils.text import slugify
 from django.utils import timezone
 from rest_framework import decorators, response, status, viewsets
@@ -46,6 +40,15 @@ from learning.serializers import (
     TestSessionSerializer,
     TopicSerializer,
 )
+from learning.services.analytics import class_results_payload, exam_pack_results_payload
+
+
+ASSIGNMENTS_WITH_COUNTS = ClassTestAssignment.objects.select_related("test").annotate(
+    question_count=Count("test__questions", distinct=True),
+)
+PACK_ITEMS_WITH_COUNTS = ExamPackItem.objects.select_related("test").annotate(
+    question_count=Count("test__questions", distinct=True),
+)
 
 
 def request_value(request, key, default=""):
@@ -68,25 +71,6 @@ def require_manage_key(request, expected):
     if provided != expected:
         return response.Response({"detail": "Valid manage key is required."}, status=status.HTTP_403_FORBIDDEN)
     return None
-
-
-def verify_google_credential(credential):
-    if not credential:
-        return None, {"credential": "Google credential is required."}
-    try:
-        url = f"https://oauth2.googleapis.com/tokeninfo?{urlencode({'id_token': credential})}"
-        with urlopen(url, timeout=8) as result:
-            payload = json.loads(result.read().decode("utf-8"))
-    except (URLError, TimeoutError, ValueError) as exc:
-        return None, {"credential": f"Google credential verification failed: {exc}"}
-    expected_audience = getattr(settings, "GOOGLE_CLIENT_ID", "")
-    if expected_audience and payload.get("aud") != expected_audience:
-        return None, {"credential": "Google credential audience mismatch."}
-    if payload.get("email_verified") not in (True, "true", "True", "1"):
-        return None, {"credential": "Google email is not verified."}
-    if not payload.get("sub"):
-        return None, {"credential": "Google subject is missing."}
-    return payload, None
 
 
 def unique_slug(model, base):
@@ -136,6 +120,14 @@ def positive_int(value, default):
         return parsed if parsed > 0 else default
     except (TypeError, ValueError, IndexError):
         return default
+
+
+def positive_id(value):
+    try:
+        parsed = int(value)
+        return parsed if parsed > 0 else None
+    except (TypeError, ValueError):
+        return None
 
 
 def string_list(value, default=None):
@@ -207,338 +199,6 @@ def import_skip(title, layer, code, reason, field=None):
     return row
 
 
-ADMIN_EMAILS = {
-    "shaxzodturayev123@gmail.com",
-    "axionsoftwareindustries@gmail.com",
-}
-
-
-def score_session(session):
-    questions = [item.question for item in session.test.testquestion_set.all()]
-    answer_map = {answer.question_id: answer.value.strip() for answer in session.answers.all()}
-    correct = sum(1 for question in questions if answer_map.get(question.id, "") == question.answer.strip())
-    total = len(questions)
-    score = round((correct / total) * 100) if total else 0
-    return questions, answer_map, correct, total, score
-
-
-def class_results_payload(classroom):
-    sessions = (
-        TestSession.objects.filter(classroom=classroom, status=TestSession.Status.SUBMITTED)
-        .select_related("test", "assignment")
-        .prefetch_related("answers", "test__testquestion_set__question__skills")
-        .order_by("-submitted_at")
-    )
-    rows = []
-    skill_totals = {}
-    score_sum = 0
-    student_totals = {}
-    assignment_totals = {}
-
-    for assignment in classroom.assignments.select_related("test").all():
-        assignment_totals[assignment.id] = {
-            "assignment_id": assignment.id,
-            "assignment_title": assignment.title,
-            "test_title": assignment.test.title,
-            "test_slug": assignment.test.slug,
-            "mode": assignment.mode,
-            "due_at": assignment.due_at.isoformat() if assignment.due_at else None,
-            "attempt_limit": assignment.attempt_limit,
-            "show_answers_after_deadline": assignment.show_answers_after_deadline,
-            "allow_late_submission": assignment.allow_late_submission,
-            "grading_policy": assignment.grading_policy,
-            "is_active": assignment.is_active,
-            "attempts": 0,
-            "unique_students": 0,
-            "late_submissions": 0,
-            "average_score": 0,
-            "_score_sum": 0,
-            "_students": set(),
-        }
-
-    for session in sessions:
-        questions, answer_map, correct, total, score = score_session(session)
-        score_sum += score
-        student_name = session.student_name or "Student"
-        student_code = session.student_code or student_name
-        student = student_totals.setdefault(
-            student_code,
-            {
-                "student_name": student_name,
-                "student_code": student_code,
-                "completed": 0,
-                "average_score": 0,
-                "_score_sum": 0,
-                "last_submitted_at": None,
-            },
-        )
-        student["student_name"] = student_name
-        student["completed"] += 1
-        student["_score_sum"] += score
-        submitted_at = session.submitted_at.isoformat() if session.submitted_at else None
-        if submitted_at and (student["last_submitted_at"] is None or submitted_at > student["last_submitted_at"]):
-            student["last_submitted_at"] = submitted_at
-
-        if session.assignment_id:
-            assignment_data = assignment_totals.setdefault(
-                session.assignment_id,
-                {
-                    "assignment_id": session.assignment_id,
-                    "assignment_title": session.assignment.title if session.assignment else "",
-                    "test_title": session.test.title,
-                    "test_slug": session.test.slug,
-                    "mode": session.assignment.mode if session.assignment else ClassTestAssignment.Mode.SESSION,
-                    "due_at": session.assignment.due_at.isoformat() if session.assignment and session.assignment.due_at else None,
-                    "attempt_limit": session.assignment.attempt_limit if session.assignment else 1,
-                    "show_answers_after_deadline": session.assignment.show_answers_after_deadline if session.assignment else False,
-                    "allow_late_submission": session.assignment.allow_late_submission if session.assignment else False,
-                    "grading_policy": session.assignment.grading_policy if session.assignment else ClassTestAssignment.GradingPolicy.BEST,
-                    "is_active": session.assignment.is_active if session.assignment else False,
-                    "attempts": 0,
-                    "unique_students": 0,
-                    "late_submissions": 0,
-                    "average_score": 0,
-                    "_score_sum": 0,
-                    "_students": set(),
-                },
-            )
-            assignment_data["attempts"] += 1
-            assignment_data["_score_sum"] += score
-            assignment_data["_students"].add(student_code)
-            if session.assignment and session.assignment.due_at and session.submitted_at and session.submitted_at > session.assignment.due_at:
-                assignment_data["late_submissions"] += 1
-
-        for question in questions:
-            is_correct = answer_map.get(question.id, "") == question.answer.strip()
-            for skill in list(question.skills.all()):
-                data = skill_totals.setdefault(skill.title, {"skill": skill.title, "correct": 0, "total": 0})
-                data["correct"] += 1 if is_correct else 0
-                data["total"] += 1
-
-        rows.append(
-            {
-                "session_id": session.id,
-                "student_name": student_name,
-                "student_code": student_code,
-                "test_title": session.test.title,
-                "test_slug": session.test.slug,
-                "assignment_id": session.assignment_id,
-                "assignment_title": session.assignment.title if session.assignment else "",
-                "assignment_mode": session.assignment.mode if session.assignment else None,
-                "score": score,
-                "correct": correct,
-                "total": total,
-                "submitted_at": submitted_at,
-                "is_late": bool(session.assignment and session.assignment.due_at and session.submitted_at and session.submitted_at > session.assignment.due_at),
-            }
-        )
-
-    weak_skills = [
-        {
-            **item,
-            "percent": round((item["correct"] / item["total"]) * 100) if item["total"] else 0,
-        }
-        for item in skill_totals.values()
-    ]
-    weak_skills.sort(key=lambda item: item["percent"])
-
-    students = []
-    for student in student_totals.values():
-        completed = student["completed"]
-        students.append(
-            {
-                "student_name": student["student_name"],
-                "student_code": student["student_code"],
-                "completed": completed,
-                "average_score": round(student["_score_sum"] / completed) if completed else 0,
-                "last_submitted_at": student["last_submitted_at"],
-            }
-        )
-    students.sort(key=lambda item: item["last_submitted_at"] or "", reverse=True)
-
-    assignment_stats = []
-    for item in assignment_totals.values():
-        attempts = item["attempts"]
-        assignment_stats.append(
-            {
-                "assignment_id": item["assignment_id"],
-                "assignment_title": item["assignment_title"],
-                "test_title": item["test_title"],
-                "test_slug": item["test_slug"],
-                "mode": item["mode"],
-                "due_at": item["due_at"],
-                "attempt_limit": item["attempt_limit"],
-                "show_answers_after_deadline": item["show_answers_after_deadline"],
-                "allow_late_submission": item["allow_late_submission"],
-                "grading_policy": item["grading_policy"],
-                "is_active": item["is_active"],
-                "attempts": attempts,
-                "unique_students": len(item["_students"]),
-                "late_submissions": item["late_submissions"],
-                "average_score": round(item["_score_sum"] / attempts) if attempts else 0,
-            }
-        )
-
-    count = len(rows)
-    return {
-        "classroom": TeacherClassSerializer(classroom).data,
-        "attempts": count,
-        "average_score": round(score_sum / count) if count else 0,
-        "students_total": classroom.students.count(),
-        "students_submitted": len(students),
-        "sessions_total": classroom.assignments.count(),
-        "sessions_open": classroom.assignments.filter(is_active=True).count(),
-        "results": rows,
-        "weak_skills": weak_skills[:6],
-        "assignment_stats": assignment_stats,
-        "student_progress": students,
-    }
-
-
-def exam_pack_results_payload(pack):
-    sessions = (
-        TestSession.objects.filter(exam_pack=pack, status=TestSession.Status.SUBMITTED)
-        .select_related("test", "exam_pack_item")
-        .prefetch_related("answers", "test__testquestion_set__question__skills")
-        .order_by("-submitted_at")
-    )
-    rows = []
-    score_sum = 0
-    item_totals = {}
-    student_totals = {}
-    skill_totals = {}
-
-    for item in pack.items.select_related("test").all():
-        item_totals[item.id] = {
-            "item_id": item.id,
-            "item_title": item.title,
-            "test_title": item.test.title,
-            "test_slug": item.test.slug,
-            "is_required": item.is_required,
-            "attempts": 0,
-            "unique_students": 0,
-            "average_score": 0,
-            "_score_sum": 0,
-            "_students": set(),
-        }
-
-    for session in sessions:
-        questions, answer_map, correct, total, score = score_session(session)
-        score_sum += score
-        student_name = session.student_name or "Student"
-        student_code = session.student_code or student_name
-        student = student_totals.setdefault(
-            student_code,
-            {
-                "student_name": student_name,
-                "student_code": student_code,
-                "completed": 0,
-                "average_score": 0,
-                "_score_sum": 0,
-                "last_submitted_at": None,
-            },
-        )
-        student["student_name"] = student_name
-        student["completed"] += 1
-        student["_score_sum"] += score
-        submitted_at = session.submitted_at.isoformat() if session.submitted_at else None
-        if submitted_at and (student["last_submitted_at"] is None or submitted_at > student["last_submitted_at"]):
-            student["last_submitted_at"] = submitted_at
-
-        if session.exam_pack_item_id:
-            item_data = item_totals.setdefault(
-                session.exam_pack_item_id,
-                {
-                    "item_id": session.exam_pack_item_id,
-                    "item_title": session.exam_pack_item.title if session.exam_pack_item else "",
-                    "test_title": session.test.title,
-                    "test_slug": session.test.slug,
-                    "is_required": session.exam_pack_item.is_required if session.exam_pack_item else False,
-                    "attempts": 0,
-                    "unique_students": 0,
-                    "average_score": 0,
-                    "_score_sum": 0,
-                    "_students": set(),
-                },
-            )
-            item_data["attempts"] += 1
-            item_data["_score_sum"] += score
-            item_data["_students"].add(student_code)
-
-        for question in questions:
-            is_correct = answer_map.get(question.id, "") == question.answer.strip()
-            for skill in list(question.skills.all()):
-                data = skill_totals.setdefault(skill.title, {"skill": skill.title, "correct": 0, "total": 0})
-                data["correct"] += 1 if is_correct else 0
-                data["total"] += 1
-
-        rows.append(
-            {
-                "session_id": session.id,
-                "student_name": student_name,
-                "student_code": student_code,
-                "test_title": session.test.title,
-                "test_slug": session.test.slug,
-                "item_id": session.exam_pack_item_id,
-                "item_title": session.exam_pack_item.title if session.exam_pack_item else "",
-                "score": score,
-                "correct": correct,
-                "total": total,
-                "submitted_at": submitted_at,
-            }
-        )
-
-    students = []
-    for student in student_totals.values():
-        completed = student["completed"]
-        students.append(
-            {
-                "student_name": student["student_name"],
-                "student_code": student["student_code"],
-                "completed": completed,
-                "average_score": round(student["_score_sum"] / completed) if completed else 0,
-                "last_submitted_at": student["last_submitted_at"],
-            }
-        )
-    students.sort(key=lambda item: item["last_submitted_at"] or "", reverse=True)
-
-    item_stats = []
-    for item in item_totals.values():
-        attempts = item["attempts"]
-        item_stats.append(
-            {
-                "item_id": item["item_id"],
-                "item_title": item["item_title"],
-                "test_title": item["test_title"],
-                "test_slug": item["test_slug"],
-                "is_required": item["is_required"],
-                "attempts": attempts,
-                "unique_students": len(item["_students"]),
-                "average_score": round(item["_score_sum"] / attempts) if attempts else 0,
-            }
-        )
-
-    weak_skills = [
-        {**item, "percent": round((item["correct"] / item["total"]) * 100) if item["total"] else 0}
-        for item in skill_totals.values()
-    ]
-    weak_skills.sort(key=lambda item: item["percent"])
-
-    count = len(rows)
-    return {
-        "pack": ExamPackSerializer(pack).data,
-        "attempts": count,
-        "average_score": round(score_sum / count) if count else 0,
-        "students_submitted": len(students),
-        "items_total": pack.items.count(),
-        "required_total": pack.items.filter(is_required=True).count(),
-        "results": rows,
-        "item_stats": item_stats,
-        "student_progress": students,
-        "weak_skills": weak_skills[:6],
-    }
-
-
 def cleanup_empty_exam_packs():
     ExamPack.objects.annotate(item_total=Count("items")).filter(item_total=0).delete()
 
@@ -570,59 +230,6 @@ def role_profile(request):
     serializer.is_valid(raise_exception=True)
     profile = serializer.save()
     return response.Response(RoleProfileSerializer(profile).data)
-
-
-@decorators.api_view(["POST"])
-def google_auth(request):
-    payload, error = verify_google_credential(request.data.get("credential", ""))
-    if error:
-        return response.Response(error, status=status.HTTP_400_BAD_REQUEST)
-    identity_code = f"google:{payload['sub']}"
-    email = payload.get("email", "").lower()
-    is_admin = email in ADMIN_EMAILS
-    profile, created = RoleProfile.objects.get_or_create(
-        identity_code=identity_code,
-        defaults={
-            "display_name": payload.get("name") or payload.get("email", ""),
-            "email": email,
-            "active_role": RoleProfile.Role.ADMIN if is_admin else request.data.get("active_role") or RoleProfile.Role.STUDENT,
-        },
-    )
-    if is_admin:
-        all_roles = [choice[0] for choice in RoleProfile.Role.choices]
-        changed_fields = []
-        if profile.active_role != RoleProfile.Role.ADMIN:
-            profile.active_role = RoleProfile.Role.ADMIN
-            changed_fields.append("active_role")
-        if profile.available_roles != all_roles:
-            profile.available_roles = all_roles
-            changed_fields.append("available_roles")
-        if changed_fields:
-            profile.save(update_fields=[*changed_fields, "updated_at"])
-    elif profile.available_roles != [profile.active_role]:
-        profile.available_roles = [profile.active_role]
-        profile.save(update_fields=["available_roles", "updated_at"])
-    if not profile.display_name and (payload.get("name") or payload.get("email")):
-        profile.display_name = payload.get("name") or payload.get("email")
-        profile.save(update_fields=["display_name", "updated_at"])
-    if email and profile.email != email:
-        profile.email = email
-        profile.save(update_fields=["email", "updated_at"])
-    selected_role = request.data.get("active_role")
-    if selected_role and not is_admin and selected_role in {choice[0] for choice in RoleProfile.Role.choices}:
-        profile.active_role = selected_role
-        profile.available_roles = [selected_role]
-        profile.save(update_fields=["active_role", "available_roles", "updated_at"])
-    data = RoleProfileSerializer(profile).data
-    return response.Response(
-        {
-            "profile": data,
-            "is_new": created,
-            "email": payload.get("email", ""),
-            "name": payload.get("name", ""),
-            "picture": payload.get("picture", ""),
-        }
-    )
 
 
 @decorators.api_view(["GET"])
@@ -671,15 +278,24 @@ class TopicViewSet(viewsets.ModelViewSet):
     @decorators.action(detail=True, methods=["get"])
     def levels(self, request, slug=None):
         topic = self.get_object()
+        tests = list(
+            Test.objects.filter(topic=topic)
+            .select_related("subject", "topic")
+            .prefetch_related("testquestion_set__question__skills")
+            .order_by("difficulty", "title")
+        )
+        tests_by_difficulty = {difficulty: [] for difficulty, _ in Question.Difficulty.choices}
+        for test in tests:
+            tests_by_difficulty.setdefault(test.difficulty, []).append(test)
         data = []
         for difficulty, label in Question.Difficulty.choices:
-            tests = Test.objects.filter(topic=topic, difficulty=difficulty)
+            difficulty_tests = tests_by_difficulty[difficulty]
             data.append(
                 {
                     "difficulty": difficulty,
                     "label": label,
-                    "test_count": tests.count(),
-                    "tests": TestSerializer(tests, many=True).data,
+                    "test_count": len(difficulty_tests),
+                    "tests": TestSerializer(difficulty_tests, many=True).data,
                 }
             )
         return response.Response(data)
@@ -687,7 +303,7 @@ class TopicViewSet(viewsets.ModelViewSet):
     @decorators.action(detail=True, methods=["get"])
     def tests(self, request, slug=None):
         topic = self.get_object()
-        queryset = Test.objects.filter(topic=topic).select_related("subject", "topic")
+        queryset = Test.objects.filter(topic=topic).select_related("subject", "topic").prefetch_related("testquestion_set__question__skills")
         status_filter = request.query_params.get("status")
         if not status_filter:
             queryset = queryset.filter(status=Test.PublishStatus.PUBLISHED)
@@ -933,6 +549,8 @@ class TestViewSet(viewsets.ModelViewSet):
     @decorators.action(detail=True, methods=["post"])
     def start(self, request, slug=None):
         test = self.get_object()
+        if test.status != Test.PublishStatus.PUBLISHED:
+            return response.Response({"detail": "Only published tests can be started."}, status=status.HTTP_400_BAD_REQUEST)
         session = TestSession.objects.create(
             test=test,
             student_name=request.data.get("student_name", "").strip(),
@@ -949,11 +567,16 @@ class TestSessionViewSet(viewsets.ModelViewSet):
     @decorators.action(detail=True, methods=["post"])
     def answer(self, request, pk=None):
         session = self.get_object()
+        if session.status != TestSession.Status.IN_PROGRESS:
+            return response.Response({"detail": "Submitted sessions cannot be changed."}, status=status.HTTP_400_BAD_REQUEST)
         serializer = AnswerSerializer(data={**request.data, "session": session.id})
         serializer.is_valid(raise_exception=True)
+        question = serializer.validated_data["question"]
+        if not TestQuestion.objects.filter(test=session.test_id, question_id=question.id).exists():
+            return response.Response({"question": "Question does not belong to this test."}, status=status.HTTP_400_BAD_REQUEST)
         Answer.objects.update_or_create(
             session=session,
-            question=serializer.validated_data["question"],
+            question=question,
             defaults={
                 "value": serializer.validated_data.get("value", ""),
                 "is_flagged": serializer.validated_data.get("is_flagged", False),
@@ -964,6 +587,8 @@ class TestSessionViewSet(viewsets.ModelViewSet):
     @decorators.action(detail=True, methods=["post"])
     def submit(self, request, pk=None):
         session = self.get_object()
+        if session.status != TestSession.Status.IN_PROGRESS:
+            return response.Response({"detail": "Session is already submitted."}, status=status.HTTP_400_BAD_REQUEST)
         session.status = TestSession.Status.SUBMITTED
         session.submitted_at = timezone.now()
         session.save(update_fields=["status", "submitted_at", "updated_at"])
@@ -972,7 +597,7 @@ class TestSessionViewSet(viewsets.ModelViewSet):
 
 class TeacherClassViewSet(viewsets.ModelViewSet):
     queryset = (
-        TeacherClass.objects.prefetch_related("assignments__test", "students")
+        TeacherClass.objects.prefetch_related(Prefetch("assignments", queryset=ASSIGNMENTS_WITH_COUNTS), "students")
         .all()
         .order_by("-created_at")
     )
@@ -1020,7 +645,7 @@ class TeacherClassViewSet(viewsets.ModelViewSet):
     def assignments(self, request, slug=None):
         classroom = self.get_object()
         if request.method == "GET":
-            assignments = classroom.assignments.select_related("test").order_by("-created_at")
+            assignments = ASSIGNMENTS_WITH_COUNTS.filter(classroom=classroom).order_by("-created_at")
             return response.Response(ClassTestAssignmentSerializer(assignments, many=True).data)
 
         denied = require_manage_code(request, classroom.manage_code)
@@ -1040,16 +665,29 @@ class TeacherClassViewSet(viewsets.ModelViewSet):
         rows = request.data.get("assignments", [])
         if not isinstance(rows, list):
             return response.Response({"assignments": "Expected a list."}, status=status.HTTP_400_BAD_REQUEST)
+        test_slugs = {str(row.get("test_slug", "")).strip() for row in rows if isinstance(row, dict) and str(row.get("test_slug", "")).strip()}
+        test_ids = {
+            parsed_id
+            for row in rows
+            if isinstance(row, dict)
+            for parsed_id in [positive_id(row.get("test"))]
+            if parsed_id
+        }
+        test_filter = Q(slug__in=test_slugs)
+        if test_ids:
+            test_filter |= Q(id__in=test_ids)
+        tests = Test.objects.filter(test_filter).only("id", "slug", "title")
+        tests_by_slug = {test.slug: test for test in tests}
+        tests_by_id = {str(test.id): test for test in tests}
         created = []
         skipped = []
         for row in rows:
+            if not isinstance(row, dict):
+                skipped.append({"reason": "Assignment row must be an object."})
+                continue
             test_slug = str(row.get("test_slug", "")).strip()
-            test_id = row.get("test")
-            test = None
-            if test_slug:
-                test = Test.objects.filter(slug=test_slug).first()
-            elif test_id:
-                test = Test.objects.filter(id=test_id).first()
+            test_id = positive_id(row.get("test"))
+            test = tests_by_slug.get(test_slug) if test_slug else tests_by_id.get(str(test_id)) if test_id else None
             if not test:
                 skipped.append({"test_slug": test_slug, "reason": "Test not found."})
                 continue
@@ -1071,6 +709,9 @@ class TeacherClassViewSet(viewsets.ModelViewSet):
             )
             serializer.is_valid(raise_exception=True)
             created.append(serializer.save(classroom=classroom))
+        created_ids = [assignment.id for assignment in created]
+        created_by_id = {assignment.id: assignment for assignment in ASSIGNMENTS_WITH_COUNTS.filter(id__in=created_ids)}
+        created = [created_by_id[assignment.id] for assignment in created if assignment.id in created_by_id]
         return response.Response(
             {
                 "created": ClassTestAssignmentSerializer(created, many=True).data,
@@ -1082,7 +723,7 @@ class TeacherClassViewSet(viewsets.ModelViewSet):
     @decorators.action(detail=True, methods=["get", "patch", "delete"], url_path=r"assignments/(?P<assignment_id>[^/.]+)")
     def assignment_detail(self, request, slug=None, assignment_id=None):
         classroom = self.get_object()
-        assignment = ClassTestAssignment.objects.select_related("test").get(id=assignment_id, classroom=classroom)
+        assignment = ASSIGNMENTS_WITH_COUNTS.get(id=assignment_id, classroom=classroom)
         if request.method == "GET":
             return response.Response(ClassTestAssignmentSerializer(assignment).data)
 
@@ -1113,6 +754,8 @@ class TeacherClassViewSet(viewsets.ModelViewSet):
             return response.Response({"detail": "Assignment is not open yet."}, status=status.HTTP_400_BAD_REQUEST)
         if assignment.closes_at and assignment.closes_at < now:
             return response.Response({"detail": "Assignment is closed."}, status=status.HTTP_400_BAD_REQUEST)
+        if assignment.test.status != Test.PublishStatus.PUBLISHED:
+            return response.Response({"detail": "Only published tests can be started."}, status=status.HTTP_400_BAD_REQUEST)
         student_name = request.data.get("student_name", "").strip()
         join_code = request.data.get("join_code", "")
         if classroom.visibility == TeacherClass.Visibility.PRIVATE and join_code != classroom.join_code:
@@ -1213,7 +856,7 @@ class SchoolViewSet(viewsets.ModelViewSet):
         school = self.get_object()
         if request.method == "GET":
             class_ids = school.teachers.filter(is_active=True).values_list("classes", flat=True)
-            classes = TeacherClass.objects.filter(id__in=class_ids).prefetch_related("assignments", "students").order_by("-created_at")
+            classes = TeacherClass.objects.filter(id__in=class_ids).prefetch_related(Prefetch("assignments", queryset=ASSIGNMENTS_WITH_COUNTS), "students").order_by("-created_at")
             return response.Response(TeacherClassSerializer(classes, many=True).data)
 
         denied = require_manage_code(request, school.manage_code)
@@ -1313,7 +956,7 @@ class SchoolViewSet(viewsets.ModelViewSet):
 
 
 class ExamPackViewSet(viewsets.ModelViewSet):
-    queryset = ExamPack.objects.prefetch_related("items__test").all().order_by("-created_at")
+    queryset = ExamPack.objects.prefetch_related(Prefetch("items", queryset=PACK_ITEMS_WITH_COUNTS)).all().order_by("-created_at")
     serializer_class = ExamPackSerializer
     lookup_field = "slug"
 
@@ -1356,7 +999,8 @@ class ExamPackViewSet(viewsets.ModelViewSet):
     def items(self, request, slug=None):
         pack = self.get_object()
         if request.method == "GET":
-            return response.Response(ExamPackItemSerializer(pack.items.select_related("test"), many=True).data)
+            items = PACK_ITEMS_WITH_COUNTS.filter(pack=pack).order_by("order", "id")
+            return response.Response(ExamPackItemSerializer(items, many=True).data)
 
         denied = require_manage_code(request, pack.manage_code)
         if denied:
@@ -1377,6 +1021,25 @@ class ExamPackViewSet(viewsets.ModelViewSet):
             return import_error("backend_schema", "items_not_list", "Expected items to be a list.", "items")
         created = []
         skipped = []
+        test_slugs = {
+            str(row.get("test_slug", "")).strip()
+            for row in rows
+            if isinstance(row, dict) and str(row.get("test_slug", "")).strip()
+        }
+        test_ids = {
+            parsed_id
+            for row in rows
+            if isinstance(row, dict)
+            for parsed_id in [positive_id(row.get("test"))]
+            if parsed_id
+        }
+        test_filter = Q(slug__in=test_slugs)
+        if test_ids:
+            test_filter |= Q(id__in=test_ids)
+        tests = Test.objects.filter(test_filter).only("id", "slug", "title")
+        tests_by_slug = {test.slug: test for test in tests}
+        tests_by_id = {str(test.id): test for test in tests}
+        seen_test_ids = set(pack.items.values_list("test_id", flat=True))
         for index, row in enumerate(rows, start=1):
             if not isinstance(row, dict):
                 skipped.append({
@@ -1388,8 +1051,8 @@ class ExamPackViewSet(viewsets.ModelViewSet):
                 })
                 continue
             test_slug = str(row.get("test_slug", "")).strip()
-            test_id = row.get("test")
-            test = Test.objects.filter(slug=test_slug).first() if test_slug else Test.objects.filter(id=test_id).first()
+            test_id = positive_id(row.get("test"))
+            test = tests_by_slug.get(test_slug) if test_slug else tests_by_id.get(str(test_id)) if test_id else None
             if not test:
                 skipped.append({
                     "test_slug": test_slug,
@@ -1399,7 +1062,7 @@ class ExamPackViewSet(viewsets.ModelViewSet):
                     "field": f"items[{index - 1}].test_slug" if test_slug else f"items[{index - 1}].test",
                 })
                 continue
-            if pack.items.filter(test=test).exists() or any(item.test_id == test.id for item in created):
+            if test.id in seen_test_ids:
                 skipped.append({
                     "test_slug": test.slug,
                     "layer": "backend_db",
@@ -1428,6 +1091,7 @@ class ExamPackViewSet(viewsets.ModelViewSet):
                 continue
             try:
                 created.append(serializer.save(pack=pack))
+                seen_test_ids.add(test.id)
             except Exception as exc:
                 skipped.append({
                     "test_slug": test.slug,
@@ -1448,6 +1112,9 @@ class ExamPackViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        created_ids = [item.id for item in created]
+        created_by_id = {item.id: item for item in PACK_ITEMS_WITH_COUNTS.filter(id__in=created_ids)}
+        created = [created_by_id[item.id] for item in created if item.id in created_by_id]
         return response.Response(
             {"created": ExamPackItemSerializer(created, many=True).data, "skipped": skipped},
             status=status.HTTP_201_CREATED,
@@ -1606,7 +1273,7 @@ class ExamPackViewSet(viewsets.ModelViewSet):
     @decorators.action(detail=True, methods=["get", "patch", "delete"], url_path=r"items/(?P<item_id>[^/.]+)")
     def item_detail(self, request, slug=None, item_id=None):
         pack = self.get_object()
-        item = ExamPackItem.objects.select_related("test").get(id=item_id, pack=pack)
+        item = PACK_ITEMS_WITH_COUNTS.get(id=item_id, pack=pack)
         if request.method == "GET":
             return response.Response(ExamPackItemSerializer(item).data)
         denied = require_manage_code(request, pack.manage_code)
@@ -1634,6 +1301,8 @@ class ExamPackViewSet(viewsets.ModelViewSet):
         student_name = request.data.get("student_name", "").strip()
         if not pack.is_active:
             return response.Response({"detail": "Exam pack is not active."}, status=status.HTTP_400_BAD_REQUEST)
+        if item.test.status != Test.PublishStatus.PUBLISHED:
+            return response.Response({"detail": "Only published tests can be started."}, status=status.HTTP_400_BAD_REQUEST)
         if pack.visibility == ExamPack.Visibility.PRIVATE and access_code != pack.access_code:
             return response.Response({"detail": "Invalid access code."}, status=status.HTTP_403_FORBIDDEN)
         if not student_name:
@@ -1661,13 +1330,13 @@ class ExamPackViewSet(viewsets.ModelViewSet):
 def profile_summary(request):
     student_code = request.query_params.get("student_code", "").strip()
     sessions = (
-        TestSession.objects.select_related("test", "test__topic", "test__subject")
+        TestSession.objects.filter(status=TestSession.Status.SUBMITTED).select_related("test", "test__topic", "test__subject")
         .prefetch_related("answers", "test__testquestion_set__question")
         .order_by("-created_at")
     )
     if student_code:
         sessions = sessions.filter(student_code=student_code)
-    submitted_sessions = [session for session in sessions if session.status == TestSession.Status.SUBMITTED]
+    submitted_sessions = list(sessions)
 
     recent_tests = []
     topic_totals = {}

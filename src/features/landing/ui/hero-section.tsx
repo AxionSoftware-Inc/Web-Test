@@ -2,12 +2,6 @@ import Link from "next/link";
 
 import { Container } from "@/shared/ui/container";
 
-const stats = [
-  ["Flow", "Test -> Result -> Fix"],
-  ["For", "Students, teachers, schools"],
-  ["Core", "Algebra MVP"],
-];
-
 export function HeroSection() {
   return (
     <section className="border-b border-black/10 bg-surface-soft">
@@ -18,28 +12,16 @@ export function HeroSection() {
             Skill-based test platform.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-black/60">
-            Test ishlang, natijani skill bo‘yicha ko‘ring, xatoni mistake bankda tuzating. Teacher class va exam pack oqimlari ham bitta platformada.
+            Test ishlang, natijani skill bo‘yicha ko‘ring va xatolarni maqsadli mashq bilan tuzating.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link href="/tests" className="rounded-2xl bg-ink px-6 py-3 text-sm font-semibold text-white">
-              Start test
+              Testni boshlash
             </Link>
-            <Link href="/teacher/classes" className="rounded-2xl border border-black/10 bg-white px-6 py-3 text-sm font-semibold">
-              Teacher module
-            </Link>
-            <Link href="/exam-packs" className="rounded-2xl border border-black/10 bg-white px-6 py-3 text-sm font-semibold">
-              Exam packs
+            <Link href="/subjects" className="rounded-2xl border border-black/10 bg-white px-6 py-3 text-sm font-semibold">
+              Fanlarni ko‘rish
             </Link>
           </div>
-        </div>
-
-        <div className="mx-auto mt-10 grid max-w-4xl gap-3 rounded-[28px] border border-black/8 bg-white p-3 shadow-[0_18px_55px_rgba(21,23,19,0.06)] md:grid-cols-3">
-          {stats.map(([label, value]) => (
-            <div key={label} className="rounded-2xl bg-surface-soft p-4 text-center">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/36">{label}</p>
-              <p className="mt-2 text-sm font-semibold">{value}</p>
-            </div>
-          ))}
         </div>
       </Container>
     </section>

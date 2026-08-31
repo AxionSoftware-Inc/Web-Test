@@ -7,7 +7,7 @@ export function MasteryRadialChart({ label, value }: { label: string; value: num
   return (
     <div className="quest-card flex min-h-[96px] items-center gap-4 p-4">
       <div className="relative size-20">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} initialDimension={{ width: 1, height: 1 }}>
           <RadialBarChart data={data} innerRadius="72%" outerRadius="100%" startAngle={90} endAngle={-270}>
             <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
             <RadialBar dataKey="value" cornerRadius={8} background={{ fill: "var(--surface-soft)" }} isAnimationActive animationDuration={900} animationEasing="ease-out" />

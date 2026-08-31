@@ -1,29 +1,24 @@
 import Link from "next/link";
-import { BookOpen, GraduationCap, LayoutDashboard, PackageCheck, TriangleAlert } from "lucide-react";
+import { BookOpen, LayoutDashboard, Target, TriangleAlert } from "lucide-react";
 
 import { Container } from "@/shared/ui/container";
 import { SectionHeading } from "@/shared/ui/section-heading";
 
 const cards = [
   { title: "Tests", href: "/tests", icon: LayoutDashboard, copy: "Published backend tests." },
-  { title: "Mistakes", href: "/mistakes", icon: TriangleAlert, copy: "Wrong answers and weak skills." },
-  { title: "Questions", href: "/questions", icon: BookOpen, copy: "Question bank with LaTeX." },
-  { title: "Teacher", href: "/teacher/classes", icon: GraduationCap, copy: "Classes, assignments, results." },
-  { title: "Classes", href: "/classes", icon: GraduationCap, copy: "Public class catalog." },
-  { title: "Exam packs", href: "/exam-packs", icon: PackageCheck, copy: "Paid or private test packs." },
+  { title: "Subjects", href: "/subjects", icon: BookOpen, copy: "Fan va mavzuni tanlang." },
+  { title: "Practice", href: "/practice", icon: Target, copy: "Zaif skilllarni mashq qiling." },
+  { title: "Mistakes", href: "/student/mistakes", icon: TriangleAlert, copy: "Xatolar va zaif skilllar." },
 ];
 
 export function SubjectMapSection() {
   return (
     <section id="modules" className="bg-white">
       <Container className="py-12">
-        <div className="mb-7 flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <SectionHeading eyebrow="Modules" title="Backend bilan ishlaydigan asosiy yo‘llar" />
-          <Link href="/crud" className="rounded-2xl border border-black/10 bg-surface-soft px-5 py-3 text-sm font-semibold">
-            Add test
-          </Link>
+        <div className="mb-7">
+          <SectionHeading eyebrow="Boshlash" title="Kerakli yo‘nalishni tanlang" />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {cards.map((card) => {
             const Icon = card.icon;
             return (

@@ -11,7 +11,7 @@ export function ScoreTrendChart({ rows }: { rows: ChartRow[] }) {
   if (!rows.length) return <EmptyState title="No score trend" />;
   return (
     <div className="quest-card h-[280px] p-4">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} initialDimension={{ width: 1, height: 1 }}>
         <AreaChart data={rows} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
           <defs>
             <linearGradient id="scoreTrendFill" x1="0" y1="0" x2="0" y2="1">

@@ -6,7 +6,6 @@ import { useMemo, useState } from "react";
 
 import { TopicBreakdownChart } from "@/components/questlab/charts/topic-breakdown-chart";
 import { EmptyState } from "@/components/questlab/feedback/empty-state";
-import { PageHeader } from "@/components/questlab/layout/page-header";
 import { QuestPage } from "@/components/questlab/layout/quest-page";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -48,7 +47,6 @@ export function TeacherStudentsPage({ classes, results, rosters = [] }: { classe
     return [...progressRows, ...rosterRows];
   }, [classes, results, rosters]);
   const filtered = students.filter((student) => `${student.student_name} ${student.student_code} ${student.class_name}`.toLowerCase().includes(query.toLowerCase()));
-  const average = students.length ? Math.round(students.reduce((sum, item) => sum + item.average_score, 0) / students.length) : 0;
   const studentRows = [...students].sort((a, b) => a.average_score - b.average_score).slice(0, 8).map((student) => ({
     label: student.student_name,
     value: student.average_score,
@@ -93,14 +91,5 @@ export function TeacherStudentsPage({ classes, results, rosters = [] }: { classe
         </aside>
       </div>
     </QuestPage>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: string | number }) {
-  return (
-    <Card className="quest-stat-card flex items-center justify-between gap-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-subtle">{label}</p>
-      <p className="text-xl font-semibold">{value}</p>
-    </Card>
   );
 }

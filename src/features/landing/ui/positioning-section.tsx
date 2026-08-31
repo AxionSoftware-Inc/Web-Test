@@ -22,7 +22,7 @@ export function PositioningSection() {
             <p className="mt-4 text-sm leading-6 text-white/64">
               Har testdan keyin user nimani bilishi, nimani bilmasligi va keyin qaysi mashqni ishlashi kerakligi ko‘rinadi.
             </p>
-            <Link href="/mistakes" className="mt-6 inline-block rounded-2xl bg-accent px-5 py-3 text-sm font-semibold text-ink">
+            <Link href="/student/mistakes" className="mt-6 inline-block rounded-2xl bg-accent px-5 py-3 text-sm font-semibold text-ink">
               Open diagnosis
             </Link>
           </div>

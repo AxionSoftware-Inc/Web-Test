@@ -13,7 +13,6 @@ from learning.views import (
     TestViewSet,
     TopicViewSet,
     mistakes_summary,
-    google_auth,
     profile_summary,
     role_profile,
     role_profile_search,
@@ -34,7 +33,6 @@ urlpatterns = [
     path("profile/summary/", profile_summary),
     path("profile/role/", role_profile),
     path("profile/role-search/", role_profile_search),
-    path("auth/google/", google_auth),
     path("mistakes/summary/", mistakes_summary),
     *router.urls,
 ]

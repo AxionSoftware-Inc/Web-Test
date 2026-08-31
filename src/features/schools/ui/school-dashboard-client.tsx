@@ -8,6 +8,7 @@ import { WeakTopicBars } from "@/components/questlab/charts/weak-topic-bars";
 import type { ApiRoleProfile, ApiSchool, ApiSchoolAnalytics, ApiTeacherClass } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { getSchoolManageCode, saveSchoolManageCode } from "@/shared/model/local-identity";
+import { Container } from "@/shared/ui/container";
 import { Eyebrow, FieldShell, premiumInputClass } from "@/shared/ui/premium-shell";
 
 function slugify(value: string) {
@@ -124,8 +125,8 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
   }
 
   return (
-    <main className="min-h-screen bg-background text-ink">
-      <div className="mx-auto max-w-7xl p-4 lg:p-6">
+    <main className="quest-page">
+      <Container>
         <div className="grid gap-4 xl:grid-cols-[320px_1fr]">
           <aside className="grid gap-4">
             <Panel>
@@ -226,13 +227,13 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
           </section>
         </div>
         {notice ? <p className="mt-4 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black/62">{notice}</p> : null}
-      </div>
+      </Container>
     </main>
   );
 }
 
 function Panel({ children }: { children: React.ReactNode }) {
-  return <section className="rounded-[24px] border border-black/8 bg-white/82 p-5 shadow-[0_18px_55px_rgba(21,23,19,0.06)]">{children}</section>;
+  return <section className="quest-panel p-5">{children}</section>;
 }
 
 function Input({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {

@@ -20,7 +20,7 @@ export default async function Page() {
           <SectionHeader title="Authoring workflow" />
           <div className="mt-4 quest-card-grid-3">
             <ActionCard title="Create questions" copy="Add question body, answer options, solution and skills." href="/crud" action="Open editor" />
-            <ActionCard title="Review drafts" copy="Check incomplete tests before assigning them to a class." href="/teacher/add-test" action="Review" />
+            <ActionCard title="Review drafts" copy="Check incomplete tests before assigning them to a class." href="/teacher/tests" action="Review" />
             <ActionCard title="Assign to class" copy="Open a live session or homework after publishing." href="/teacher/classes" action="Assign" />
           </div>
         </Card>

@@ -17,6 +17,7 @@
   --color-brand-hover: var(--brand-hover);
   --color-brand-soft: var(--brand-soft);
   --color-brand-ring: var(--brand-ring);
+  --color-accent: var(--accent);
 
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
@@ -81,6 +82,7 @@
   --brand-hover: #1f574b;
   --brand-soft: #edf7f3;
   --brand-ring: rgba(39, 106, 91, 0.22);
+  --accent: #8fd6bd;
 
   /* Status colors */
   --success: #276a5b;
@@ -137,11 +139,11 @@
   --shadow-float: 0 18px 44px rgba(21, 23, 19, 0.12);
 
   /* Desktop/laptop layout */
-  --page-max-reading: 1920px;
-  --page-max: 1920px;
-  --page-max-wide: 1920px;
-  --page-max-table: 1920px;
-  --page-max-test: 1920px;
+  --page-max-reading: 1200px;
+  --page-max: 1440px;
+  --page-max-wide: 1440px;
+  --page-max-table: 1440px;
+  --page-max-test: 1280px;
 
   --sidebar-width: 264px;
   --topbar-height: 64px;
@@ -188,6 +190,13 @@ body {
   color: var(--foreground);
 }
 
+.quest-header-container {
+  width: 100%;
+  max-width: var(--page-max);
+  margin-inline: auto;
+  padding: 12px var(--page-x);
+}
+
 .quest-container {
   width: 100%;
   max-width: var(--page-max);
@@ -224,6 +233,7 @@ body {
 }
 
 @media (min-width: 1536px) {
+  .quest-header-container,
   .quest-container-reading,
   .quest-container,
   .quest-container-wide,
@@ -235,6 +245,10 @@ body {
 
 /* Mobile fallback only, not main design target */
 @media (max-width: 767px) {
+  .quest-header-container {
+    padding: 10px 12px;
+  }
+
   .quest-container-reading,
   .quest-container,
   .quest-container-wide,

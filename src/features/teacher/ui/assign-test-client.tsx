@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { PageHeader } from "@/components/questlab/layout/page-header";
 import { QuestPage } from "@/components/questlab/layout/quest-page";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";

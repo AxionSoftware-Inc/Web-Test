@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 
-import { GoogleLoginClient } from "@/features/auth/ui/google-login-client";
+import { LoginClient } from "@/features/auth/ui/login-client";
 
 export const metadata: Metadata = {
   title: "Login | QuestLab",
 };
 
 export default function Page() {
-  return <GoogleLoginClient />;
+  return <LoginClient mode="login" />;
 }

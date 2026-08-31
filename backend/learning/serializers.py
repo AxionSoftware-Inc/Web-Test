@@ -230,7 +230,11 @@ class ClassTestAssignmentSerializer(serializers.ModelSerializer):
     test_title = serializers.CharField(source="test.title", read_only=True)
     test_slug = serializers.CharField(source="test.slug", read_only=True)
     difficulty = serializers.CharField(source="test.difficulty", read_only=True)
-    question_count = serializers.IntegerField(source="test.questions.count", read_only=True)
+    question_count = serializers.SerializerMethodField()
+
+    def get_question_count(self, obj):
+        annotated_count = getattr(obj, "question_count", None)
+        return annotated_count if annotated_count is not None else obj.test.questions.count()
 
     class Meta:
         model = ClassTestAssignment
@@ -333,7 +337,11 @@ class ExamPackItemSerializer(serializers.ModelSerializer):
     test_title = serializers.CharField(source="test.title", read_only=True)
     test_slug = serializers.CharField(source="test.slug", read_only=True)
     difficulty = serializers.CharField(source="test.difficulty", read_only=True)
-    question_count = serializers.IntegerField(source="test.questions.count", read_only=True)
+    question_count = serializers.SerializerMethodField()
+
+    def get_question_count(self, obj):
+        annotated_count = getattr(obj, "question_count", None)
+        return annotated_count if annotated_count is not None else obj.test.questions.count()
 
     class Meta:
         model = ExamPackItem

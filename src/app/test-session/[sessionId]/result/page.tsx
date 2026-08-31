@@ -38,11 +38,11 @@ export default async function Page({ params }: PageProps) {
             <div className="rounded-md bg-danger-soft p-4"><p className="text-sm text-black/55">Skipped</p><p className="mt-1 text-2xl font-semibold">{questions.length - answered}</p></div>
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link href={`/results/${sessionId}`} className="rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-white">
-              Open detailed result
+            <Link href="/tests" className="rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-white">
+              Back to tests
             </Link>
-            <Link href={`/results/${sessionId}/analysis`} className="rounded-2xl border border-black/10 bg-white px-5 py-3 text-sm font-semibold">
-              Mistake analysis
+            <Link href={`/test-session/${sessionId}/review`} className="rounded-2xl border border-black/10 bg-white px-5 py-3 text-sm font-semibold">
+              Review answers
             </Link>
           </div>
         </div>

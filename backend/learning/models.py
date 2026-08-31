@@ -112,6 +112,12 @@ class Test(TimestampedModel):
     manage_key = models.CharField(max_length=80, blank=True)
     questions = models.ManyToManyField(Question, through="TestQuestion", related_name="tests")
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["topic", "difficulty"], name="test_topic_diff_idx"),
+            models.Index(fields=["status", "created_at"], name="test_status_created_idx"),
+        ]
+
     def __str__(self) -> str:
         return self.title
 
@@ -205,6 +211,11 @@ class ClassTestAssignment(TimestampedModel):
     grading_policy = models.CharField(max_length=24, choices=GradingPolicy.choices, default=GradingPolicy.BEST)
     is_active = models.BooleanField(default=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["classroom", "-created_at"], name="assignment_class_created_idx"),
+        ]
+
     def __str__(self) -> str:
         return self.title
 
@@ -238,6 +249,9 @@ class ExamPackItem(TimestampedModel):
     class Meta:
         ordering = ["order", "id"]
         unique_together = ("pack", "test")
+        indexes = [
+            models.Index(fields=["pack", "order"], name="pack_item_order_idx"),
+        ]
 
     def __str__(self) -> str:
         return self.title
@@ -251,6 +265,9 @@ class TestQuestion(models.Model):
     class Meta:
         unique_together = ("test", "question")
         ordering = ["order", "id"]
+        indexes = [
+            models.Index(fields=["test", "order"], name="test_question_order_idx"),
+        ]
 
 
 class TestSession(TimestampedModel):
@@ -268,6 +285,13 @@ class TestSession(TimestampedModel):
     student_code = models.CharField(max_length=80, blank=True)
     status = models.CharField(max_length=32, choices=Status.choices, default=Status.IN_PROGRESS)
     submitted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["classroom", "status", "-submitted_at"], name="session_class_status_idx"),
+            models.Index(fields=["exam_pack", "status", "-submitted_at"], name="session_pack_status_idx"),
+            models.Index(fields=["student_code", "status"], name="session_student_status_idx"),
+        ]
 
     def __str__(self) -> str:
         return f"{self.test.title} / {self.status}"

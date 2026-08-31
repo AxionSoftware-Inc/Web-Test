@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
-import { getSessionTestOrThrow, getTestQuestions } from "@/features/test-engine/model/test-engine-content";
 import { PrimaryLink, SecondaryLink, StatCard, TestShell } from "@/features/test-engine/ui/test-shell";
+import { questApi } from "@/shared/api/questlab-api";
 
 type PageProps = {
   params: Promise<{ sessionId: string }>;
@@ -13,8 +13,11 @@ export const metadata: Metadata = {
 
 export default async function Page({ params }: PageProps) {
   const { sessionId } = await params;
-  const test = getSessionTestOrThrow(sessionId);
-  const questions = getTestQuestions(test.id);
+  const session = await questApi.session(sessionId);
+  const test = await questApi.test(session.test_slug);
+  const questions = test.test_questions.map((item) => item.question);
+  const answered = session.answers.filter((answer) => Boolean(answer.value)).length;
+  const flagged = session.answers.filter((answer) => answer.is_flagged).length;
 
   return (
     <TestShell
@@ -29,14 +32,14 @@ export default async function Page({ params }: PageProps) {
       }
     >
       <section className="grid gap-4 py-8 md:grid-cols-3">
-        <StatCard label="Timer" value={`${test.estimatedMinutes}:00`} />
-        <StatCard label="Progress" value={`0/${questions.length}`} />
-        <StatCard label="Flags" value="0" />
+        <StatCard label="Time limit" value={`${test.estimated_minutes} min`} />
+        <StatCard label="Progress" value={`${answered}/${questions.length}`} />
+        <StatCard label="Flags" value={String(flagged)} />
       </section>
       <section className="rounded-lg border border-black/10 bg-white p-5">
         <h2 className="text-xl font-semibold">Session workspace</h2>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-black/60">
-          Answers, flags and visited questions are saved in a fake frontend backend using localStorage. This keeps the MVP usable before adding a real database.
+          Javoblar, flaglar va progress DRF backend orqali saqlanadi. Istalgan savolga qaytib, yakuniy yuborishdan oldin javoblarni tekshirishingiz mumkin.
         </p>
       </section>
     </TestShell>

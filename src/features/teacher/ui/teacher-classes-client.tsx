@@ -4,7 +4,6 @@ import { Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-import { PageHeader } from "@/components/questlab/layout/page-header";
 import { QuestPage } from "@/components/questlab/layout/quest-page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -117,14 +116,5 @@ export function TeacherClassesClient({ initialClasses }: { initialClasses: ApiTe
         </Card>
       </div>
     </QuestPage>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: string | number }) {
-  return (
-    <Card className="quest-stat-card">
-      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-subtle">{label}</p>
-      <p className="mt-2 text-2xl font-semibold">{value}</p>
-    </Card>
   );
 }

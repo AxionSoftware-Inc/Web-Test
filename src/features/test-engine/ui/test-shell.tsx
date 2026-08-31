@@ -17,21 +17,10 @@ export function TestShell({
   actions?: ReactNode;
 }) {
   return (
-    <main className="min-h-screen bg-background text-ink">
+    <main className="quest-page">
       <Container className="py-8">
         <header className="border-b border-black/10 pb-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <Link href="/" className="text-sm font-semibold text-brand">
-              QuestLab
-            </Link>
-            <nav className="flex flex-wrap items-center gap-3 text-sm font-semibold text-black/55">
-              <Link href="/tests">Tests</Link>
-              <Link href="/subjects">Subjects</Link>
-              <Link href="/practice">Practice</Link>
-              <Link href="/results">Results</Link>
-            </nav>
-          </div>
-          <p className="mt-8 text-sm font-semibold uppercase tracking-[0.14em] text-brand">
+          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-brand">
             {eyebrow}
           </p>
           <div className="mt-3 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">

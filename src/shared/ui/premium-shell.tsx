@@ -3,19 +3,11 @@ import type { ReactNode } from "react";
 import { cn } from "@/shared/lib/cn";
 
 export function PremiumPage({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <main className={cn("min-h-screen bg-background px-5 py-8 text-ink sm:px-8 lg:px-10", className)}>
-      <div className="mx-auto max-w-7xl">{children}</div>
-    </main>
-  );
+  return <main className={cn("quest-page", className)}><div className="quest-container">{children}</div></main>;
 }
 
 export function PremiumPanel({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <section className={cn("rounded-[28px] border border-black/8 bg-white p-5 shadow-[0_18px_55px_rgba(21,23,19,0.07)]", className)}>
-      {children}
-    </section>
-  );
+  return <section className={cn("quest-panel p-5", className)}>{children}</section>;
 }
 
 export function Eyebrow({ children }: { children: ReactNode }) {
