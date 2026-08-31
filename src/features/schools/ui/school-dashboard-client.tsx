@@ -76,7 +76,7 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
         accent_color: "var(--accent)",
         student_invite_code: `ST-${Date.now().toString().slice(-4)}`,
       });
-      saveSchoolManageCode(school.slug, school.manage_code);
+      saveSchoolManageCode(school.slug, manageCode);
       setSchools((items) => [school, ...items]);
       setActiveSlug(school.slug);
       setNotice("School yaratildi.");

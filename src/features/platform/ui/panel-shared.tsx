@@ -222,7 +222,7 @@ export function AdminSchoolCard({ school }: { school: ApiSchool }) {
       <p className="mt-3 line-clamp-2 text-sm leading-6 text-muted">{school.description || school.portal_domain || school.portal_subdomain || "No description"}</p>
       <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
         <MiniInfo label="Teachers" value={school.teacher_count} />
-        <MiniInfo label="Invite" value={school.student_invite_code || "Not set"} />
+        <MiniInfo label="Invite" value={school.student_invite_code ? "set" : "Not set"} />
       </div>
     </Link>
   );

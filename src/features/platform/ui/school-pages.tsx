@@ -83,7 +83,7 @@ export async function SchoolHomePage() {
               <div className="mt-4 grid gap-3">
                 <MiniInfo label="Visibility" value={school.visibility} />
                 <MiniInfo label="Teachers" value={school.teacher_count} />
-                <MiniInfo label="Student invite" value={school.student_invite_code || "Not set"} />
+                <MiniInfo label="Student invite" value={school.student_invite_code ? "set" : "Not set"} />
               </div>
             </Card>
             <Card className="p-5">
@@ -443,7 +443,7 @@ export async function SchoolClassDetailPage({ classId }: { classId: string }) {
         </div>
         <aside className="grid h-fit gap-5 xl:sticky xl:top-24">
           <Card className="p-5"><TeacherSectionHeader title="Weak skills" /><div className="mt-4">{weakRows.length ? <WeakTopicBars rows={weakRows} /> : <QuestEmptyState title="No weak skills yet" />}</div></Card>
-          <Card className="p-5"><TeacherSectionHeader title="Class settings" /><div className="mt-4 grid gap-3"><MiniInfo label="Visibility" value={classroom.visibility} /><MiniInfo label="Join code" value={classroom.join_code || "Not set"} /><MiniInfo label="Manage code" value={classroom.manage_code ? "set" : "missing"} /></div></Card>
+          <Card className="p-5"><TeacherSectionHeader title="Class settings" /><div className="mt-4 grid gap-3"><MiniInfo label="Visibility" value={classroom.visibility} /><MiniInfo label="Join code" value={classroom.join_code ? "set" : "Not set"} /><MiniInfo label="Manage code" value={classroom.manage_code ? "set" : "missing"} /></div></Card>
         </aside>
       </div>
     </QuestPage>

@@ -21,23 +21,8 @@ import { Card } from "@/components/ui/card";
 import { StudentShell } from "@/components/student/student-ui";
 import type { ApiExamPack, ApiMistakesSummary, ApiProfileSummary, ApiSession, ApiTest } from "@/shared/api/questlab-api";
 
-export function normalize(value: string) {
-  return value.toLowerCase().replace(/\s+/g, "").replace(/[()]/g, "").replace(/\\/g, "");
-}
-
 export function nowMs() {
   return new Date().getTime();
-}
-
-export function scoreSession(session: ApiSession, test: ApiTest) {
-  const answers = new Map(session.answers.map((answer) => [answer.question, answer.value]));
-  const questions = test.test_questions.map((item) => item.question);
-  const correct = questions.filter((question) => normalize(question.answer) === normalize(answers.get(question.id) ?? "")).length;
-  const answered = questions.filter((question) => answers.get(question.id)).length;
-  const wrong = Math.max(0, answered - correct);
-  const skipped = Math.max(0, questions.length - answered);
-  const score = questions.length ? Math.round((correct / questions.length) * 100) : 0;
-  return { correct, wrong, skipped, answered, total: questions.length, score };
 }
 
 export function testSkills(test: ApiTest) {

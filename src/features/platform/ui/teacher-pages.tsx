@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 
 import type { ApiClassResults } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
-import { normalizeAnswer } from "@/features/assessment/lib/assessment-scoring";
 import { LatexText } from "@/shared/ui/latex-text";
 import { TopicBreakdownChart } from "@/components/questlab/charts/topic-breakdown-chart";
 import { WeakTopicBars } from "@/components/questlab/charts/weak-topic-bars";
@@ -162,22 +161,15 @@ export async function TeacherResultsPage() {
 }
 
 export async function ResultDetailPage({ resultId, role = "teacher" }: { resultId: string; role?: "teacher" | "school" }) {
-  const [session, tests, classes] = await Promise.all([
+  const [session, result, classes] = await Promise.all([
     questApi.session(resultId),
-    questApi.tests(),
+    questApi.sessionResult(resultId),
     questApi.classes(),
   ]);
   const scopedSession = session as typeof session & { classroom?: number | null };
-  const test = tests.find((item) => item.id === session.test);
-  if (!test) notFound();
   const classroom = classes.find((item) => item.id === scopedSession.classroom);
   const workspaceBase = role === "school" ? "/school" : "/teacher";
-  const answerMap = new Map(session.answers.map((answer) => [answer.question, answer.value]));
-  const rows = test.test_questions.map((item) => {
-    const answer = answerMap.get(item.question.id) ?? "";
-    const correct = normalizeAnswer(answer) === normalizeAnswer(item.question.answer);
-    return { ...item, answer, correct };
-  });
+  const rows = result.questions.map((item) => ({ ...item, answer: item.student_answer, correct: item.is_correct }));
   const weakSkills = rows
     .filter((row) => !row.correct)
     .flatMap((row) => row.question.skill_titles.length ? row.question.skill_titles : ["general"])

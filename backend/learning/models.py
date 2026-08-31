@@ -285,6 +285,7 @@ class TestSession(TimestampedModel):
     student_code = models.CharField(max_length=80, blank=True)
     status = models.CharField(max_length=32, choices=Status.choices, default=Status.IN_PROGRESS)
     submitted_at = models.DateTimeField(null=True, blank=True)
+    result_snapshot = models.JSONField(null=True, blank=True)
 
     class Meta:
         indexes = [
@@ -305,3 +306,18 @@ class Answer(TimestampedModel):
 
     class Meta:
         unique_together = ("session", "question")
+
+
+class AuditEvent(TimestampedModel):
+    action = models.CharField(max_length=80)
+    resource_type = models.CharField(max_length=80)
+    resource_id = models.CharField(max_length=80)
+    identity_code = models.CharField(max_length=120, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["resource_type", "resource_id", "-created_at"], name="audit_resource_idx"),
+            models.Index(fields=["action", "-created_at"], name="audit_action_idx"),
+        ]

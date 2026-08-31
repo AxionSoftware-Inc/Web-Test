@@ -16,3 +16,50 @@ a {
 a:hover {
   opacity: 0.82;
 }
+
+.landing-grid {
+  background-image: linear-gradient(rgba(39, 106, 91, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(39, 106, 91, 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 78%);
+}
+
+.landing-orb {
+  animation: landing-float 10s ease-in-out infinite;
+}
+
+.landing-preview {
+  animation: landing-rise 700ms ease-out both;
+}
+
+@keyframes landing-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-18px, 12px, 0);
+  }
+}
+
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .landing-orb,
+  .landing-preview {
+    animation: none;
+  }
+}

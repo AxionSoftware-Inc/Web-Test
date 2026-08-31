@@ -1,4 +1,5 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000/api";
+export { apiDelete, apiGet, apiPatch, apiPost } from "./client";
+import { apiDelete, apiGet, apiPatch, apiPost } from "./client";
 
 export type ApiSubject = {
   id: number;
@@ -36,6 +37,11 @@ export type ApiQuestion = {
   difficulty: "beginner" | "intermediate" | "advanced";
   prompt: string;
   options: string[];
+  answer?: string;
+  explanation?: string;
+};
+
+export type ApiQuestionSolution = ApiQuestion & {
   answer: string;
   explanation: string;
 };
@@ -59,6 +65,10 @@ export type ApiTest = {
   status: "draft" | "published";
   creator_name: string;
   test_questions: ApiTestQuestion[];
+};
+
+export type ApiResultTest = Omit<ApiTest, "test_questions"> & {
+  test_questions: Array<{ order: number; question: ApiQuestionSolution }>;
 };
 
 export type ApiLevel = {
@@ -145,6 +155,27 @@ export type ApiSession = {
   created_at: string;
 };
 
+export type ApiSessionResult = {
+  session_id: number;
+  scoring_version: number;
+  test: ApiResultTest;
+  summary: {
+    correct: number;
+    wrong: number;
+    skipped: number;
+    answered: number;
+    total: number;
+    score: number;
+  };
+  questions: Array<{
+    order: number;
+    question_id: number;
+    question: ApiQuestionSolution;
+    student_answer: string;
+    is_correct: boolean;
+  }>;
+};
+
 export type ApiProfileSummary = {
   name: string;
   level: string;
@@ -177,8 +208,8 @@ export type ApiTeacherClass = {
   school_slug: string;
   teacher_name: string;
   visibility: "public" | "private";
-  join_code: string;
-  manage_code: string;
+  join_code?: string;
+  manage_code?: string;
   description: string;
   student_count: number;
   assignment_count: number;
@@ -286,8 +317,8 @@ export type ApiExamPack = {
   description: string;
   exam_type: string;
   visibility: "public" | "private";
-  access_code: string;
-  manage_code: string;
+  access_code?: string;
+  manage_code?: string;
   price_label: string;
   is_active: boolean;
   item_count: number;
@@ -352,7 +383,7 @@ export type ApiSchool = {
   name: string;
   slug: string;
   owner_name: string;
-  manage_code: string;
+  manage_code?: string;
   visibility: "public" | "private";
   description: string;
   portal_subdomain: string;
@@ -360,7 +391,7 @@ export type ApiSchool = {
   logo_url: string;
   primary_color: string;
   accent_color: string;
-  student_invite_code: string;
+  student_invite_code?: string;
   teacher_count: number;
   teachers: ApiSchoolTeacher[];
   created_at: string;
@@ -424,70 +455,6 @@ export type ApiRoleProfile = {
   updated_at: string;
 };
 
-export async function apiGet<T>(path: string): Promise<T> {
-  try {
-    const res = await fetch(`${API_BASE_URL}${path}`, { cache: "no-store" });
-    if (!res.ok) throw new Error(`API GET ${path} failed: ${res.status}`);
-    return res.json() as Promise<T>;
-  } catch (error) {
-    throw new Error(error instanceof Error ? error.message : "Backend server is unavailable.");
-  }
-}
-
-export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: body ? JSON.stringify(body) : undefined,
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error(await apiErrorMessage(res, `API POST ${path} failed: ${res.status}`));
-  return res.json() as Promise<T>;
-}
-
-export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error(await apiErrorMessage(res, `API PATCH ${path} failed: ${res.status}`));
-  return res.json() as Promise<T>;
-}
-
-export async function apiDelete<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, { method: "DELETE", cache: "no-store" });
-  if (!res.ok) throw new Error(await apiErrorMessage(res, `API DELETE ${path} failed: ${res.status}`));
-  if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
-}
-
-async function apiErrorMessage(res: Response, fallback: string) {
-  try {
-    const payload = await res.json();
-    if (payload?.detail) return String(payload.detail);
-    if (Array.isArray(payload?.skipped) && payload.skipped.length) {
-      const reasons = payload.skipped
-        .slice(0, 3)
-        .map((item: { title?: string; test_slug?: string; reason?: string; layer?: string; code?: string }) => {
-          const prefix = [item.layer, item.code].filter(Boolean).join("/");
-          return `${item.title || item.test_slug || "Item"}${prefix ? ` [${prefix}]` : ""}: ${item.reason || "unknown reason"}`;
-        })
-        .join(" | ");
-      return `${fallback}. ${reasons}`;
-    }
-    if (payload && typeof payload === "object") {
-      return Object.entries(payload)
-        .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : String(value)}`)
-        .join(" | ");
-    }
-  } catch {
-    return fallback;
-  }
-  return fallback;
-}
-
 export const questApi = {
   subjects: () => apiGet<ApiSubject[]>("/subjects/"),
   topics: (subjectSlug?: string) => apiGet<ApiTopic[]>(`/topics/${subjectSlug ? `?subject=${subjectSlug}` : ""}`),
@@ -504,7 +471,9 @@ export const questApi = {
   tests: () => apiGet<ApiTest[]>("/tests/"),
   questions: () => apiGet<ApiQuestion[]>("/questions/"),
   question: (id: string) => apiGet<ApiQuestion>(`/questions/${id}/`),
+  questionSolution: (id: string) => apiGet<ApiQuestionSolution>(`/questions/${id}/solution/`),
   test: (testSlug: string) => apiGet<ApiTest>(`/tests/${testSlug}/`),
+  testManage: (testSlug: string, manageKey: string) => apiGet<ApiResultTest>(`/tests/${testSlug}/manage/?manage_key=${encodeURIComponent(manageKey)}`),
   createTest: (payload: CreateTestPayload) => apiPost<ApiTest>("/tests/", payload),
   importTestPack: (payload: { source: StrictPackImportSource; creator_name?: string; creator_code?: string; manage_key?: string; pack_manage_code?: string }) =>
     apiPost<ApiPackImportResult>("/tests/import-pack/", payload),
@@ -525,6 +494,7 @@ export const questApi = {
   answer: (sessionId: string, payload: { question: number; value: string; is_flagged?: boolean }) =>
     apiPost<ApiSession>(`/sessions/${sessionId}/answer/`, payload),
   submit: (sessionId: string) => apiPost<ApiSession>(`/sessions/${sessionId}/submit/`),
+  sessionResult: (sessionId: string) => apiGet<ApiSessionResult>(`/sessions/${sessionId}/result/`),
   roleProfile: (identityCode: string) => apiGet<ApiRoleProfile>(`/profile/role/?identity_code=${encodeURIComponent(identityCode)}`),
   searchRoleProfiles: (query: string, role?: ApiRoleProfile["active_role"]) => apiGet<ApiRoleProfile[]>(`/profile/role-search/?q=${encodeURIComponent(query)}${role ? `&role=${role}` : ""}`),
   updateRoleProfile: (identityCode: string, payload: { active_role?: ApiRoleProfile["active_role"]; display_name?: string; phone?: string }) =>

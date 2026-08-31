@@ -7,14 +7,15 @@ import { Card } from "@/components/ui/card";
 import { MetricTile, Section, StudentShell } from "@/components/student/student-ui";
 import { apiSessionToAnswerSnapshots, buildMasteryReport, readRuntimeQuestionTimes, readRuntimeReport } from "@/features/mastery-engine/model";
 import type { MasteryReport } from "@/features/mastery-engine/model";
-import type { ApiSession, ApiTest } from "@/shared/api/questlab-api";
+import type { ApiSession, ApiSessionResult, ApiTest } from "@/shared/api/questlab-api";
 import { getStudentCode } from "@/shared/model/local-identity";
-import { formatDate, scoreSession } from "@/features/student/ui/student-dashboard";
+import { formatDate } from "@/features/student/ui/student-dashboard";
 import { OverallMasteryAnalytics, QuestionSignalScatter, RecommendationCard, SkillGapMatrix, WeakTopicsBarChart, WrongQuestionList } from "@/features/student/ui/student-diagnostics";
 
-export function StudentResult({ session, test }: { session: ApiSession; test: ApiTest }) {
-  const stats = scoreSession(session, test);
-  const answerSnapshots = apiSessionToAnswerSnapshots({ session, test, studentId: getStudentCode(), timeSpentByQuestionId: readRuntimeQuestionTimes(session.id) });
+export function StudentResult({ session, test, result }: { session: ApiSession; test: ApiTest; result: ApiSessionResult }) {
+  const stats = result.summary;
+  const evaluationTest = result.test;
+  const answerSnapshots = apiSessionToAnswerSnapshots({ session, test: evaluationTest, studentId: getStudentCode(), timeSpentByQuestionId: readRuntimeQuestionTimes(session.id) });
   const fallbackReport = buildMasteryReport(getStudentCode(), answerSnapshots);
   const report = readRuntimeReport<MasteryReport>(session.id) ?? fallbackReport;
   const subjectTopics = report.topics.filter((topic) => topic.subject === test.subject_slug || topic.topicSlug === test.topic_slug);

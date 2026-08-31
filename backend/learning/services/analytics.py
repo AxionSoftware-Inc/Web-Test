@@ -2,6 +2,7 @@ from django.db.models import Count, Prefetch, prefetch_related_objects
 
 from learning.models import ClassTestAssignment, ExamPackItem, TestQuestion, TestSession
 from learning.serializers import ExamPackSerializer, TeacherClassSerializer
+from learning.services.scoring import is_answer_correct, score_session
 
 
 ANALYTICS_TEST_QUESTIONS = Prefetch(
@@ -25,26 +26,6 @@ ANALYTICS_PACK_ITEMS = Prefetch(
         question_count=Count("test__questions", distinct=True),
     ),
 )
-
-
-def _session_questions(session):
-    items = getattr(session.test, "analytics_test_questions", None)
-    if items is None:
-        items = (
-            session.test.testquestion_set.select_related("question")
-            .prefetch_related("question__skills")
-            .order_by("order", "id")
-        )
-    return [item.question for item in items]
-
-
-def score_session(session):
-    questions = _session_questions(session)
-    answer_map = {answer.question_id: answer.value.strip() for answer in session.answers.all()}
-    correct = sum(1 for question in questions if answer_map.get(question.id, "") == question.answer.strip())
-    total = len(questions)
-    score = round((correct / total) * 100) if total else 0
-    return questions, answer_map, correct, total, score
 
 
 def _student_totals_row(student_totals, session, score):
@@ -89,7 +70,7 @@ def _weak_skills(skill_totals):
 
 def _add_skill_totals(skill_totals, questions, answer_map):
     for question in questions:
-        is_correct = answer_map.get(question.id, "") == question.answer.strip()
+        is_correct = is_answer_correct(question, answer_map.get(question.id, ""))
         for skill in question.skills.all():
             data = skill_totals.setdefault(skill.title, {"skill": skill.title, "correct": 0, "total": 0})
             data["correct"] += int(is_correct)

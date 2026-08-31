@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import type { ApiExamPack, ApiExamPackItem, ApiExamPackResults, ApiTest, StrictPackImportSource } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { cn } from "@/shared/lib/cn";
-import { getPackManageCode } from "@/shared/model/local-identity";
+import { getPackAccessCode, getPackManageCode, savePackAccessCode } from "@/shared/model/local-identity";
 import { Eyebrow, FieldShell, premiumInputClass } from "@/shared/ui/premium-shell";
 import { StudentPackClient } from "./student-pack-client";
 
@@ -173,7 +173,7 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
   const [packDescription, setPackDescription] = useState(pack.description);
   const [packExamType, setPackExamType] = useState(pack.exam_type);
   const [packVisibility, setPackVisibility] = useState<ApiExamPack["visibility"]>(pack.visibility);
-  const [packAccessCode, setPackAccessCode] = useState(pack.access_code);
+  const [packAccessCode, setPackAccessCode] = useState(pack.access_code ?? getPackAccessCode(pack.slug));
   const [packPriceLabel, setPackPriceLabel] = useState(pack.price_label);
   const [testId, setTestId] = useState(tests[0]?.id ?? 0);
   const [title, setTitle] = useState(tests[0]?.title ?? "");
@@ -213,8 +213,8 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
         type: item.question.type,
         body: item.question.prompt,
         options: item.question.options.map((text, index) => ({ id: String.fromCharCode(65 + index), text })),
-        answer: { correct: item.question.answer },
-        explanation: item.question.explanation,
+        answer: { correct: item.question.answer ?? "" },
+        explanation: item.question.explanation ?? "",
         skills: item.question.skill_titles.length ? item.question.skill_titles : ["general"],
         difficulty: item.question.difficulty,
       })),
@@ -249,6 +249,7 @@ export function ExamPackWorkspace({ pack, initialItems, results, tests }: { pack
         manage_code: getPackManageCode(currentPack.slug),
       });
       setCurrentPack(updated);
+      if (packAccessCode) savePackAccessCode(currentPack.slug, packAccessCode);
       setNotice("Pack ma'lumotlari saqlandi.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Pack update failed.");

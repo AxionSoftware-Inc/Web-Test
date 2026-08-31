@@ -5,6 +5,6 @@ export const dynamic = "force-dynamic";
 
 export default async function Page({ params }: { params: Promise<{ resultId: string }> }) {
   const session = await questApi.session((await params).resultId);
-  const test = await questApi.test(session.test_slug);
-  return <StudentResult session={session} test={test} />;
+  const result = await questApi.sessionResult(String(session.id));
+  return <StudentResult session={session} test={result.test} result={result} />;
 }

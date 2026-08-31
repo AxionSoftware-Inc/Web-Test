@@ -21,7 +21,7 @@ export function apiSessionToAnswerSnapshots(input: {
   return input.test.test_questions.map((row) => {
     const answer = answerByQuestionId.get(row.question.id);
     const selectedAnswer = answer?.value ?? "";
-    const isCorrect = normalizeAnswer(selectedAnswer) === normalizeAnswer(row.question.answer);
+    const isCorrect = normalizeAnswer(selectedAnswer) === normalizeAnswer(row.question.answer ?? "");
     const difficulty = mapApiDifficulty(row.question.difficulty);
     const timeSpentSeconds = input.timeSpentByQuestionId?.[row.question.id] ?? input.timeSpentByQuestionId?.[String(row.question.id)] ?? estimatedSecondsPerQuestion;
 
@@ -32,7 +32,7 @@ export function apiSessionToAnswerSnapshots(input: {
       testId: String(input.test.id),
       questionId: String(row.question.id),
       selectedAnswer,
-      correctAnswer: row.question.answer,
+      correctAnswer: row.question.answer ?? "",
       isCorrect,
       timeSpentSeconds,
       answeredAt,
@@ -47,7 +47,7 @@ export function apiSessionToAnswerSnapshots(input: {
       prerequisites: defaultPrerequisites(input.test.topic_slug),
       questionTitle: input.test.title,
       questionPreview: row.question.prompt,
-      explanation: row.question.explanation,
+      explanation: row.question.explanation ?? "",
       visibility: input.visibility ?? (session.classroom ? "class" : "personal"),
       classId: input.classId ?? (session.classroom ? String(session.classroom) : undefined),
     } satisfies SessionAnswerSnapshot;

@@ -13,6 +13,7 @@ from learning.views import (
     TestViewSet,
     TopicViewSet,
     mistakes_summary,
+    health_check,
     profile_summary,
     role_profile,
     role_profile_search,
@@ -30,6 +31,7 @@ router.register("exam-packs", ExamPackViewSet)
 router.register("schools", SchoolViewSet)
 
 urlpatterns = [
+    path("health/", health_check),
     path("profile/summary/", profile_summary),
     path("profile/role/", role_profile),
     path("profile/role-search/", role_profile_search),

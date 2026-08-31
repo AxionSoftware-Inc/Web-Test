@@ -126,24 +126,33 @@ export function TestCrudForm({ subjects, topics, tests: initialTests, skills }: 
     }
   }
 
-  function editTest(test: ApiTest) {
-    setEditingSlug(test.slug);
-    setTitle(test.title);
-    setSlug(test.slug);
-    setSubjectId(test.subject);
-    setTopicId(test.topic);
-    setDifficulty(test.difficulty);
-    setStatus(test.status);
-    setMinutes(test.estimated_minutes);
-    setPassingScore(test.passing_score);
-    setQuestions(test.test_questions.map((item) => ({
-      type: item.question.type,
-      prompt: item.question.prompt,
-      options: item.question.options,
-      answer: item.question.answer,
-      explanation: item.question.explanation,
-      skills: item.question.skills,
-    })));
+  async function editTest(test: ApiTest) {
+    setSaving(true);
+    setError("");
+    try {
+      const managedTest = await questApi.testManage(test.slug, getCreatorCode());
+      setEditingSlug(managedTest.slug);
+      setTitle(managedTest.title);
+      setSlug(managedTest.slug);
+      setSubjectId(managedTest.subject);
+      setTopicId(managedTest.topic);
+      setDifficulty(managedTest.difficulty);
+      setStatus(managedTest.status);
+      setMinutes(managedTest.estimated_minutes);
+      setPassingScore(managedTest.passing_score);
+      setQuestions(managedTest.test_questions.map((item) => ({
+        type: item.question.type,
+        prompt: item.question.prompt,
+        options: item.question.options,
+      answer: item.question.answer ?? "",
+      explanation: item.question.explanation ?? "",
+        skills: item.question.skills,
+      })));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Test ma'lumotlarini yuklashda xatolik.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function removeTest(test: ApiTest) {
@@ -405,7 +414,7 @@ export function TestCrudForm({ subjects, topics, tests: initialTests, skills }: 
                   <p className="mt-1 text-sm text-black/50">{test.difficulty} / {test.status} / {test.test_questions.length} questions</p>
                 </div>
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => editTest(test)} className="grid size-10 place-items-center rounded-xl border border-black/10 hover:bg-[#f3f3ec]" aria-label="Edit test">
+                  <button type="button" onClick={() => void editTest(test)} className="grid size-10 place-items-center rounded-xl border border-black/10 hover:bg-[#f3f3ec]" aria-label="Edit test">
                     <Pencil className="size-4" />
                   </button>
                   <button type="button" onClick={() => removeTest(test)} className="grid size-10 place-items-center rounded-xl border border-black/10 text-red-600 hover:bg-red-50" aria-label="Delete test">

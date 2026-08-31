@@ -2,6 +2,7 @@ from django.contrib import admin
 
 from learning.models import (
     Answer,
+    AuditEvent,
     ClassStudent,
     ClassTestAssignment,
     ExamPack,
@@ -61,3 +62,4 @@ admin.site.register(ClassStudent)
 admin.site.register(ClassTestAssignment)
 admin.site.register(ExamPack)
 admin.site.register(ExamPackItem)
+admin.site.register(AuditEvent)

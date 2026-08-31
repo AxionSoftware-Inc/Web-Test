@@ -20,6 +20,11 @@ from learning.models import (
 )
 
 
+class HealthSerializer(serializers.Serializer):
+    status = serializers.CharField()
+    database = serializers.CharField()
+
+
 class SubjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subject
@@ -76,8 +81,34 @@ class QuestionSerializer(serializers.ModelSerializer):
         ]
 
 
+class PublicQuestionSerializer(serializers.ModelSerializer):
+    skill_titles = serializers.StringRelatedField(source="skills", many=True, read_only=True)
+
+    class Meta:
+        model = Question
+        fields = [
+            "id",
+            "subject",
+            "topic",
+            "skills",
+            "skill_titles",
+            "type",
+            "difficulty",
+            "prompt",
+            "options",
+        ]
+
+
 class TestQuestionSerializer(serializers.ModelSerializer):
     question = QuestionSerializer(read_only=True)
+
+    class Meta:
+        model = TestQuestion
+        fields = ["order", "question"]
+
+
+class PublicTestQuestionSerializer(serializers.ModelSerializer):
+    question = PublicQuestionSerializer(read_only=True)
 
     class Meta:
         model = TestQuestion
@@ -88,6 +119,30 @@ class TestSerializer(serializers.ModelSerializer):
     subject_slug = serializers.CharField(source="subject.slug", read_only=True)
     topic_slug = serializers.CharField(source="topic.slug", read_only=True)
     test_questions = TestQuestionSerializer(source="testquestion_set", many=True, read_only=True)
+
+    class Meta:
+        model = Test
+        fields = [
+            "id",
+            "title",
+            "slug",
+            "subject",
+            "subject_slug",
+            "topic",
+            "topic_slug",
+            "difficulty",
+            "estimated_minutes",
+            "passing_score",
+            "status",
+            "creator_name",
+            "test_questions",
+        ]
+
+
+class PublicTestSerializer(serializers.ModelSerializer):
+    subject_slug = serializers.CharField(source="subject.slug", read_only=True)
+    topic_slug = serializers.CharField(source="topic.slug", read_only=True)
+    test_questions = PublicTestQuestionSerializer(source="testquestion_set", many=True, read_only=True)
 
     class Meta:
         model = Test
@@ -232,7 +287,7 @@ class ClassTestAssignmentSerializer(serializers.ModelSerializer):
     difficulty = serializers.CharField(source="test.difficulty", read_only=True)
     question_count = serializers.SerializerMethodField()
 
-    def get_question_count(self, obj):
+    def get_question_count(self, obj) -> int:
         annotated_count = getattr(obj, "question_count", None)
         return annotated_count if annotated_count is not None else obj.test.questions.count()
 
@@ -262,6 +317,8 @@ class ClassTestAssignmentSerializer(serializers.ModelSerializer):
 
 
 class TeacherClassSerializer(serializers.ModelSerializer):
+    join_code = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    manage_code = serializers.CharField(write_only=True, required=False, allow_blank=True)
     student_count = serializers.IntegerField(source="students.count", read_only=True)
     assignment_count = serializers.IntegerField(source="assignments.count", read_only=True)
     assignments = ClassTestAssignmentSerializer(many=True, read_only=True)
@@ -307,6 +364,8 @@ class SchoolTeacherSerializer(serializers.ModelSerializer):
 
 
 class SchoolSerializer(serializers.ModelSerializer):
+    manage_code = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    student_invite_code = serializers.CharField(write_only=True, required=False, allow_blank=True)
     teacher_count = serializers.IntegerField(source="teachers.count", read_only=True)
     teachers = SchoolTeacherSerializer(many=True, read_only=True)
 
@@ -339,7 +398,7 @@ class ExamPackItemSerializer(serializers.ModelSerializer):
     difficulty = serializers.CharField(source="test.difficulty", read_only=True)
     question_count = serializers.SerializerMethodField()
 
-    def get_question_count(self, obj):
+    def get_question_count(self, obj) -> int:
         annotated_count = getattr(obj, "question_count", None)
         return annotated_count if annotated_count is not None else obj.test.questions.count()
 
@@ -362,6 +421,8 @@ class ExamPackItemSerializer(serializers.ModelSerializer):
 
 
 class ExamPackSerializer(serializers.ModelSerializer):
+    access_code = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    manage_code = serializers.CharField(write_only=True, required=False, allow_blank=True)
     item_count = serializers.IntegerField(source="items.count", read_only=True)
     items = ExamPackItemSerializer(many=True, read_only=True)
 

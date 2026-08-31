@@ -11,21 +11,14 @@ Minimal Django REST Framework backend for the frontend MVP.
 
 ## Database
 
-Current dev database settings:
-
-- DB: `answer`
-- User: `postgres`
-- Password: `root`
-- Host: `localhost`
-- Port: `5432`
+Development uses SQLite by default. Production requires PostgreSQL and explicit environment variables; no production database password is stored in the repository.
 
 ## Setup
 
-```powershell
+```bash
 cd backend
 python -m pip install -r requirements.txt
 python manage.py migrate
-python manage.py seed_demo
 python manage.py runserver 127.0.0.1:8000
 ```
 
@@ -45,10 +38,15 @@ GET  /api/subjects/{subjectSlug}/topics/
 GET  /api/topics/{topicSlug}/levels/
 GET  /api/topics/{topicSlug}/tests/?difficulty=beginner
 GET  /api/tests/{testSlug}/
+GET  /api/questions/{questionId}/solution/
 POST /api/tests/{testSlug}/start/
 POST /api/sessions/{sessionId}/answer/
 POST /api/sessions/{sessionId}/submit/
+GET  /api/sessions/{sessionId}/result/
+GET  /api/health/
 ```
+
+Collection endpoints use DRF page-number pagination (`page_size` up to 100). `/api/v1/` is the versioned alias; `/api/` remains available for compatibility.
 
 Docs:
 

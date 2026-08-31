@@ -120,7 +120,7 @@ export async function AdminTestDetailPage({ testId }: { testId: string }) {
   if (!test) notFound();
   return (
     <QuestPage variant="wide">
-      <Card className="p-5"><TeacherSectionHeader title="Questions preview" /><div className="mt-4 quest-card-grid-3">{test.test_questions.slice(0, 12).map((item) => <GenericEntityCard key={item.question.id} title={item.question.prompt.slice(0, 80)} href={`/questions/${item.question.id}`} meta={item.question.difficulty} copy={item.question.explanation} />)}{!test.test_questions.length ? <QuestEmptyState title="No questions yet" /> : null}</div></Card>
+      <Card className="p-5"><TeacherSectionHeader title="Questions preview" /><div className="mt-4 quest-card-grid-3">{test.test_questions.slice(0, 12).map((item) => <GenericEntityCard key={item.question.id} title={item.question.prompt.slice(0, 80)} href={`/questions/${item.question.id}`} meta={item.question.difficulty} copy={item.question.explanation ?? "No explanation"} />)}{!test.test_questions.length ? <QuestEmptyState title="No questions yet" /> : null}</div></Card>
     </QuestPage>
   );
 }

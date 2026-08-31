@@ -44,7 +44,7 @@ export function SchoolClassesPage({ school, initialClasses, teachers }: { school
         description,
         teacher_id: teacher.id,
       });
-      saveTeacherManageCode(classroom.slug, classroom.manage_code);
+      saveTeacherManageCode(classroom.slug, getSchoolManageCode(school.slug));
       setClasses((items) => [classroom, ...items]);
       setNotice("Class yaratildi va teacherga bog'landi.");
     } catch (error) {

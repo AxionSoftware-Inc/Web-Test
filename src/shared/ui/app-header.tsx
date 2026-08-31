@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, BookOpen, Building2, GraduationCap, Home, Info, LayoutDashboard, PackageCheck, Plus, Settings, Target, TriangleAlert, UserRound, UsersRound } from "lucide-react";
+import { ArrowRight, BarChart3, BookOpen, Building2, GraduationCap, Home, Info, LayoutDashboard, PackageCheck, Plus, Settings, Target, TriangleAlert, UserRound, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
@@ -106,6 +106,34 @@ export function AppHeader() {
   const navItems = isAuthed ? (roleNavItems[roleId] ?? roleNavItems.student) : publicNavItems;
   const canSwitchRoles = isAuthed && isAdmin;
   const normalizedPathname = pathname.replace(/\/$/, "") || "/";
+
+  if (pathname === "/") {
+    return (
+      <header className="sticky top-0 z-40 border-b border-ink/8 bg-[#fbfcf7]/90 supports-[backdrop-filter]:backdrop-blur-md">
+        <div className="mx-auto flex w-full max-w-[1180px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+          <Link href="/" className="flex items-center gap-2.5">
+            <span className="grid size-9 place-items-center rounded-xl bg-ink text-sm font-bold text-white">Q</span>
+            <span className="text-sm font-semibold tracking-tight text-ink sm:text-base">QuestLab</span>
+          </Link>
+          <nav aria-label="Landing navigation" className="hidden items-center gap-6 text-sm font-medium text-ink/55 md:flex">
+            <a href="#how-it-works" className="hover:text-brand">How it works</a>
+            <a href="#subjects" className="hover:text-brand">Subjects</a>
+            <a href="#teams" className="hover:text-brand">For teams</a>
+          </nav>
+          <div className="flex items-center gap-2">
+            {isAuthed ? (
+              <Link href="/profile" className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-ink/62 hover:bg-white hover:text-ink sm:inline-flex">Profile</Link>
+            ) : (
+              <Link href="/auth/login" className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-ink/62 hover:bg-white hover:text-ink sm:inline-flex">Log in</Link>
+            )}
+            <Link href="/tests" className="inline-flex items-center gap-2 rounded-xl bg-ink px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-ring">
+              Start exploring <ArrowRight className="size-3.5" />
+            </Link>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   function isActive(href: string) {
     const normalizedHref = href.replace(/\/$/, "") || "/";

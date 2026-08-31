@@ -1,7 +1,10 @@
-from django.db import transaction
+from django.db import connection, transaction
 from django.db.models import Count, Prefetch, Q
+from django.shortcuts import get_object_or_404
 from django.utils.text import slugify
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import decorators, response, status, viewsets
 
 from learning.models import (
@@ -29,7 +32,10 @@ from learning.serializers import (
     CreateTestSerializer,
     ExamPackItemSerializer,
     ExamPackSerializer,
+    HealthSerializer,
     QuestionSerializer,
+    PublicQuestionSerializer,
+    PublicTestSerializer,
     RoleProfileSerializer,
     SchoolSerializer,
     SchoolTeacherSerializer,
@@ -41,6 +47,8 @@ from learning.serializers import (
     TopicSerializer,
 )
 from learning.services.analytics import class_results_payload, exam_pack_results_payload
+from learning.services.audit import record_event
+from learning.services.scoring import build_session_result
 
 
 ASSIGNMENTS_WITH_COUNTS = ClassTestAssignment.objects.select_related("test").annotate(
@@ -213,6 +221,18 @@ def exam_pack_title_exists(title, exclude_id=None):
     return queryset.exists()
 
 
+@extend_schema(responses={200: HealthSerializer, 503: HealthSerializer})
+@decorators.api_view(["GET"])
+def health_check(request):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+    except Exception:
+        return response.Response({"status": "unhealthy", "database": "down"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    return response.Response({"status": "ok", "database": "ok"})
+
+
+@extend_schema(request=RoleProfileSerializer, responses={200: RoleProfileSerializer})
 @decorators.api_view(["GET", "PATCH"])
 def role_profile(request):
     identity_code = request.query_params.get("identity_code", "").strip() or request.data.get("identity_code", "").strip()
@@ -232,6 +252,7 @@ def role_profile(request):
     return response.Response(RoleProfileSerializer(profile).data)
 
 
+@extend_schema(responses={200: RoleProfileSerializer(many=True)})
 @decorators.api_view(["GET"])
 def role_profile_search(request):
     role = request.query_params.get("role", "").strip()
@@ -295,7 +316,7 @@ class TopicViewSet(viewsets.ModelViewSet):
                     "difficulty": difficulty,
                     "label": label,
                     "test_count": len(difficulty_tests),
-                    "tests": TestSerializer(difficulty_tests, many=True).data,
+                    "tests": PublicTestSerializer(difficulty_tests, many=True).data,
                 }
             )
         return response.Response(data)
@@ -312,7 +333,7 @@ class TopicViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(difficulty=difficulty)
         if status_filter:
             queryset = queryset.filter(status=status_filter)
-        return response.Response(TestSerializer(queryset, many=True).data)
+        return response.Response(PublicTestSerializer(queryset, many=True).data)
 
 
 class SkillViewSet(viewsets.ModelViewSet):
@@ -322,7 +343,16 @@ class SkillViewSet(viewsets.ModelViewSet):
 
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.select_related("subject", "topic").prefetch_related("skills").all().order_by("-id")
-    serializer_class = QuestionSerializer
+    serializer_class = PublicQuestionSerializer
+
+    def get_serializer_class(self):
+        if self.action in {"create", "update", "partial_update", "solution"}:
+            return QuestionSerializer
+        return PublicQuestionSerializer
+
+    @decorators.action(detail=True, methods=["get"])
+    def solution(self, request, pk=None):
+        return response.Response(QuestionSerializer(self.get_object()).data)
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -346,14 +376,21 @@ class TestViewSet(viewsets.ModelViewSet):
     lookup_field = "slug"
 
     def get_serializer_class(self):
-        return CreateTestSerializer if self.action in {"create", "update", "partial_update"} else TestSerializer
+        if self.action in {"create", "update", "partial_update"}:
+            return CreateTestSerializer
+        if self.action == "manage":
+            return TestSerializer
+        return PublicTestSerializer
 
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         test = serializer.save()
-        return response.Response(TestSerializer(test).data, status=status.HTTP_201_CREATED)
+        record_event(request, action="test.created", resource_type="test", resource_id=test.id, metadata={"slug": test.slug})
+        return response.Response(PublicTestSerializer(test).data, status=status.HTTP_201_CREATED)
 
+    @transaction.atomic
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
@@ -363,6 +400,15 @@ class TestViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         test = serializer.save()
+        record_event(request, action="test.updated", resource_type="test", resource_id=test.id, metadata={"slug": test.slug})
+        return response.Response(PublicTestSerializer(test).data)
+
+    @decorators.action(detail=True, methods=["get"])
+    def manage(self, request, slug=None):
+        test = self.get_object()
+        denied = require_manage_key(request, test.manage_key)
+        if denied:
+            return denied
         return response.Response(TestSerializer(test).data)
 
     def get_queryset(self):
@@ -383,7 +429,9 @@ class TestViewSet(viewsets.ModelViewSet):
         if test.sessions.exists():
             test.status = Test.PublishStatus.DRAFT
             test.save(update_fields=["status", "updated_at"])
-            return response.Response(TestSerializer(test).data)
+            record_event(request, action="test.archived", resource_type="test", resource_id=test.id, metadata={"slug": test.slug})
+            return response.Response(PublicTestSerializer(test).data)
+        record_event(request, action="test.deleted", resource_type="test", resource_id=test.id, metadata={"slug": test.slug})
         return super().destroy(request, *args, **kwargs)
 
     @decorators.action(detail=False, methods=["post"], url_path="import-pack")
@@ -440,6 +488,7 @@ class TestViewSet(viewsets.ModelViewSet):
             if not valid_questions:
                 skipped.append(import_skip(test_title, "backend_schema", "question_prompt_missing", "All questions are missing prompt/body text.", f"tests[{order - 1}].questions"))
                 continue
+            savepoint = transaction.savepoint()
             try:
                 topic_slug = slugify(test_data.get("topic") or pack_data.get("branch") or test_data.get("title") or f"topic-{order}")
                 topic, _ = Topic.objects.get_or_create(
@@ -516,11 +565,14 @@ class TestViewSet(viewsets.ModelViewSet):
                     created_question_count += 1
                 if created_question_count < 1:
                     test.delete()
+                    transaction.savepoint_commit(savepoint)
                     skipped.append(import_skip(test.title, "backend_db", "questions_not_created", "No valid questions were saved.", f"tests[{order - 1}].questions"))
                     continue
                 ExamPackItem.objects.create(pack=pack, test=test, title=test.title, order=order, is_required=True)
+                transaction.savepoint_commit(savepoint)
                 created_tests.append(test)
             except Exception as exc:
+                transaction.savepoint_rollback(savepoint)
                 skipped.append(import_skip(test_title, "backend_db", "test_save_failed", str(exc), f"tests[{order - 1}]"))
 
         if not created_tests:
@@ -551,10 +603,16 @@ class TestViewSet(viewsets.ModelViewSet):
         test = self.get_object()
         if test.status != Test.PublishStatus.PUBLISHED:
             return response.Response({"detail": "Only published tests can be started."}, status=status.HTTP_400_BAD_REQUEST)
+        student_name = request.data.get("student_name", "").strip()
+        student_code = request.data.get("student_code", "").strip()
+        if not student_name:
+            return response.Response({"student_name": "This field is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not student_code:
+            return response.Response({"student_code": "This field is required."}, status=status.HTTP_400_BAD_REQUEST)
         session = TestSession.objects.create(
             test=test,
-            student_name=request.data.get("student_name", "").strip(),
-            student_code=request.data.get("student_code", "").strip(),
+            student_name=student_name,
+            student_code=student_code,
             user=request.user if request.user.is_authenticated else None,
         )
         return response.Response(TestSessionSerializer(session).data, status=status.HTTP_201_CREATED)
@@ -565,8 +623,9 @@ class TestSessionViewSet(viewsets.ModelViewSet):
     serializer_class = TestSessionSerializer
 
     @decorators.action(detail=True, methods=["post"])
+    @transaction.atomic
     def answer(self, request, pk=None):
-        session = self.get_object()
+        session = get_object_or_404(self.get_queryset().select_for_update(), pk=pk)
         if session.status != TestSession.Status.IN_PROGRESS:
             return response.Response({"detail": "Submitted sessions cannot be changed."}, status=status.HTTP_400_BAD_REQUEST)
         serializer = AnswerSerializer(data={**request.data, "session": session.id})
@@ -585,14 +644,30 @@ class TestSessionViewSet(viewsets.ModelViewSet):
         return response.Response(TestSessionSerializer(session).data)
 
     @decorators.action(detail=True, methods=["post"])
+    @transaction.atomic
     def submit(self, request, pk=None):
-        session = self.get_object()
+        session = get_object_or_404(self.get_queryset().select_for_update(), pk=pk)
         if session.status != TestSession.Status.IN_PROGRESS:
             return response.Response({"detail": "Session is already submitted."}, status=status.HTTP_400_BAD_REQUEST)
         session.status = TestSession.Status.SUBMITTED
         session.submitted_at = timezone.now()
-        session.save(update_fields=["status", "submitted_at", "updated_at"])
+        session.result_snapshot = build_session_result(session)
+        session.save(update_fields=["status", "submitted_at", "result_snapshot", "updated_at"])
+        record_event(
+            request,
+            action="session.submitted",
+            resource_type="test_session",
+            resource_id=session.id,
+            metadata={"test_id": session.test_id, "score": session.result_snapshot["summary"]["score"]},
+        )
         return response.Response(TestSessionSerializer(session).data)
+
+    @decorators.action(detail=True, methods=["get"])
+    def result(self, request, pk=None):
+        session = self.get_object()
+        if session.status != TestSession.Status.SUBMITTED:
+            return response.Response({"detail": "Submit the session before viewing its result."}, status=status.HTTP_400_BAD_REQUEST)
+        return response.Response(session.result_snapshot or build_session_result(session))
 
 
 class TeacherClassViewSet(viewsets.ModelViewSet):
@@ -657,6 +732,7 @@ class TeacherClassViewSet(viewsets.ModelViewSet):
         return response.Response(ClassTestAssignmentSerializer(assignment).data, status=status.HTTP_201_CREATED)
 
     @decorators.action(detail=True, methods=["post"], url_path="assignments/bulk")
+    @transaction.atomic
     def bulk_assignments(self, request, slug=None):
         classroom = self.get_object()
         denied = require_manage_code(request, classroom.manage_code)
@@ -720,10 +796,11 @@ class TeacherClassViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @extend_schema(parameters=[OpenApiParameter("assignment_id", OpenApiTypes.INT, OpenApiParameter.PATH)])
     @decorators.action(detail=True, methods=["get", "patch", "delete"], url_path=r"assignments/(?P<assignment_id>[^/.]+)")
-    def assignment_detail(self, request, slug=None, assignment_id=None):
+    def assignment_detail(self, request, slug=None, assignment_id: int | None = None):
         classroom = self.get_object()
-        assignment = ASSIGNMENTS_WITH_COUNTS.get(id=assignment_id, classroom=classroom)
+        assignment = get_object_or_404(ASSIGNMENTS_WITH_COUNTS, id=assignment_id, classroom=classroom)
         if request.method == "GET":
             return response.Response(ClassTestAssignmentSerializer(assignment).data)
 
@@ -744,9 +821,14 @@ class TeacherClassViewSet(viewsets.ModelViewSet):
         return response.Response(ClassTestAssignmentSerializer(assignment).data)
 
     @decorators.action(detail=True, methods=["post"], url_path=r"assignments/(?P<assignment_id>[^/.]+)/start")
+    @transaction.atomic
     def start_assignment(self, request, slug=None, assignment_id=None):
         classroom = self.get_object()
-        assignment = ClassTestAssignment.objects.select_related("test").get(id=assignment_id, classroom=classroom)
+        assignment = get_object_or_404(
+            ClassTestAssignment.objects.select_for_update().select_related("test"),
+            id=assignment_id,
+            classroom=classroom,
+        )
         if not assignment.is_active:
             return response.Response({"detail": "Assignment is not active."}, status=status.HTTP_400_BAD_REQUEST)
         now = timezone.now()
@@ -829,10 +911,11 @@ class SchoolViewSet(viewsets.ModelViewSet):
             teacher.classes.set(TeacherClass.objects.filter(id__in=class_ids))
         return response.Response(SchoolTeacherSerializer(teacher).data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(parameters=[OpenApiParameter("teacher_id", OpenApiTypes.INT, OpenApiParameter.PATH)])
     @decorators.action(detail=True, methods=["get", "patch", "delete"], url_path=r"teachers/(?P<teacher_id>[^/.]+)")
-    def teacher_detail(self, request, slug=None, teacher_id=None):
+    def teacher_detail(self, request, slug=None, teacher_id: int | None = None):
         school = self.get_object()
-        teacher = SchoolTeacher.objects.prefetch_related("classes").get(id=teacher_id, school=school)
+        teacher = get_object_or_404(SchoolTeacher.objects.prefetch_related("classes"), id=teacher_id, school=school)
         if request.method == "GET":
             return response.Response(SchoolTeacherSerializer(teacher).data)
 
@@ -964,11 +1047,13 @@ class ExamPackViewSet(viewsets.ModelViewSet):
         cleanup_empty_exam_packs()
         return super().list(request, *args, **kwargs)
 
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
         if exam_pack_title_exists(request.data.get("title")):
             return import_error("backend_schema", "pack_title_duplicate", "A pack with this title already exists. Rename the pack before saving.", "title")
         return super().create(request, *args, **kwargs)
 
+    @transaction.atomic
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
         pack = self.get_object()
@@ -981,6 +1066,7 @@ class ExamPackViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(pack, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        record_event(request, action="exam_pack.updated", resource_type="exam_pack", resource_id=pack.id, metadata={"slug": pack.slug})
         return response.Response(serializer.data)
 
     def destroy(self, request, *args, **kwargs):
@@ -991,7 +1077,9 @@ class ExamPackViewSet(viewsets.ModelViewSet):
         if pack.sessions.exists():
             pack.is_active = False
             pack.save(update_fields=["is_active", "updated_at"])
+            record_event(request, action="exam_pack.archived", resource_type="exam_pack", resource_id=pack.id, metadata={"slug": pack.slug})
             return response.Response(ExamPackSerializer(pack).data)
+        record_event(request, action="exam_pack.deleted", resource_type="exam_pack", resource_id=pack.id, metadata={"slug": pack.slug})
         pack.delete()
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -1011,6 +1099,7 @@ class ExamPackViewSet(viewsets.ModelViewSet):
         return response.Response(ExamPackItemSerializer(item).data, status=status.HTTP_201_CREATED)
 
     @decorators.action(detail=True, methods=["post"], url_path="items/bulk")
+    @transaction.atomic
     def bulk_items(self, request, slug=None):
         pack = self.get_object()
         denied = require_manage_code(request, pack.manage_code)
@@ -1165,6 +1254,7 @@ class ExamPackViewSet(viewsets.ModelViewSet):
             if not valid_questions:
                 skipped.append(import_skip(test_title, "backend_schema", "question_prompt_missing", "All questions are missing prompt/body text.", f"tests[{order - 1}].questions"))
                 continue
+            savepoint = transaction.savepoint()
             try:
                 topic_slug = slugify(test_data.get("topic") or pack_data.get("branch") or test_data.get("title") or f"topic-{order}")
                 topic, _ = Topic.objects.get_or_create(
@@ -1241,12 +1331,15 @@ class ExamPackViewSet(viewsets.ModelViewSet):
                     created_question_count += 1
                 if created_question_count < 1:
                     test.delete()
+                    transaction.savepoint_commit(savepoint)
                     skipped.append(import_skip(test.title, "backend_db", "questions_not_created", "No valid questions were saved.", f"tests[{order - 1}].questions"))
                     continue
                 item = ExamPackItem.objects.create(pack=pack, test=test, title=test.title, order=start_order + len(created_items), is_required=True)
+                transaction.savepoint_commit(savepoint)
                 created_tests.append(test)
                 created_items.append(item)
             except Exception as exc:
+                transaction.savepoint_rollback(savepoint)
                 skipped.append(import_skip(test_title, "backend_db", "test_save_failed", str(exc), f"tests[{order - 1}]"))
 
         if not created_tests:
@@ -1270,10 +1363,11 @@ class ExamPackViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @extend_schema(parameters=[OpenApiParameter("item_id", OpenApiTypes.INT, OpenApiParameter.PATH)])
     @decorators.action(detail=True, methods=["get", "patch", "delete"], url_path=r"items/(?P<item_id>[^/.]+)")
-    def item_detail(self, request, slug=None, item_id=None):
+    def item_detail(self, request, slug=None, item_id: int | None = None):
         pack = self.get_object()
-        item = PACK_ITEMS_WITH_COUNTS.get(id=item_id, pack=pack)
+        item = get_object_or_404(PACK_ITEMS_WITH_COUNTS, id=item_id, pack=pack)
         if request.method == "GET":
             return response.Response(ExamPackItemSerializer(item).data)
         denied = require_manage_code(request, pack.manage_code)
@@ -1296,7 +1390,7 @@ class ExamPackViewSet(viewsets.ModelViewSet):
     @decorators.action(detail=True, methods=["post"], url_path=r"items/(?P<item_id>[^/.]+)/start")
     def start_item(self, request, slug=None, item_id=None):
         pack = self.get_object()
-        item = ExamPackItem.objects.select_related("test").get(id=item_id, pack=pack)
+        item = get_object_or_404(ExamPackItem.objects.select_related("test"), id=item_id, pack=pack)
         access_code = request.data.get("access_code", "")
         student_name = request.data.get("student_name", "").strip()
         if not pack.is_active:
@@ -1326,6 +1420,7 @@ class ExamPackViewSet(viewsets.ModelViewSet):
         return response.Response(exam_pack_results_payload(pack))
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @decorators.api_view(["GET"])
 def profile_summary(request):
     student_code = request.query_params.get("student_code", "").strip()
@@ -1437,6 +1532,7 @@ def profile_summary(request):
     )
 
 
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
 @decorators.api_view(["GET"])
 def mistakes_summary(request):
     student_code = request.query_params.get("student_code", "").strip()

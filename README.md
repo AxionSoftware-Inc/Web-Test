@@ -29,13 +29,15 @@ npm run lint
 npm run build
 ```
 
+The backend checks and deployment runbook are in [docs/operations.md](docs/operations.md). CI runs on every push and pull request.
+
 ## Authentication
 
 Development authentication uses a local identity stored in the browser. The login and register screens create or update a `RoleProfile` through the backend API; no external account provider is required. This is suitable for the current prototype, but production authentication should add server-managed sessions or tokens and real authorization checks.
 
-## Public Question JSON Structure
+## Content Import Question JSON Structure
 
-Creators and import tools should use this structure for questions. `topic_slug` is mandatory because it is the primary grouping key for mastery, mistakes and recommendations.
+Creators and import tools should use this structure for questions. It is an authoring/import format, not the public runtime API contract. `topic_slug` is mandatory because it is the primary grouping key for mastery, mistakes and recommendations.
 
 ```json
 {
@@ -70,3 +72,5 @@ Notes:
 - Use `estimated_seconds` only as a mastery signal, not as a harsh student-facing judgment.
 - Use `mastery_weight` `1` by default. Increase it only for important or harder questions.
 - Store historical answer analysis from metadata snapshots so edited questions do not rewrite old results.
+
+The public test API intentionally omits answer keys and explanations. Solutions are available only through the explicit `/api/questions/{id}/solution/` endpoint, and submitted session results are calculated and snapshotted by the backend.

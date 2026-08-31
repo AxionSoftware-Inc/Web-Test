@@ -43,16 +43,17 @@ export function TeacherClassesClient({ initialClasses }: { initialClasses: ApiTe
     setError("");
     setNotice("");
     try {
+      const manageCode = getTeacherManageCode();
       const classroom = await questApi.createClass({
         name,
         slug: `${slugify(name)}-${Date.now().toString().slice(-4)}`,
         teacher_name: teacherName,
         visibility,
         join_code: visibility === "private" ? joinCode : "",
-        manage_code: getTeacherManageCode(),
+        manage_code: manageCode,
         description,
       });
-      saveTeacherManageCode(classroom.slug, classroom.manage_code);
+      saveTeacherManageCode(classroom.slug, manageCode);
       setClasses((items) => [classroom, ...items]);
       setNotice("Class created. Open the class to assign tests and review results.");
     } catch (err) {

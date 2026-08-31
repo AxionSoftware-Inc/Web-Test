@@ -50,6 +50,15 @@ export function savePackManageCode(slug: string, code: string) {
   if (typeof window !== "undefined" && code) window.localStorage.setItem(`questlab-pack-manage:${slug}`, code);
 }
 
+export function getPackAccessCode(slug: string) {
+  if (typeof window === "undefined") return "";
+  return window.localStorage.getItem(`questlab-pack-access:${slug}`) ?? "";
+}
+
+export function savePackAccessCode(slug: string, code: string) {
+  if (typeof window !== "undefined" && code) window.localStorage.setItem(`questlab-pack-access:${slug}`, code);
+}
+
 export function getSchoolManageCode(slug?: string) {
   return getLocalIdentity(slug ? `questlab-school-manage:${slug}` : "questlab-school-manage", "school");
 }

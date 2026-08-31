@@ -171,9 +171,7 @@ export async function CreatorTestEditPage({ testId }: { testId: string }) {
 }
 
 export async function CreatorQuestionEditPage({ questionId }: { questionId: string }) {
-  const questions = await questApi.questions();
-  const question = questions.find((item) => String(item.id) === questionId);
-  if (!question) notFound();
+  const question = await questApi.questionSolution(questionId);
   return (
     <QuestPage variant="reading">
       <Card className="p-5">

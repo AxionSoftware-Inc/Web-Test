@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 
 export default async function Page({ params }: PageProps) {
   const { questionId } = await params;
-  const question = await questApi.question(questionId);
+  const question = await questApi.questionSolution(questionId);
 
   return (
     <main className="min-h-screen bg-background text-ink">
