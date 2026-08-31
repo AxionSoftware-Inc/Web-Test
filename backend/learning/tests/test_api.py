@@ -226,3 +226,47 @@ class LearningApiContractTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["count"], 1)
         self.assertEqual(response.data["results"][0]["student_code"], "first-student")
+
+    def test_import_pack_can_save_a_private_draft(self):
+        response = self.client.post(
+            "/api/tests/import-pack/",
+            {
+                "status": "draft",
+                "creator_name": "Teacher",
+                "source": {
+                    "version": "1.0",
+                    "pack": {"title": "Draft import pack", "subject": "mathematics", "branch": "algebra", "level": "beginner", "language": "uz"},
+                    "tests": [{
+                        "title": "Draft algebra test",
+                        "topic": "algebra",
+                        "questions": [{
+                            "type": "single_choice",
+                            "body": "1 + 1 = ?",
+                            "options": [{"id": "A", "text": "2"}, {"id": "B", "text": "3"}],
+                            "answer": {"correct": "A"},
+                            "skills": ["addition"],
+                        }],
+                    }],
+                },
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["tests"][0]["status"], Test.PublishStatus.DRAFT)
+
+    def test_import_pack_rejects_unbounded_payloads_before_creating_data(self):
+        response = self.client.post(
+            "/api/tests/import-pack/",
+            {
+                "source": {
+                    "version": "1.0",
+                    "pack": {"title": "Too many tests", "subject": "mathematics", "branch": "algebra", "level": "beginner", "language": "uz"},
+                    "tests": [{"title": f"Test {index}", "questions": []} for index in range(201)],
+                },
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data["code"], "too_many_tests")

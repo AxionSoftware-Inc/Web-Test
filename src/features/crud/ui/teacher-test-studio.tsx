@@ -2,7 +2,7 @@
 
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, ClipboardPaste, FileUp, Plus, Sparkles, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import type { ApiSkill, ApiSubject, ApiTest, ApiTopic, StrictPackImportSource } from "@/shared/api/questlab-api";
@@ -12,6 +12,7 @@ import { FieldShell, premiumInputClass } from "@/shared/ui/premium-shell";
 import { cn } from "@/shared/lib/cn";
 import { parseTeacherContent, type TeacherImportResult } from "@/features/exam-packs/lib/teacher-import-parser";
 import type { ImportQuestion } from "@/features/exam-packs/lib/import-parser";
+import { parseTeacherFile } from "@/features/crud/lib/teacher-file-parser";
 
 type SourceMode = "paste" | "file" | "manual";
 type StudioStep = "source" | "review";
@@ -21,6 +22,21 @@ type ManualQuestion = {
   options: string[];
   answer: string;
   explanation: string;
+};
+
+type TeacherDraft = {
+  step?: StudioStep;
+  sourceMode?: SourceMode;
+  title?: string;
+  subjectId?: number;
+  topicId?: number;
+  difficulty?: ApiTest["difficulty"];
+  minutes?: number;
+  pasteText?: string;
+  fileName?: string;
+  source?: StrictPackImportSource | null;
+  warnings?: string[];
+  manualQuestions?: ManualQuestion[];
 };
 
 type Props = {
@@ -47,6 +63,23 @@ A) ln|x| + C
 B) x + C
 C) 1/x² + C
 Javob: A`;
+
+const draftStorageKey = "questlab:teacher-test-studio:draft:v1";
+
+function normalizeQuestionBody(value: string) {
+  return value.toLocaleLowerCase().replace(/\s+/g, " ").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+}
+
+function readTeacherDraft(): TeacherDraft | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const saved = window.localStorage.getItem(draftStorageKey);
+    return saved ? JSON.parse(saved) as TeacherDraft : null;
+  } catch {
+    window.localStorage.removeItem(draftStorageKey);
+    return null;
+  }
+}
 
 function emptyManualQuestion(): ManualQuestion {
   return { prompt: "", options: ["", "", "", ""], answer: "A", explanation: "" };
@@ -99,23 +132,45 @@ function teacherSourceFromManual(title: string, topic: ApiTopic | undefined, dif
 export function TeacherTestStudio({ subjects, topics }: Props) {
   const defaultSubject = subjects.find((subject) => subject.slug === "mathematics") ?? subjects[0];
   const defaultTopic = topics.find((topic) => topic.slug === "algebra") ?? topics.find((topic) => topic.subject === defaultSubject?.id) ?? topics[0];
-  const [step, setStep] = useState<StudioStep>("source");
-  const [sourceMode, setSourceMode] = useState<SourceMode>("paste");
-  const [title, setTitle] = useState("Yangi test");
-  const [subjectId, setSubjectId] = useState(defaultSubject?.id ?? 0);
-  const [topicId, setTopicId] = useState(defaultTopic?.id ?? 0);
-  const [difficulty, setDifficulty] = useState<ApiTest["difficulty"]>("beginner");
-  const [minutes, setMinutes] = useState(15);
-  const [pasteText, setPasteText] = useState("");
-  const [fileName, setFileName] = useState("");
-  const [source, setSource] = useState<StrictPackImportSource | null>(null);
-  const [warnings, setWarnings] = useState<string[]>([]);
-  const [manualQuestions, setManualQuestions] = useState<ManualQuestion[]>([emptyManualQuestion()]);
+  const [savedDraft] = useState<TeacherDraft | null>(() => readTeacherDraft());
+  const [step, setStep] = useState<StudioStep>(savedDraft?.step === "review" ? "review" : "source");
+  const [sourceMode, setSourceMode] = useState<SourceMode>(savedDraft?.sourceMode ?? "paste");
+  const [title, setTitle] = useState(savedDraft?.title ?? "Yangi test");
+  const [subjectId, setSubjectId] = useState(savedDraft?.subjectId ?? defaultSubject?.id ?? 0);
+  const [topicId, setTopicId] = useState(savedDraft?.topicId ?? defaultTopic?.id ?? 0);
+  const [difficulty, setDifficulty] = useState<ApiTest["difficulty"]>(savedDraft?.difficulty ?? "beginner");
+  const [minutes, setMinutes] = useState(savedDraft?.minutes ?? 15);
+  const [pasteText, setPasteText] = useState(savedDraft?.pasteText ?? "");
+  const [fileName, setFileName] = useState(savedDraft?.fileName ?? "");
+  const [source, setSource] = useState<StrictPackImportSource | null>(savedDraft?.source ?? null);
+  const [warnings, setWarnings] = useState<string[]>(savedDraft?.warnings ?? []);
+  const [manualQuestions, setManualQuestions] = useState<ManualQuestion[]>(savedDraft?.manualQuestions?.length ? savedDraft.manualQuestions : [emptyManualQuestion()]);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState(savedDraft ? "Qoralama avtomatik tiklandi." : "");
   const [createdPackSlug, setCreatedPackSlug] = useState("");
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(draftStorageKey, JSON.stringify({
+        step,
+        sourceMode,
+        title,
+        subjectId,
+        topicId,
+        difficulty,
+        minutes,
+        pasteText,
+        fileName,
+        source,
+        warnings,
+        manualQuestions,
+      }));
+    } catch {
+      // Draft persistence is best effort and must never block test authoring.
+    }
+  }, [difficulty, fileName, manualQuestions, minutes, pasteText, source, sourceMode, step, subjectId, title, topicId, warnings]);
 
   const visibleTopics = useMemo(() => topics.filter((topic) => topic.subject === subjectId), [subjectId, topics]);
   const selectedTopic = topics.find((topic) => topic.id === topicId) ?? visibleTopics[0];
@@ -142,6 +197,29 @@ export function TeacherTestStudio({ subjects, topics }: Props) {
     return result;
   }, [source]);
 
+  const duplicateKeys = useMemo(() => {
+    const occurrences = new Map<string, string[]>();
+    source?.tests.forEach((test, testIndex) => test.questions.forEach((question, questionIndex) => {
+      const normalized = normalizeQuestionBody(question.body);
+      if (!normalized) return;
+      const key = `${testIndex}:${questionIndex}`;
+      const current = occurrences.get(normalized) ?? [];
+      current.push(key);
+      occurrences.set(normalized, current);
+    }));
+    return new Set([...occurrences.values()].filter((keys) => keys.length > 1).flat());
+  }, [source]);
+
+  const checklist = useMemo(() => [
+    { label: "Test nomi yozilgan", ok: Boolean(title.trim()) },
+    { label: "Fan va bo'lim tanlangan", ok: Boolean(subjectId && topicId) },
+    { label: "Kamida bitta savol bor", ok: Boolean(source?.tests.some((test) => test.questions.length)) },
+    { label: "Savol va variantlar to'liq", ok: !issues.some((item) => item.message === "Savol matnini kiriting." || item.message === "Kamida 2 ta variant kerak.") },
+    { label: "To'g'ri javoblar mos", ok: !issues.some((item) => item.message.includes("To'g'ri javob")) },
+  ], [issues, source, subjectId, title, topicId]);
+
+  const canSave = checklist.every((item) => item.ok) && !issues.length;
+
   function updateSource(next: (current: StrictPackImportSource) => StrictPackImportSource) {
     setSource((current) => current ? next(current) : current);
   }
@@ -152,6 +230,16 @@ export function TeacherTestStudio({ subjects, topics }: Props) {
       tests: current.tests.map((test, currentTestIndex) => currentTestIndex !== testIndex ? test : {
         ...test,
         questions: test.questions.map((question, currentQuestionIndex) => currentQuestionIndex !== questionIndex ? question : { ...question, ...patch }),
+      }),
+    }));
+  }
+
+  function removeQuestion(testIndex: number, questionIndex: number) {
+    updateSource((current) => ({
+      ...current,
+      tests: current.tests.map((test, currentTestIndex) => currentTestIndex !== testIndex ? test : {
+        ...test,
+        questions: test.questions.filter((_, currentQuestionIndex) => currentQuestionIndex !== questionIndex),
       }),
     }));
   }
@@ -190,7 +278,10 @@ export function TeacherTestStudio({ subjects, topics }: Props) {
 
   function handleFile(file: File) {
     setFileName(file.name);
-    void file.text().then((text) => parseInput(text, file.name.toLowerCase().endsWith(".csv") ? "csv" : undefined)).catch(() => setError("Faylni o'qib bo'lmadi."));
+    setError("");
+    void parseTeacherFile(file, selectedTopic?.slug || "general")
+      .then(startReview)
+      .catch((err) => setError(err instanceof Error ? err.message : "Faylni o'qib bo'lmadi."));
   }
 
   function reviewManualQuestions() {
@@ -234,7 +325,7 @@ export function TeacherTestStudio({ subjects, topics }: Props) {
     };
   }
 
-  async function saveToBank() {
+  async function saveToBank(status: "draft" | "published") {
     if (!source) return;
     if (issues.length) {
       setError(`${issues.length} ta joyni tekshiring. Qizil yozuv turgan savolni tuzating.`);
@@ -253,14 +344,16 @@ export function TeacherTestStudio({ subjects, topics }: Props) {
       const manageCode = getPackManageCode();
       const result = await questApi.importTestPack({
         source: applySaveMetadata(source),
+        status,
         creator_name: "Teacher",
         creator_code: creatorCode,
         manage_key: creatorCode,
         pack_manage_code: manageCode,
       });
       savePackManageCode(result.pack.slug, manageCode);
+      window.localStorage.removeItem(draftStorageKey);
       setCreatedPackSlug(result.pack.slug);
-      setNotice(`${result.tests.length} ta test bazaga saqlandi.` + (result.skipped.length ? ` ${result.skipped.length} tasi o'tkazib yuborildi.` : ""));
+      setNotice(`${result.tests.length} ta test ${status === "draft" ? "qoralama sifatida saqlandi" : "publish qilindi"}.` + (result.skipped.length ? ` ${result.skipped.length} tasi o'tkazib yuborildi.` : ""));
       if (result.skipped.length) setWarnings(result.skipped.slice(0, 3).map((item) => `${item.title}: ${item.reason}`));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Testlarni saqlashda xatolik yuz berdi.");
@@ -286,11 +379,13 @@ export function TeacherTestStudio({ subjects, topics }: Props) {
           <StepPill number="2" title="Tekshirish va saqlash" active={step === "review"} done={false} />
         </div>
 
+        {step === "source" && notice ? <p className="mt-5 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">{notice}</p> : null}
+
         {step === "source" ? (
           <div className="mt-8">
             <div className="grid gap-3 md:grid-cols-3">
               <SourceCard icon={<ClipboardPaste className="size-5" />} title="Tayyor matnni qo&apos;ying" copy="Word, Telegram yoki AI’dan ko&apos;chiring" active={sourceMode === "paste"} recommended onClick={() => changeSourceMode("paste")} />
-              <SourceCard icon={<FileUp className="size-5" />} title="Fayl yuklang" copy="CSV, JSON, TXT yoki MD fayl" active={sourceMode === "file"} onClick={() => changeSourceMode("file")} />
+              <SourceCard icon={<FileUp className="size-5" />} title="Fayl yuklang" copy="Excel, Word, CSV, JSON yoki TXT" active={sourceMode === "file"} onClick={() => changeSourceMode("file")} />
               <SourceCard icon={<Plus className="size-5" />} title="Qo&apos;lda yozing" copy="1–3 ta savol uchun tezkor forma" active={sourceMode === "manual"} onClick={() => changeSourceMode("manual")} />
             </div>
 
@@ -315,8 +410,8 @@ export function TeacherTestStudio({ subjects, topics }: Props) {
               <div className="mt-6 rounded-3xl border border-dashed border-black/18 bg-surface-soft p-8 text-center">
                 <FileUp className="mx-auto size-8 text-brand" />
                 <h2 className="mt-4 text-xl font-semibold">Faylni shu yerga tanlang</h2>
-                <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-black/55">CSV, JSON, TXT va MD qabul qilinadi. CSV uchun ustunlar: question, A, B, C, D, answer, explanation, skills.</p>
-                <input ref={fileRef} id="teacher-test-file" type="file" accept=".csv,.json,.txt,.md,text/csv,application/json,text/plain" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) handleFile(file); }} />
+                <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-black/55">Excel, Word, CSV, JSON, TXT va MD qabul qilinadi. Excel jadvalining birinchi qatoriga question, A, B, C, D, answer ustunlarini qo&apos;ying.</p>
+                <input ref={fileRef} id="teacher-test-file" type="file" accept=".xlsx,.xls,.docx,.csv,.json,.txt,.md,text/csv,application/json,text/plain" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) handleFile(file); }} />
                 <label htmlFor="teacher-test-file" className="mt-5 inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-control)] bg-brand px-5 text-sm font-semibold text-white hover:bg-brand-hover"><FileUp className="size-4" /> Fayl tanlash</label>
                 {fileName ? <p className="mt-4 text-sm font-semibold text-brand">Tanlandi: {fileName}</p> : null}
               </div>
@@ -368,8 +463,10 @@ export function TeacherTestStudio({ subjects, topics }: Props) {
                         {test.questions.map((question, questionIndex) => {
                           const issue = issues.find((item) => item.testIndex === testIndex && item.questionIndex === questionIndex);
                           const options = question.options ?? [];
-                          return <article key={questionIndex} className={cn("rounded-2xl border bg-white p-4", issue ? "border-red-300" : "border-black/8")}>
-                            <div className="flex items-center justify-between gap-3"><p className="text-xs font-bold uppercase tracking-[0.14em] text-black/40">Savol {questionIndex + 1}</p>{issue ? <span className="text-xs font-semibold text-red-600">{issue.message}</span> : <Check className="size-4 text-brand" />}</div>
+                          const questionKey = `${testIndex}:${questionIndex}`;
+                          const isDuplicate = duplicateKeys.has(questionKey);
+                          return <article key={questionIndex} className={cn("rounded-2xl border bg-white p-4", issue ? "border-red-300" : isDuplicate ? "border-amber-300" : "border-black/8")}>
+                            <div className="flex items-center justify-between gap-3"><p className="text-xs font-bold uppercase tracking-[0.14em] text-black/40">Savol {questionIndex + 1}</p><div className="flex items-center gap-3">{issue ? <span className="text-xs font-semibold text-red-600">{issue.message}</span> : isDuplicate ? <span className="text-xs font-semibold text-amber-700">Takroriy savol</span> : <Check className="size-4 text-brand" />}<button type="button" onClick={() => removeQuestion(testIndex, questionIndex)} className="grid size-7 place-items-center rounded-lg text-black/35 hover:bg-red-50 hover:text-red-600" aria-label={`Savol ${questionIndex + 1} ni o'chirish`}><Trash2 className="size-3.5" /></button></div></div>
                             <textarea value={question.body} onChange={(event) => updateQuestion(testIndex, questionIndex, { body: event.target.value })} rows={2} className={cn(premiumInputClass, "mt-3 resize-y")} aria-label={`Savol ${questionIndex + 1} matni`} />
                             {options.length ? <div className="mt-3 grid gap-2 sm:grid-cols-2">{options.map((option, optionIndex) => <div key={`${option.id}-${optionIndex}`} className="flex items-center gap-2"><button type="button" onClick={() => updateQuestion(testIndex, questionIndex, { answer: { correct: option.id } })} className={cn("grid size-9 shrink-0 place-items-center rounded-xl border text-xs font-bold", answerOption(question, option) ? "border-brand bg-brand text-white" : "border-black/10 bg-white text-black/45")} aria-label={`${option.id} javobini tanlash`}>{option.id}</button><input value={option.text} onChange={(event) => updateQuestion(testIndex, questionIndex, { options: options.map((item, currentIndex) => currentIndex === optionIndex ? { ...item, text: event.target.value } : item) })} className={cn(premiumInputClass, "min-w-0 flex-1 px-3 py-2 text-sm")} aria-label={`${option.id} varianti`} /></div>)}</div> : <FieldShell label="To'g'ri javob"><input value={answerValue(question)} onChange={(event) => updateQuestion(testIndex, questionIndex, { answer: { correct: event.target.value } })} className={cn(premiumInputClass, "mt-2")} aria-label={`Savol ${questionIndex + 1} javobi`} /></FieldShell>}
                             {options.length ? <p className="mt-2 text-xs text-black/45">To&apos;g&apos;ri javobni chapdagi harfdan tanlang.</p> : null}
@@ -390,9 +487,10 @@ export function TeacherTestStudio({ subjects, topics }: Props) {
                   <FieldShell label="Bo&apos;lim"><select value={topicId} onChange={(event) => setTopicId(Number(event.target.value))} className={premiumInputClass}>{visibleTopics.map((topic) => <option key={topic.id} value={topic.id}>{topic.title}</option>)}</select></FieldShell>
                   <div className="grid grid-cols-2 gap-3"><FieldShell label="Daraja"><select value={difficulty} onChange={(event) => setDifficulty(event.target.value as ApiTest["difficulty"])} className={premiumInputClass}><option value="beginner">Oson</option><option value="intermediate">O&apos;rta</option><option value="advanced">Qiyin</option></select></FieldShell><FieldShell label="Vaqt (min) "><input type="number" min={1} value={minutes} onChange={(event) => setMinutes(Number(event.target.value))} className={premiumInputClass} /></FieldShell></div>
                 </div>
-                <div className="mt-5 rounded-2xl bg-white p-4 text-sm leading-6 text-black/58"><p className="font-semibold text-ink">Mening test bazam</p><p className="mt-1">Testlar yopiq bazaga saqlanadi. Keyin pack yoki sinfga qo&apos;shishingiz mumkin.</p></div>
+                <div className="mt-5 rounded-2xl bg-white p-4 text-sm leading-6 text-black/58"><p className="font-semibold text-ink">Saqlashdan oldingi tekshiruv</p><div className="mt-3 grid gap-2">{checklist.map((item) => <div key={item.label} className="flex items-center gap-2"><span className={cn("grid size-5 place-items-center rounded-full", item.ok ? "bg-emerald-100 text-emerald-700" : "bg-black/6 text-black/30")}>{item.ok ? <Check className="size-3" /> : <span className="size-1.5 rounded-full bg-current" />}</span><span className={cn("text-xs", item.ok ? "text-black/70" : "text-black/40")}>{item.label}</span></div>)}</div>{duplicateKeys.size ? <p className="mt-3 text-xs leading-5 text-amber-700">{duplicateKeys.size} ta takroriy savol topildi. Saqlash mumkin, lekin bittasini o&apos;chirib tashlash tavsiya qilinadi.</p> : null}</div>
                 {issues.length ? <p className="mt-4 text-sm font-semibold text-red-600">Saqlash uchun {issues.length} ta joyni tuzating.</p> : null}
-                <Button onClick={() => void saveToBank()} disabled={saving || issues.length > 0} size="lg" className="mt-5 w-full">{saving ? "Saqlanmoqda..." : "Bazaga saqlash"} <ArrowRight className="size-4" /></Button>
+                <Button onClick={() => void saveToBank("published")} disabled={saving || !canSave} size="lg" className="mt-5 w-full">{saving ? "Saqlanmoqda..." : "Tekshirilgan deb publish qilish"} <ArrowRight className="size-4" /></Button>
+                <Button onClick={() => void saveToBank("draft")} disabled={saving || !canSave} variant="secondary" className="mt-2 w-full">Qoralama sifatida saqlash</Button>
                 {notice ? <p className="mt-4 rounded-2xl bg-emerald-50 p-3 text-sm font-semibold leading-5 text-emerald-800">{notice}{createdPackSlug ? <><br /><Link className="underline" href={`/exam-packs/${createdPackSlug}`}>Bazani ochish</Link></> : null}</p> : null}
               </aside>
             </div>

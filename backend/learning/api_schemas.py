@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from learning.models import ClassTestAssignment, Question
+from learning.models import ClassTestAssignment, Question, Test
 from learning.serializers import ExamPackItemSerializer, ExamPackSerializer, TestSerializer
 
 
@@ -88,6 +88,7 @@ class BulkPackItemsRequestSerializer(serializers.Serializer):
 
 class TestPackImportRequestSerializer(serializers.Serializer):
     source = serializers.JSONField()
+    status = serializers.ChoiceField(choices=Test.PublishStatus.choices, required=False, default=Test.PublishStatus.PUBLISHED)
     creator_name = serializers.CharField(required=False, allow_blank=True)
     creator_code = serializers.CharField(required=False, allow_blank=True)
     manage_key = serializers.CharField(required=False, allow_blank=True)

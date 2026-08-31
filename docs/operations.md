@@ -29,7 +29,7 @@ From the repository checkout on the server:
 ./scripts/deploy-frontend.sh
 ```
 
-The backend script migrates the database, collects static files, runs `check --deploy`, starts Gunicorn under PM2, and verifies `/api/health/`. Put Nginx or another TLS reverse proxy in front of Gunicorn; the app enables HTTPS security headers when `DJANGO_DEBUG=false`.
+The backend script migrates the database, collects static files, runs `check --deploy`, starts Gunicorn under PM2 (or a scoped PID/log fallback when PM2 is unavailable), and verifies `/api/health/`. The default production ports are API `8001` and web `3001`; override them with `QUESTLAB_API_BIND`, `QUESTLAB_WEB_PORT`, and related `QUESTLAB_*_PID_FILE`/`*_LOG_FILE` variables. Put Nginx or another TLS reverse proxy in front of Gunicorn; the app enables HTTPS security headers when `DJANGO_DEBUG=false`.
 
 ## Backups and recovery
 

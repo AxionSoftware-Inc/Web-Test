@@ -92,8 +92,7 @@ async function apiErrorMessage(res: Response, fallback: string) {
       const reasons = payload.skipped
         .slice(0, 3)
         .map((item: { title?: string; test_slug?: string; reason?: string; layer?: string; code?: string }) => {
-          const prefix = [item.layer, item.code].filter(Boolean).join("/");
-          return `${item.title || item.test_slug || "Item"}${prefix ? ` [${prefix}]` : ""}: ${item.reason || "unknown reason"}`;
+          return `${item.title || item.test_slug || "Item"}: ${item.reason || "unknown reason"}`;
         })
         .join(" | ");
       return `${fallback}. ${reasons}`;

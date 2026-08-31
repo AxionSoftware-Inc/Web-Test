@@ -115,6 +115,7 @@ class Test(TimestampedModel):
     class Meta:
         indexes = [
             models.Index(fields=["topic", "difficulty"], name="test_topic_diff_idx"),
+            models.Index(fields=["topic", "status", "created_at"], name="test_topic_status_created_idx"),
             models.Index(fields=["status", "created_at"], name="test_status_created_idx"),
         ]
 
@@ -291,7 +292,7 @@ class TestSession(TimestampedModel):
         indexes = [
             models.Index(fields=["classroom", "status", "-submitted_at"], name="session_class_status_idx"),
             models.Index(fields=["exam_pack", "status", "-submitted_at"], name="session_pack_status_idx"),
-            models.Index(fields=["student_code", "status"], name="session_student_status_idx"),
+            models.Index(fields=["student_code", "status", "-submitted_at"], name="session_student_status_idx"),
         ]
 
     def __str__(self) -> str:

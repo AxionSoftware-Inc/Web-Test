@@ -77,6 +77,8 @@ ASSIGNMENTS_WITH_COUNTS = ClassTestAssignment.objects.select_related("test").ann
 PACK_ITEMS_WITH_COUNTS = ExamPackItem.objects.select_related("test").annotate(
     question_count=Count("test__questions", distinct=True),
 )
+IMPORT_MAX_TESTS = 200
+IMPORT_MAX_QUESTIONS = 5_000
 
 
 def request_value(request, key, default=""):
@@ -469,6 +471,14 @@ class TestViewSet(viewsets.ModelViewSet):
             return import_error("backend_schema", "pack_missing", "Pack object is required.", "pack")
         if not isinstance(tests_data, list) or not tests_data:
             return import_error("backend_schema", "tests_missing", "At least one test is required.", "tests")
+        if len(tests_data) > IMPORT_MAX_TESTS:
+            return import_error("backend_schema", "too_many_tests", f"Bir importda ko'pi bilan {IMPORT_MAX_TESTS} ta test yuborish mumkin.", "tests")
+        question_count = sum(len(normalize_import_questions(test_data)) for test_data in tests_data if isinstance(test_data, dict))
+        if question_count > IMPORT_MAX_QUESTIONS:
+            return import_error("backend_schema", "too_many_questions", f"Bir importda ko'pi bilan {IMPORT_MAX_QUESTIONS} ta savol yuborish mumkin.", "tests")
+        import_status = request.data.get("status") or Test.PublishStatus.PUBLISHED
+        if import_status not in {Test.PublishStatus.DRAFT, Test.PublishStatus.PUBLISHED}:
+            return import_error("backend_schema", "invalid_status", "Test holati draft yoki published bo'lishi kerak.", "status")
         if exam_pack_title_exists(pack_data.get("title")):
             return import_error("backend_schema", "pack_title_duplicate", "A pack with this title already exists. Rename the pack before importing.", "pack.title")
 
@@ -535,7 +545,7 @@ class TestViewSet(viewsets.ModelViewSet):
                         10,
                     ),
                     passing_score=70,
-                    status=Test.PublishStatus.PUBLISHED,
+                    status=import_status,
                     creator_name=request.data.get("creator_name") or "Importer",
                     creator_code=creator_code,
                     manage_key=manage_key,

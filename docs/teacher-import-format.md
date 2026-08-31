@@ -1,6 +1,8 @@
 # O‘qituvchi uchun test import formati
 
-QuestLab’da test qo‘shish uchun texnik JSON formatini yodlash shart emas. `/crud` sahifasidagi **Tayyor matnni qo‘ying** oynasiga Word, Telegram yoki AI’dan olingan matnni joylash kifoya.
+QuestLab’da test qo‘shish uchun texnik JSON formatini yodlash shart emas. `/crud` sahifasidagi **Tayyor matnni qo‘ying** oynasiga Word, Telegram yoki AI’dan olingan matnni joylash kifoya. Excel (`.xlsx`/`.xls`) faylining birinchi varag‘i va Word (`.docx`) fayli ham to‘g‘ridan-to‘g‘ri qabul qilinadi.
+
+Excel jadvalining birinchi qatorida `question`, `A`, `B`, `C`, `D`, `answer`, `explanation`, `skills` ustunlari bo‘lishi mumkin. Word fayli oddiy matnga aylantiriladi va quyidagi raqamlangan savol formatidan foydalanadi.
 
 ## Oddiy matn
 
@@ -39,12 +41,13 @@ CSV importdan keyin barcha savollar preview’da ko‘rsatiladi. Javob harfini b
 
 ## Saqlash
 
-`Bazaga saqlash` bosilganda:
+`Publish qilish` yoki `Qoralama sifatida saqlash` bosilganda:
 
 - bitta test yopiq test bazasiga saqlanadi;
 - JSON ichida bir nechta test bo‘lsa, ular bitta yangi yopiq bazaga birlashtiriladi;
 - bo‘lim va fan tanlangan qiymatga moslanadi;
 - skill ko‘rsatilmagan savollarga `general` skill avtomatik beriladi;
 - bo‘sh savol, javobsiz test yoki ikkidan kam variantli savol saqlashdan oldin ko‘rsatiladi.
+- takroriy savollar ogohlantirish bilan ajratiladi va ularni saqlashdan oldin o‘chirib tashlash mumkin.
 
 Texnik JSON va mavjud testlarni packga yig‘ish uchun **Ko‘p testli baza** sahifasidagi kengaytirilgan import oynasidan foydalanish mumkin.

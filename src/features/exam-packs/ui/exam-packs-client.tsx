@@ -56,8 +56,8 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
     setError(message);
   }
 
-  function setImportError(layer: ImportLayer, code: string, message: string) {
-    setWarning(`[${layer}/${code}] ${message}`);
+  function setImportError(_layer: ImportLayer, _code: string, message: string) {
+    setWarning(message);
   }
 
   function duplicateTitle(candidate: string) {
@@ -119,8 +119,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
     if (!skipped.length) return "";
     const reasons = skipped.slice(0, 3).map((item) => {
       const row = item as typeof item & { layer?: string; code?: string; field?: string };
-      const prefix = [row.layer, row.code].filter(Boolean).join("/");
-      return `${row.title}${prefix ? ` [${prefix}]` : ""}: ${row.reason}`;
+      return `${row.title}: ${row.reason}`;
     }).join(" | ");
     return `${skipped.length} test yaratilmadi. ${reasons}`;
   }
@@ -189,11 +188,11 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
       if (cleanItems.length) {
         const result = await questApi.bulkCreateExamPackItems(pack.slug, { manage_code: manageCode, items: cleanItems });
         if (!result.created.length) {
-          setImportError("backend_db", "no_items_created", `Testlar packga qo'shilmadi. ${result.skipped.slice(0, 3).map((item) => `${item.test_slug || "test"} [${[item.layer, item.code].filter(Boolean).join("/") || "backend"}]: ${item.reason}`).join(" | ")}`);
+          setImportError("backend_db", "no_items_created", `Testlar packga qo'shilmadi. ${result.skipped.slice(0, 3).map((item) => `${item.test_slug || "test"}: ${item.reason}`).join(" | ")}`);
           return;
         }
         if (result.skipped.length) {
-          setError(`${result.skipped.length} test qo'shilmadi. ${result.skipped.slice(0, 2).map((item) => `${item.test_slug || "test"} [${[item.layer, item.code].filter(Boolean).join("/") || "backend"}]: ${item.reason}`).join(" | ")}`);
+          setError(`${result.skipped.length} test qo'shilmadi. ${result.skipped.slice(0, 2).map((item) => `${item.test_slug || "test"}: ${item.reason}`).join(" | ")}`);
         }
         pack.item_count = result.created.length;
         pack.items = result.created;

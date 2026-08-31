@@ -532,7 +532,7 @@ export const questApi = {
   test: (testSlug: string) => apiGet<ApiTest>(`/tests/${testSlug}/`),
   testManage: (testSlug: string, manageKey: string) => apiGet<ApiResultTest>(`/tests/${testSlug}/manage/?manage_key=${encodeURIComponent(manageKey)}`),
   createTest: (payload: CreateTestPayload) => apiPost<ApiTest>("/tests/", payload),
-  importTestPack: (payload: { source: StrictPackImportSource; creator_name?: string; creator_code?: string; manage_key?: string; pack_manage_code?: string }) =>
+  importTestPack: (payload: { source: StrictPackImportSource; status?: "draft" | "published"; creator_name?: string; creator_code?: string; manage_key?: string; pack_manage_code?: string }) =>
     apiPost<ApiPackImportResult>("/tests/import-pack/", payload),
   updateTest: (
     testSlug: string,
