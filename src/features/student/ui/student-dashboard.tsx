@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -19,7 +20,9 @@ import { Button } from "@/components/ui/button";
 import { Badge as UiBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { StudentShell } from "@/components/student/student-ui";
-import type { ApiExamPack, ApiMistakesSummary, ApiProfileSummary, ApiSession, ApiTest } from "@/shared/api/questlab-api";
+import type { ApiExamPack, ApiMasteryProgress, ApiMistakesSummary, ApiProfileSummary, ApiSession, ApiTest } from "@/shared/api/questlab-api";
+import { questApi } from "@/shared/api/questlab-api";
+import { getStudentCode } from "@/shared/model/local-identity";
 
 export function nowMs() {
   return new Date().getTime();
@@ -54,31 +57,49 @@ export function StudentDashboard({
   sessions: ApiSession[];
   mistakes?: ApiMistakesSummary;
 }) {
-  const inProgressSessions = sessions.filter((item) => item.status === "in_progress");
-  const completedSessions = sessions.filter((item) => item.status === "submitted");
+  const [studentSummary, setStudentSummary] = useState(summary);
+  const [studentSessions, setStudentSessions] = useState(sessions);
+  const [mastery, setMastery] = useState<ApiMasteryProgress | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const studentCode = getStudentCode();
+    Promise.all([questApi.profileSummary(studentCode), questApi.profileMastery(studentCode), questApi.sessions(studentCode)]).then(([nextSummary, nextMastery, nextSessions]) => {
+      if (cancelled) return;
+      setStudentSummary(nextSummary);
+      setMastery(nextMastery);
+      setStudentSessions(nextSessions);
+    }).catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const inProgressSessions = studentSessions.filter((item) => item.status === "in_progress");
+  const completedSessions = studentSessions.filter((item) => item.status === "submitted");
   const activeSession = inProgressSessions[0];
   const completedSlugs = new Set(completedSessions.map((item) => item.test_slug));
   const inProgressBySlug = new Map(inProgressSessions.map((item) => [item.test_slug, item]));
-  const weakTopics = [...summary.topic_progress].filter((item) => item.value < 75).sort((a, b) => a.value - b.value);
+  const topicProgress = mastery?.topics.map((item) => ({ topic: item.topic, slug: item.topic_slug, value: item.mastery, attempts: item.attempts })) ?? studentSummary.topic_progress;
+  const weakTopics = [...topicProgress].filter((item) => item.value < 75).sort((a, b) => a.value - b.value);
+  const skillGaps = mastery?.skills.filter((item) => item.mastery < 85).slice(0, 6) ?? [];
   const availableTests = tests.filter((test) => !completedSlugs.has(test.slug));
   const nextTest = activeSession
     ? tests.find((test) => test.slug === activeSession.test_slug)
     : availableTests[0] ?? tests[0];
-  const assignedTests = buildAssignedTests(tests, sessions).slice(0, 6);
+  const assignedTests = buildAssignedTests(tests, studentSessions).slice(0, 6);
   const activePackCount = packs.filter((pack) => pack.is_active).length;
-  const trendRows = summary.recent_tests.slice(-12).map((item) => ({
+  const trendRows = studentSummary.recent_tests.slice(-12).map((item) => ({
     label: shortDate(item.submitted_at),
     score: item.score,
     testTitle: item.title,
     date: formatDate(item.submitted_at),
   }));
-  const topicRows = [...summary.topic_progress]
+  const topicRows = [...topicProgress]
     .sort((a, b) => a.value - b.value)
     .slice(0, 8)
     .map((item) => ({ topic: item.topic, mastery: item.value, attempts: item.attempts }));
   const recentMistakes = (mistakes?.mistakes ?? []).slice(0, 3);
-  const recentResults = summary.recent_tests.slice(0, 3);
-  const recommendation = deriveRecommendation({ activeSession, nextTest, weakTopics, assignedTests });
+  const recentResults = studentSummary.recent_tests.slice(0, 3);
+  const recommendation = deriveRecommendation({ activeSession, nextTest, weakTopics, assignedTests, mastery });
   const pendingTests = Math.max(0, assignedTests.filter((item) => item.status === "assigned").length || availableTests.length || activePackCount);
 
   return (
@@ -96,20 +117,21 @@ export function StudentDashboard({
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <StudentHomeStat label="Pending tests" value={pendingTests} />
         <StudentHomeStat label="In progress" value={inProgressSessions.length} />
-        <StudentHomeStat label="Average score" value={`${summary.average_score || 0}%`} />
-        <StudentHomeStat label="Weak topics" value={weakTopics.length} />
-        <StudentHomeStat label="Completed tests" value={summary.tests_taken || completedSessions.length} />
+        <StudentHomeStat label="Observed mastery" value={`${mastery?.overview.mastery ?? studentSummary.math_mastery ?? 0}%`} />
+        <StudentHomeStat label="Skill gaps" value={mastery?.overview.weak_skill_count ?? weakTopics.length} />
+        <StudentHomeStat label="Questions analyzed" value={mastery?.overview.questions_attempted ?? studentSummary.answered_questions} />
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <main className="grid gap-6">
           <ContinueOrNextTestCard activeSession={activeSession} nextTest={nextTest} />
+          <LearningFocusCard skills={skillGaps} recommendation={mastery?.recommendations[0]} />
           <AssignedTestsPreview tests={assignedTests} inProgressBySlug={inProgressBySlug} />
           <ScoreTrendChart rows={trendRows} />
         </main>
 
         <aside className="grid h-fit gap-4 xl:sticky xl:top-24">
-          <OverallMasteryCard value={summary.math_mastery || summary.average_score || 0} />
+          <OverallMasteryCard value={mastery?.overview.mastery ?? (studentSummary.math_mastery || studentSummary.average_score || 0)} />
           <WeakTopicsCard rows={topicRows} />
           <RecommendedNextActionCard recommendation={recommendation} />
           <RecentMistakesCard mistakes={recentMistakes} />
@@ -179,11 +201,13 @@ function deriveRecommendation({
   nextTest,
   weakTopics,
   assignedTests,
+  mastery,
 }: {
   activeSession?: ApiSession;
   nextTest?: ApiTest;
   weakTopics: ApiProfileSummary["topic_progress"];
   assignedTests: StudentAssignedTest[];
+  mastery?: ApiMasteryProgress | null;
 }) {
   if (activeSession) {
     return {
@@ -191,6 +215,15 @@ function deriveRecommendation({
       reason: "You already started this test. Finish it while the context is fresh.",
       actionLabel: "Continue",
       href: `/student/test-session/${activeSession.id}`,
+    };
+  }
+  if (mastery?.recommendations[0]) {
+    const next = mastery.recommendations[0];
+    return {
+      title: next.title,
+      reason: next.reason,
+      actionLabel: next.type === "review" ? "Review gaps" : "Start focused test",
+      href: next.href,
     };
   }
   if (weakTopics.length) {
@@ -216,6 +249,33 @@ function deriveRecommendation({
     actionLabel: "Practice",
     href: "/student/tests",
   };
+}
+
+function LearningFocusCard({ skills, recommendation }: { skills: ApiMasteryProgress["skills"]; recommendation?: ApiMasteryProgress["recommendations"][number] }) {
+  return (
+    <Card className="border-brand/20 bg-brand-soft p-5">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">Learning focus</p>
+          <h2 className="mt-2 text-xl font-semibold text-ink">What to learn next</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Progress is based on skill evidence, not just the number of correct answers.</p>
+        </div>
+        {recommendation ? <Button asChild><Link href={recommendation.href}>{recommendation.type === "review" ? "Review gaps" : "Practice now"}</Link></Button> : null}
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {skills.map((skill) => (
+          <div key={`${skill.topic_slug}-${skill.skill_slug}`} className="rounded-[var(--radius-control)] border border-brand/15 bg-surface p-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0"><p className="line-clamp-1 text-sm font-semibold">{skill.skill}</p><p className="mt-1 text-xs text-muted">{skill.topic} · {skill.confidence} confidence</p></div>
+              <span className="shrink-0 text-sm font-bold" style={{ color: masteryColor(skill.mastery) }}>{skill.mastery}%</span>
+            </div>
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-neutral-soft"><div className="h-full rounded-full" style={{ width: `${skill.mastery}%`, background: masteryColor(skill.mastery) }} /></div>
+          </div>
+        ))}
+        {!skills.length ? <p className="text-sm text-muted">Submit a test to build your first skill map.</p> : null}
+      </div>
+    </Card>
+  );
 }
 
 function StudentHomeStat({ label, value }: { label: string; value: string | number }) {

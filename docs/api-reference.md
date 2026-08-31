@@ -111,9 +111,12 @@ The importer still accepts legacy aliases from old files (`prompt`, `savol`, `ch
 | PATCH | `/api/v1/profile/role/` | `identity_code`, optional `active_role`, `display_name`, `phone` | updated `RoleProfile` |
 | GET | `/api/v1/profile/role-search/?q=...&role=...` | `q` filters email; optional role | up to 8 `RoleProfile` rows |
 | GET | `/api/v1/profile/summary/?student_code=...` | optional student code | profile totals, topic progress, weekly activity, recent tests, recommendations |
+| GET | `/api/v1/profile/mastery/?student_code=...` | required student code | server-authoritative topic/skill mastery, evidence counts, confidence, priorities, and next actions |
 | GET | `/api/v1/mistakes/summary/?student_code=...` | optional student code | mistakes and weak skills |
 
 `RoleProfile` includes `identity_code`, `display_name`, `email`, `phone`, `active_role`, `available_roles`, `created_at`, and `updated_at`.
+
+`profile/mastery` is the learning map used by the student dashboard. `accuracy` is the raw correct-answer ratio; `mastery` discounts low-evidence results (less than six question attempts) and medium-evidence results (six to fourteen attempts), so a single lucky answer is not treated as full knowledge. `recommendations[0]` is the highest-priority next action. The endpoint requires the browser's student identity because progress is personal; authorization and RBAC remain a separate scope.
 
 ### Taxonomy and questions
 
@@ -149,7 +152,7 @@ Public question fields are `id`, `subject`, `topic`, `skills`, `skill_titles`, `
 | DELETE | `/api/v1/tests/{test_slug}/?manage_key=...` | management key when configured | `204`, or archived draft when sessions exist |
 | GET | `/api/v1/tests/{test_slug}/manage/?manage_key=...` | required management key when configured | test with answer/explanation fields |
 | POST | `/api/v1/tests/import-pack/` | `{source: TestPackV1, creator_name?, creator_code?, manage_key?, pack_manage_code?}` | `{pack, tests, skipped[]}` |
-| GET | `/api/v1/sessions/` | optional page params | paginated sessions |
+| GET | `/api/v1/sessions/?student_code=...` | optional student code and page params | paginated sessions; student code scopes the list to one learner |
 | GET | `/api/v1/sessions/{id}/` | numeric id | session and saved answers |
 | POST | `/api/v1/tests/{test_slug}/start/` | `student_name`, `student_code` | created in-progress session (`201`) |
 | POST | `/api/v1/sessions/{id}/answer/` | `question`, `value`, `is_flagged?` | updated session |

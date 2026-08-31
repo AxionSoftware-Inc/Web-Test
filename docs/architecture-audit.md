@@ -25,6 +25,7 @@ Django REST API
     views.py           endpoint orchestration (still large)
     services/
       scoring.py       authoritative answer/result engine
+      mastery.py       server-authoritative learner knowledge map
       analytics.py     class/school/pack aggregates
       audit.py         business event recording
 ```
@@ -47,7 +48,7 @@ The backend has useful service boundaries, but `learning/views.py` is still a la
 
 Before this audit, `profile_summary` and `mistakes_summary` used direct string comparison while analytics and result snapshots used `services/scoring.py`. Frontend mastery adapters also had their own normalization call path. This could make multiple-choice, whitespace, or LaTeX answers disagree across screens.
 
-The authoritative backend scorer is now used by profile and mistake aggregation, and the frontend assessment/mastery paths use one shared answer-scoring helper. Submitted results remain backend-authoritative.
+The authoritative backend scorer is now used by profile, mistake, and mastery aggregation, and the frontend assessment path uses one shared answer-scoring helper. Submitted results and learner mastery remain backend-authoritative; the browser only renders the returned projection and keeps a local fallback for an offline result view.
 
 There is still one intentional boundary: frontend mastery heuristics and backend result scoring are different responsibilities. They must share versioned evidence and policy definitions before mastery itself is moved server-side.
 
@@ -68,7 +69,7 @@ Its limitations are material:
 - scoring thresholds and multipliers are hard-coded heuristics;
 - topic prerequisites are hard-coded to an algebra graph on the client;
 - time, answer changes, hints, and tab-switch evidence are not a durable backend event model;
-- mastery is recomputed in browser storage and is not a server-owned projection;
+- mastery is now served by a server-owned `StudentProgress` projection refreshed after submission; the refresh currently recomputes the learner's history synchronously, so an incremental queue is still needed for larger cohorts;
 - content import normalization is still more permissive than the canonical schema;
 - analytics and recommendation policies have no independently versioned configuration or calibration dataset.
 

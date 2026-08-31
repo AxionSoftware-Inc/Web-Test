@@ -127,3 +127,102 @@ class LearningApiContractTests(APITestCase):
         self.assertTrue(result_response.data["questions"][0]["is_correct"])
         self.assertEqual(profile_response.data["average_score"], 100)
         self.assertEqual(mistakes_response.data["mistakes"], [])
+
+    def test_mastery_endpoint_builds_skill_gaps_and_updates_across_attempts(self):
+        differentiation = Skill.objects.create(topic=self.topic, title="Differentiation", slug="differentiation")
+        questions = [
+            self.question,
+            Question.objects.create(
+                subject=self.subject,
+                topic=self.topic,
+                type=Question.QuestionType.SINGLE_CHOICE,
+                difficulty=Question.Difficulty.BEGINNER,
+                prompt="3 + 3 = ?",
+                options=["5", "6"],
+                answer="6",
+            ),
+            Question.objects.create(
+                subject=self.subject,
+                topic=self.topic,
+                type=Question.QuestionType.SINGLE_CHOICE,
+                difficulty=Question.Difficulty.INTERMEDIATE,
+                prompt="Derivative of x² = ?",
+                options=["x", "2x"],
+                answer="2x",
+            ),
+            Question.objects.create(
+                subject=self.subject,
+                topic=self.topic,
+                type=Question.QuestionType.SINGLE_CHOICE,
+                difficulty=Question.Difficulty.INTERMEDIATE,
+                prompt="Derivative of x³ = ?",
+                options=["3x²", "x²"],
+                answer="3x²",
+            ),
+        ]
+        questions[1].skills.add(self.skill)
+        questions[2].skills.add(differentiation)
+        questions[3].skills.add(differentiation)
+        for order, question in enumerate(questions[1:], start=2):
+            TestQuestion.objects.create(test=self.test, question=question, order=order)
+
+        def submit(values):
+            start = self.client.post(
+                "/api/tests/algebra-smoke-test/start/",
+                {"student_name": "Student", "student_code": "mastery-student"},
+                format="json",
+            )
+            self.assertEqual(start.status_code, 201)
+            session_id = start.data["id"]
+            for question, value in zip(questions, values):
+                answer = self.client.post(
+                    f"/api/sessions/{session_id}/answer/",
+                    {"question": question.id, "value": value},
+                    format="json",
+                )
+                self.assertEqual(answer.status_code, 200)
+            submitted = self.client.post(f"/api/sessions/{session_id}/submit/", format="json")
+            self.assertEqual(submitted.status_code, 200)
+
+        submit(["4", "wrong", "wrong", "wrong"])
+        first = self.client.get("/api/profile/mastery/?student_code=mastery-student")
+        self.assertEqual(first.status_code, 200)
+        first_skills = {item["skill"]: item for item in first.data["skills"]}
+        self.assertEqual(first.data["overview"]["questions_attempted"], 4)
+        self.assertEqual(first_skills["Linear equations"]["accuracy"], 50)
+        self.assertEqual(first_skills["Differentiation"]["accuracy"], 0)
+        self.assertEqual(first.data["recommendations"][0]["skill"], "Differentiation")
+        self.assertEqual(first.data["recommendations"][0]["type"], "practice")
+
+        submit(["4", "6", "2x", "3x²"])
+        second = self.client.get("/api/profile/mastery/?student_code=mastery-student")
+        second_skills = {item["skill"]: item for item in second.data["skills"]}
+        self.assertEqual(second.data["overview"]["tests_taken"], 2)
+        self.assertEqual(second_skills["Differentiation"]["attempts"], 4)
+        self.assertEqual(second_skills["Differentiation"]["correct"], 2)
+        self.assertEqual(second_skills["Differentiation"]["mastery"], 38)
+        self.assertEqual(second.data["recommendations"][0]["skill"], "Differentiation")
+
+    def test_mastery_requires_a_student_identity(self):
+        response = self.client.get("/api/profile/mastery/")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("student_code", response.data)
+
+    def test_session_list_can_be_scoped_to_one_student(self):
+        first = self.client.post(
+            "/api/tests/algebra-smoke-test/start/",
+            {"student_name": "First", "student_code": "first-student"},
+            format="json",
+        )
+        second = self.client.post(
+            "/api/tests/algebra-smoke-test/start/",
+            {"student_name": "Second", "student_code": "second-student"},
+            format="json",
+        )
+        response = self.client.get("/api/sessions/?student_code=first-student")
+
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(second.status_code, 201)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["student_code"], "first-student")

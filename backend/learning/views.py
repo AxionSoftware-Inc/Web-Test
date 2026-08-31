@@ -33,6 +33,7 @@ from learning.api_schemas import (
     ClassJoinRequestSerializer,
     ClassStudentWriteRequestSerializer,
     MistakesSummarySerializer,
+    MasteryProgressSerializer,
     PackItemWriteRequestSerializer,
     ProfileSummarySerializer,
     SchoolClassWriteRequestSerializer,
@@ -67,6 +68,7 @@ from learning.serializers import (
 from learning.services.analytics import class_results_payload, exam_pack_results_payload
 from learning.services.audit import record_event
 from learning.services.scoring import build_session_result, is_answer_correct, score_session
+from learning.services.mastery import get_mastery_progress, refresh_mastery_progress
 
 
 ASSIGNMENTS_WITH_COUNTS = ClassTestAssignment.objects.select_related("test").annotate(
@@ -642,6 +644,17 @@ class TestSessionViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
     queryset = TestSession.objects.select_related("test", "user").prefetch_related("answers").all().order_by("-created_at")
     serializer_class = TestSessionSerializer
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        student_code = self.request.query_params.get("student_code", "").strip()
+        return queryset.filter(student_code=student_code) if student_code else queryset
+
+    @extend_schema(
+        parameters=[OpenApiParameter(name="student_code", type=OpenApiTypes.STR, location=OpenApiParameter.QUERY, required=False)],
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
     @extend_schema(request=AnswerRequestSerializer, responses={200: TestSessionSerializer})
     @decorators.action(detail=True, methods=["post"])
     @transaction.atomic
@@ -675,6 +688,7 @@ class TestSessionViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
         session.submitted_at = timezone.now()
         session.result_snapshot = build_session_result(session)
         session.save(update_fields=["status", "submitted_at", "result_snapshot", "updated_at"])
+        refresh_mastery_progress(session.student_code)
         record_event(
             request,
             action="session.submitted",
@@ -1592,10 +1606,35 @@ def profile_summary(request):
             }
         ]
 
+    profile_name = request.user.get_full_name() or request.user.username if request.user.is_authenticated else "QuestLab Learner"
+    if student_code:
+        mastery_progress = get_mastery_progress(student_code)
+        mastery_overview = mastery_progress["overview"]
+        topic_progress = [
+            {
+                "topic": item["topic"],
+                "slug": item["topic_slug"],
+                "value": item["mastery"],
+                "attempts": item["test_attempts"],
+            }
+            for item in mastery_progress["topics"]
+        ]
+        topic_progress.sort(key=lambda item: item["value"])
+        average_score = mastery_overview["accuracy"]
+        mastery = mastery_overview["mastery"]
+        correct_total = mastery_overview["correct_answers"]
+        question_total = mastery_overview["questions_attempted"]
+        attempts = mastery_overview["tests_taken"]
+        profile_name = mastery_progress["student"]["name"]
+        recommendations = [
+            {"title": item["title"], "description": item["reason"], "href": item["href"]}
+            for item in mastery_progress["recommendations"]
+        ]
+
     return response.Response(
         {
-            "name": request.user.get_full_name() or request.user.username if request.user.is_authenticated else "QuestLab Learner",
-            "level": "Algebra Builder" if mastery < 80 else "Algebra Master",
+            "name": profile_name,
+            "level": "Skill foundations" if mastery < 80 else "Skill fluent",
             "tests_taken": attempts,
             "average_score": average_score,
             "math_mastery": mastery,
@@ -1607,6 +1646,18 @@ def profile_summary(request):
             "recommendations": recommendations,
         }
     )
+
+
+@extend_schema(
+    parameters=[OpenApiParameter(name="student_code", type=OpenApiTypes.STR, location=OpenApiParameter.QUERY, required=True)],
+    responses={200: MasteryProgressSerializer},
+)
+@decorators.api_view(["GET"])
+def profile_mastery(request):
+    student_code = request.query_params.get("student_code", "").strip()
+    if not student_code:
+        return response.Response({"student_code": "This query parameter is required."}, status=status.HTTP_400_BAD_REQUEST)
+    return response.Response(get_mastery_progress(student_code))
 
 
 @extend_schema(responses={200: MistakesSummarySerializer})

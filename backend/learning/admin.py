@@ -10,6 +10,7 @@ from learning.models import (
     Question,
     Skill,
     Subject,
+    StudentProgress,
     TeacherClass,
     Test,
     TestQuestion,
@@ -63,3 +64,10 @@ admin.site.register(ClassTestAssignment)
 admin.site.register(ExamPack)
 admin.site.register(ExamPackItem)
 admin.site.register(AuditEvent)
+
+
+@admin.register(StudentProgress)
+class StudentProgressAdmin(admin.ModelAdmin):
+    list_display = ["student_code", "updated_at"]
+    search_fields = ["student_code"]
+    readonly_fields = ["student_code", "snapshot", "created_at", "updated_at"]

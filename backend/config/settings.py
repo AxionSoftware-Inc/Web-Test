@@ -173,5 +173,7 @@ SPECTACULAR_SETTINGS = {
         "TestPublishStatusEnum": "learning.models.Test.PublishStatus",
         "TestSessionStatusEnum": "learning.models.TestSession.Status",
         "VisibilityEnum": "learning.models.TeacherClass.Visibility",
+        "QuestionTypeEnum": "learning.models.Question.QuestionType",
+        "ConfidenceLevelEnum": ["low", "medium", "high"],
     },
 }

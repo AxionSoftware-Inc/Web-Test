@@ -298,6 +298,19 @@ class TestSession(TimestampedModel):
         return f"{self.test.title} / {self.status}"
 
 
+class StudentProgress(TimestampedModel):
+    """Materialized learner knowledge map refreshed after submitted sessions."""
+
+    student_code = models.CharField(max_length=80, unique=True)
+    snapshot = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["student_code", "-updated_at"], name="progress_student_updated_idx")]
+
+    def __str__(self) -> str:
+        return self.student_code
+
+
 class Answer(TimestampedModel):
     session = models.ForeignKey(TestSession, related_name="answers", on_delete=models.CASCADE)
     question = models.ForeignKey(Question, related_name="answers", on_delete=models.CASCADE)

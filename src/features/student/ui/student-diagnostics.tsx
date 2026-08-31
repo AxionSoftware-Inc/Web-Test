@@ -27,7 +27,7 @@ import { Card } from "@/components/ui/card";
 import { AnalyticsBars, Badge, Empty, Section, StudentShell } from "@/components/student/student-ui";
 import { apiSessionsToAnswerSnapshots, buildMasteryReport } from "@/features/mastery-engine/model";
 import type { MasteryReport } from "@/features/mastery-engine/model";
-import type { ApiMistakesSummary } from "@/shared/api/questlab-api";
+import type { ApiMasteryProgress, ApiMistakesSummary } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { cn } from "@/shared/lib/cn";
 import { getStudentCode } from "@/shared/model/local-identity";
@@ -99,24 +99,33 @@ export function StudentMistakes({ initialSummary: _initialSummary }: { initialSu
 }
 
 export function StudentMistakesDiagnostic({ initialSummary }: { initialSummary: ApiMistakesSummary }) {
-  const [report, setReport] = useState<MasteryReport | null>(null);
+  const [serverProgress, setServerProgress] = useState<ApiMasteryProgress | null>(null);
+  const [serverMistakes, setServerMistakes] = useState(initialSummary.mistakes);
   const searchParams = useSearchParams();
   const [selectedSubject, setSelectedSubject] = useState(searchParams.get("subject") ?? "");
 
   useEffect(() => {
-    Promise.all([questApi.sessions(), questApi.tests()]).then(([sessions, tests]) => {
-      const studentId = getStudentCode();
-      setReport(buildMasteryReport(studentId, apiSessionsToAnswerSnapshots({ sessions, tests, studentId })));
+    const studentCode = getStudentCode();
+    Promise.all([questApi.profileMastery(studentCode), questApi.mistakesSummary(studentCode)]).then(([nextProgress, nextMistakes]) => {
+      setServerProgress(nextProgress);
+      setServerMistakes(nextMistakes.mistakes);
     }).catch(() => undefined);
   }, []);
 
-  const subjects = Array.from(new Set([...(report?.topics.map((item) => item.subject) ?? []), ...(report?.mistakes.map((item) => item.subject) ?? [])])).filter(Boolean);
+  const serverTopics = serverProgress?.topics.map(toDiagnosticTopic) ?? [];
+  const serverSkills = serverProgress?.skills.map(toDiagnosticSkill) ?? [];
+  const displayTopics = serverTopics;
+  const displaySkills = serverSkills;
+  const subjects = Array.from(new Set(displayTopics.map((item) => item.subject))).filter(Boolean);
   const activeSubject = selectedSubject || subjects[0] || "";
-  const topics = (report?.topics ?? []).filter((item) => !activeSubject || item.subject === activeSubject);
-  const weakTopics = (report?.weakTopics ?? []).filter((item) => !activeSubject || item.subject === activeSubject);
-  const skills = (report?.skills ?? []).filter((item) => topics.some((topic) => topic.topicSlug === item.topicSlug));
-  const mistakes = (report?.mistakes ?? []).filter((item) => !activeSubject || item.subject === activeSubject);
-  const focus = report?.recommendedActions.find((action) => topics.some((topic) => topic.topicSlug === action.topicSlug)) ?? report?.recommendedActions[0];
+  const topics = displayTopics.filter((item) => !activeSubject || item.subject === activeSubject);
+  const weakTopics = serverTopics.filter((item) => item.mastery < 70).filter((item) => !activeSubject || item.subject === activeSubject);
+  const skills = displaySkills.filter((item) => topics.some((topic) => topic.topicSlug === item.topicSlug));
+  const mistakes = serverMistakes.map((item) => toDiagnosticMistake(item, getStudentCode(), serverProgress?.recommendations[0])).filter((item) => !activeSubject || !item.subject || item.subject === activeSubject);
+  const serverFocus = serverProgress?.recommendations.find((action) => topics.some((topic) => topic.topicSlug === action.topic_slug)) ?? serverProgress?.recommendations[0];
+  const focus = serverFocus
+    ? { label: serverFocus.title, href: serverFocus.href, reason: serverFocus.reason, topicSlug: serverFocus.topic_slug }
+    : undefined;
   const lifecycle = {
     newMistakes: mistakes.filter((item) => item.status === "new").length || initialSummary.mistakes.length,
     reviewed: mistakes.filter((item) => item.status === "reviewed").length,
@@ -124,7 +133,7 @@ export function StudentMistakesDiagnostic({ initialSummary }: { initialSummary: 
     mastered: mistakes.filter((item) => item.status === "mastered").length,
     highPriorityTopics: weakTopics.filter((item) => item.priorityScore >= 40 || item.status === "weak").length,
   };
-  const overallMastery = topics.length ? Math.round(topics.reduce((sum, topic) => sum + topic.mastery, 0) / topics.length) : 0;
+  const overallMastery = serverProgress?.overview.mastery ?? (topics.length ? Math.round(topics.reduce((sum, topic) => sum + topic.mastery, 0) / topics.length) : 0);
   const groupedMistakes = groupMistakesByTopic(mistakes);
   const recentReviewed = mistakes.filter((item) => item.status !== "new").slice(0, 4);
   const primaryTopic = [...weakTopics].sort((a, b) => b.priorityScore - a.priorityScore)[0] ?? [...topics].sort((a, b) => b.priorityScore - a.priorityScore)[0];
@@ -291,6 +300,90 @@ type TrendRow = { label: string; mistakes: number };
 type TopicMistakeGroup = { topic: string; topicSlug: string; mistakes: MistakeView[] };
 type MistakeLifecycleSummary = { newMistakes: number; reviewed: number; practiced: number; mastered: number; highPriorityTopics: number };
 
+function toDiagnosticTopic(item: ApiMasteryProgress["topics"][number]): TopicMasteryView {
+  return {
+    studentId: "server",
+    subject: item.subject,
+    topic: item.topic,
+    topicSlug: item.topic_slug,
+    attempts: item.attempts,
+    correct: item.correct,
+    wrong: item.wrong,
+    accuracy: item.accuracy,
+    mastery: item.mastery,
+    averageTimeSeconds: 0,
+    expectedAverageTimeSeconds: 0,
+    confidence: item.confidence,
+    status: item.status as TopicMasteryView["status"],
+    isFundamental: item.is_fundamental,
+    prerequisites: item.prerequisites,
+    lastPracticedAt: item.last_practiced_at ?? undefined,
+    updatedAt: item.updated_at,
+    priorityScore: item.priority_score,
+  };
+}
+
+function toDiagnosticSkill(item: ApiMasteryProgress["skills"][number]): SkillMasteryView {
+  return {
+    studentId: "server",
+    subject: item.subject,
+    skill: item.skill,
+    skillSlug: item.skill_slug,
+    topicSlug: item.topic_slug,
+    attempts: item.attempts,
+    correct: item.correct,
+    wrong: item.wrong,
+    accuracy: item.accuracy,
+    mastery: item.mastery,
+    confidence: item.confidence,
+    status: item.status as SkillMasteryView["status"],
+    updatedAt: item.updated_at,
+  };
+}
+
+function toDiagnosticMistake(
+  item: ApiMistakesSummary["mistakes"][number],
+  studentId: string,
+  recommendation?: ApiMasteryProgress["recommendations"][number],
+): MistakeView {
+  return {
+    id: `${item.session_id}-${item.question_id}`,
+    studentId,
+    sessionId: String(item.session_id),
+    testId: "",
+    questionId: String(item.question_id),
+    subject: "",
+    topic: item.topic,
+    topicSlug: toSlug(item.topic),
+    skills: item.skills.length ? item.skills : ["general"],
+    questionTitle: item.test_title,
+    questionPreview: item.prompt,
+    studentAnswer: item.user_answer,
+    correctAnswer: item.correct_answer,
+    explanation: item.explanation,
+    difficulty: "easy",
+    timeSpentSeconds: 0,
+    estimatedSeconds: 0,
+    timeQuality: "normal",
+    status: "new",
+    priority: recommendation?.priority ?? "medium",
+    mistakeType: "unknown",
+    recommendedAction: {
+      type: recommendation?.type === "retest" ? "retest" : "practice",
+      label: recommendation?.title ?? "Review gaps",
+      href: recommendation?.href ?? "/student/mistakes",
+      reason: recommendation?.reason ?? "Review this question and practice the related skill.",
+      topicSlug: recommendation?.topic_slug || toSlug(item.topic),
+      priority: recommendation?.priority ?? "medium",
+    },
+    createdAt: new Date(0).toISOString(),
+  };
+}
+
+function toSlug(value: string) {
+  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "general";
+}
+
 function LifecycleSummary({ lifecycle }: { lifecycle: MistakeLifecycleSummary }) {
   return (
     <div className="grid w-full grid-cols-5 overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface-soft md:w-auto">
@@ -314,7 +407,7 @@ function DiagnosticKpi({ label, value, note, tone }: { label: string; value: num
   );
 }
 
-function PriorityDecisionCard({ topic, recommendation }: { topic?: TopicMasteryView; recommendation?: MasteryReport["recommendedActions"][number] }) {
+function PriorityDecisionCard({ topic, recommendation }: { topic?: TopicMasteryView; recommendation?: { label: string; href: string; reason: string; topicSlug?: string } }) {
   const score = topic ? Math.min(140, Math.round(topic.priorityScore)) : 0;
   const ringValue = Math.min(100, Math.max(8, score));
   return (
@@ -429,7 +522,7 @@ function MasteryTerrain({ topics }: { topics: TopicMasteryView[] }) {
   );
 }
 
-function RecoveryProtocol({ recommendation }: { recommendation?: MasteryReport["recommendedActions"][number] }) {
+function RecoveryProtocol({ recommendation }: { recommendation?: { label: string; href: string; reason: string; topicSlug?: string } }) {
   return (
     <Card className="border-white/10 bg-[#11130f] p-5 text-white shadow-[var(--shadow-card)]">
       <div className="flex items-start justify-between gap-3">

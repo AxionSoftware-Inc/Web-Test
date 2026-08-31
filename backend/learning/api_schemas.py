@@ -158,6 +158,68 @@ class ProfileSummarySerializer(serializers.Serializer):
     recommendations = RecommendationSerializer(many=True)
 
 
+class MasteryStudentSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    student_code = serializers.CharField()
+
+
+class MasteryOverviewSerializer(serializers.Serializer):
+    mastery = serializers.IntegerField()
+    accuracy = serializers.IntegerField()
+    tests_taken = serializers.IntegerField()
+    questions_attempted = serializers.IntegerField()
+    correct_answers = serializers.IntegerField()
+    weak_skill_count = serializers.IntegerField()
+
+
+class MasteryTopicSerializer(serializers.Serializer):
+    subject = serializers.CharField()
+    topic = serializers.CharField()
+    topic_slug = serializers.CharField()
+    attempts = serializers.IntegerField()
+    test_attempts = serializers.IntegerField()
+    correct = serializers.IntegerField()
+    wrong = serializers.IntegerField()
+    accuracy = serializers.IntegerField()
+    mastery = serializers.IntegerField()
+    confidence = serializers.ChoiceField(choices=("low", "medium", "high"))
+    status = serializers.CharField()
+    priority_score = serializers.IntegerField()
+    is_fundamental = serializers.BooleanField()
+    prerequisites = serializers.ListField(child=serializers.CharField())
+    last_practiced_at = serializers.DateTimeField(allow_null=True)
+    updated_at = serializers.DateTimeField()
+
+
+class MasterySkillSerializer(MasteryTopicSerializer):
+    skill = serializers.CharField()
+    skill_slug = serializers.CharField()
+
+
+class MasteryRecommendationSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=("review", "practice", "retest", "next_assigned"))
+    title = serializers.CharField()
+    description = serializers.CharField()
+    reason = serializers.CharField()
+    href = serializers.CharField()
+    priority = serializers.ChoiceField(choices=("low", "medium", "high"))
+    topic = serializers.CharField()
+    topic_slug = serializers.CharField()
+    skill = serializers.CharField()
+    skill_slug = serializers.CharField()
+    mastery = serializers.IntegerField()
+
+
+class MasteryProgressSerializer(serializers.Serializer):
+    scoring_version = serializers.IntegerField()
+    student = MasteryStudentSerializer()
+    overview = MasteryOverviewSerializer()
+    topics = MasteryTopicSerializer(many=True)
+    skills = MasterySkillSerializer(many=True)
+    recommendations = MasteryRecommendationSerializer(many=True)
+    updated_at = serializers.DateTimeField()
+
+
 class WeakSkillSerializer(serializers.Serializer):
     skill = serializers.CharField()
     correct = serializers.IntegerField()

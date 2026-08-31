@@ -202,6 +202,61 @@ export type ApiProfileSummary = {
   recommendations: Array<{ title: string; description: string; href: string }>;
 };
 
+export type ApiMasteryTopic = {
+  subject: string;
+  topic: string;
+  topic_slug: string;
+  attempts: number;
+  test_attempts: number;
+  correct: number;
+  wrong: number;
+  accuracy: number;
+  mastery: number;
+  confidence: "low" | "medium" | "high";
+  status: string;
+  priority_score: number;
+  is_fundamental: boolean;
+  prerequisites: string[];
+  last_practiced_at: string | null;
+  updated_at: string;
+};
+
+export type ApiMasterySkill = ApiMasteryTopic & {
+  skill: string;
+  skill_slug: string;
+};
+
+export type ApiMasteryRecommendation = {
+  type: "review" | "practice" | "retest" | "next_assigned";
+  title: string;
+  description: string;
+  reason: string;
+  href: string;
+  priority: "low" | "medium" | "high";
+  topic: string;
+  topic_slug: string;
+  skill: string;
+  skill_slug: string;
+  mastery: number;
+};
+
+export type ApiMasteryProgress = {
+  scoring_version: number;
+  student: { name: string; student_code: string };
+  overview: {
+    mastery: number;
+    accuracy: number;
+    tests_taken: number;
+    questions_attempted: number;
+    correct_answers: number;
+    weak_skill_count: number;
+  };
+  topics: ApiMasteryTopic[];
+  skills: ApiMasterySkill[];
+  recommendations: ApiMasteryRecommendation[];
+  updated_at: string;
+};
+
 export type ApiTeacherClass = {
   id: number;
   name: string;
@@ -491,7 +546,7 @@ export const questApi = {
     apiPatch<ApiTest>(`/tests/${testSlug}/`, payload),
   deleteTest: (testSlug: string, manageKey?: string) => apiDelete<ApiTest | undefined>(`/tests/${testSlug}/${manageKey ? `?manage_key=${encodeURIComponent(manageKey)}` : ""}`),
   startTest: (testSlug: string, payload?: { student_name?: string; student_code?: string }) => apiPost<ApiSession>(`/tests/${testSlug}/start/`, payload),
-  sessions: () => apiGet<ApiSession[]>("/sessions/"),
+  sessions: (studentCode?: string) => apiGet<ApiSession[]>(`/sessions/${studentCode ? `?student_code=${encodeURIComponent(studentCode)}` : ""}`),
   session: (sessionId: string) => apiGet<ApiSession>(`/sessions/${sessionId}/`),
   answer: (sessionId: string, payload: { question: number; value: string; is_flagged?: boolean }) =>
     apiPost<ApiSession>(`/sessions/${sessionId}/answer/`, payload),
@@ -502,6 +557,7 @@ export const questApi = {
   updateRoleProfile: (identityCode: string, payload: { active_role?: ApiRoleProfile["active_role"]; display_name?: string; phone?: string }) =>
     apiPatch<ApiRoleProfile>("/profile/role/", { ...payload, identity_code: identityCode }),
   profileSummary: (studentCode?: string) => apiGet<ApiProfileSummary>(`/profile/summary/${studentCode ? `?student_code=${encodeURIComponent(studentCode)}` : ""}`),
+  profileMastery: (studentCode: string) => apiGet<ApiMasteryProgress>(`/profile/mastery/?student_code=${encodeURIComponent(studentCode)}`),
   mistakesSummary: (studentCode?: string) => apiGet<ApiMistakesSummary>(`/mistakes/summary/${studentCode ? `?student_code=${encodeURIComponent(studentCode)}` : ""}`),
   classes: () => apiGet<ApiTeacherClass[]>("/classes/"),
   classDetail: (slug: string) => apiGet<ApiTeacherClass>(`/classes/${slug}/`),

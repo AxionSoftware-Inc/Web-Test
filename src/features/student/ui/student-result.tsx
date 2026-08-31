@@ -1,27 +1,47 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MetricTile, Section, StudentShell } from "@/components/student/student-ui";
 import { apiSessionToAnswerSnapshots, buildMasteryReport, readRuntimeQuestionTimes, readRuntimeReport } from "@/features/mastery-engine/model";
 import type { MasteryReport } from "@/features/mastery-engine/model";
-import type { ApiSession, ApiSessionResult, ApiTest } from "@/shared/api/questlab-api";
+import type { ApiMasteryProgress, ApiSession, ApiSessionResult, ApiTest } from "@/shared/api/questlab-api";
+import { questApi } from "@/shared/api/questlab-api";
 import { getStudentCode } from "@/shared/model/local-identity";
 import { formatDate } from "@/features/student/ui/student-dashboard";
 import { OverallMasteryAnalytics, QuestionSignalScatter, RecommendationCard, SkillGapMatrix, WeakTopicsBarChart, WrongQuestionList } from "@/features/student/ui/student-diagnostics";
 
 export function StudentResult({ session, test, result }: { session: ApiSession; test: ApiTest; result: ApiSessionResult }) {
+  const [serverProgress, setServerProgress] = useState<ApiMasteryProgress | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    questApi.profileMastery(getStudentCode()).then((next) => {
+      if (!cancelled) setServerProgress(next);
+    }).catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const stats = result.summary;
   const evaluationTest = result.test;
   const answerSnapshots = apiSessionToAnswerSnapshots({ session, test: evaluationTest, studentId: getStudentCode(), timeSpentByQuestionId: readRuntimeQuestionTimes(session.id) });
   const fallbackReport = buildMasteryReport(getStudentCode(), answerSnapshots);
   const report = readRuntimeReport<MasteryReport>(session.id) ?? fallbackReport;
-  const subjectTopics = report.topics.filter((topic) => topic.subject === test.subject_slug || topic.topicSlug === test.topic_slug);
-  const subjectSkills = report.skills.filter((skill) => subjectTopics.some((topic) => topic.topicSlug === skill.topicSlug));
+  const subjectTopics = serverProgress?.topics.filter((topic) => topic.topic_slug === test.topic_slug).map(toResultTopic) ?? report.topics.filter((topic) => topic.subject === test.subject_slug || topic.topicSlug === test.topic_slug);
+  const subjectSkills = serverProgress?.skills.filter((skill) => skill.topic_slug === test.topic_slug).map(toResultSkill) ?? report.skills.filter((skill) => subjectTopics.some((topic) => topic.topicSlug === skill.topicSlug));
   const subjectMistakes = report.mistakes.filter((mistake) => mistake.subject === test.subject_slug || mistake.topicSlug === test.topic_slug);
-  const recommendation = report.recommendedActions.find((action) => subjectTopics.some((topic) => topic.topicSlug === action.topicSlug)) ?? report.recommendedActions[0];
+  const serverRecommendation = serverProgress?.recommendations.find((action) => action.topic_slug === test.topic_slug) ?? serverProgress?.recommendations[0];
+  const recommendation = serverRecommendation ? {
+    type: serverRecommendation.type,
+    label: serverRecommendation.title,
+    href: serverRecommendation.href,
+    reason: serverRecommendation.reason,
+    topicSlug: serverRecommendation.topic_slug,
+    priority: serverRecommendation.priority,
+  } : report.recommendedActions.find((action) => subjectTopics.some((topic) => topic.topicSlug === action.topicSlug)) ?? report.recommendedActions[0];
   const expectedTimeSeconds = answerSnapshots.reduce((sum, item) => sum + item.estimatedSeconds, 0);
   const timeSpentSeconds = answerSnapshots.reduce((sum, item) => sum + item.timeSpentSeconds, 0);
   const averageTimePerQuestion = Math.round(timeSpentSeconds / Math.max(1, answerSnapshots.length));
@@ -78,7 +98,7 @@ export function StudentResult({ session, test, result }: { session: ApiSession; 
     createdAt: answer.answeredAt,
     questionNumber: index + 1,
   }));
-  const overallMastery = Math.round(topicBreakdown.reduce((sum, item) => sum + item.mastery, 0) / Math.max(1, topicBreakdown.length));
+  const overallMastery = serverProgress?.overview.mastery ?? Math.round(topicBreakdown.reduce((sum, item) => sum + item.mastery, 0) / Math.max(1, topicBreakdown.length));
   const resultTone = stats.score >= test.passing_score ? "Passed" : "Needs review";
   return (
     <StudentShell variant="wide">
@@ -132,4 +152,45 @@ export function StudentResult({ session, test, result }: { session: ApiSession; 
       </div>
     </StudentShell>
   );
+}
+
+function toResultTopic(item: ApiMasteryProgress["topics"][number]): MasteryReport["topics"][number] {
+  return {
+    studentId: item.subject,
+    subject: item.subject,
+    topic: item.topic,
+    topicSlug: item.topic_slug,
+    attempts: item.attempts,
+    correct: item.correct,
+    wrong: item.wrong,
+    accuracy: item.accuracy,
+    mastery: item.mastery,
+    averageTimeSeconds: 0,
+    expectedAverageTimeSeconds: 0,
+    confidence: item.confidence,
+    status: item.status as MasteryReport["topics"][number]["status"],
+    isFundamental: item.is_fundamental,
+    prerequisites: item.prerequisites,
+    lastPracticedAt: item.last_practiced_at ?? undefined,
+    updatedAt: item.updated_at,
+    priorityScore: item.priority_score,
+  };
+}
+
+function toResultSkill(item: ApiMasteryProgress["skills"][number]): MasteryReport["skills"][number] {
+  return {
+    studentId: item.subject,
+    subject: item.subject,
+    skill: item.skill,
+    skillSlug: item.skill_slug,
+    topicSlug: item.topic_slug,
+    attempts: item.attempts,
+    correct: item.correct,
+    wrong: item.wrong,
+    accuracy: item.accuracy,
+    mastery: item.mastery,
+    confidence: item.confidence,
+    status: item.status as MasteryReport["skills"][number]["status"],
+    updatedAt: item.updated_at,
+  };
 }
