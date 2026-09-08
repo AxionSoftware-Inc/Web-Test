@@ -1,3 +1,15 @@
+# 🔒⚠️ DIQQAT — BU LOYIHA OPEN SOURCE EMAS
+
+> ## ⛔ RUXSATSIZ FOYDALANISH QAT’IYAN TAQIQLANADI
+> **Repository’ni ko‘rish, clone yoki fork qilish sizga koddan foydalanish huquqini bermaydi.** Muallif/repository egasining **OLDINDAN YOZMA RUXSATISIZ** original kod, algoritm, arxitektura, hujjat va assetlarni nusxalash, o‘zgartirish, tarqatish, build/run/deploy qilish, tijoriy yoki notijoriy mahsulotda ishlatish, sotish/sublicense qilish yoki AI/ML training/dataset uchun ishlatish **TAQIQLANADI**.
+>
+> **Public preview faqat ko‘rib chiqish va baholash uchun.** Production/tijoriy foydalanish uchun alohida yozma tijoriy litsenziya kerak.
+>
+> 📄 **[TO‘LIQ LITSENZIYA — LICENSE.md](LICENSE.md)**  
+> © 2026 AxionSoftware-Inc / repository owner — **BARCHA HUQUQLAR HIMOYALANGAN.**
+
+---
+
 # QuestLab
 
 QuestLab is a Next.js platform prototype for global problem-solving education across programming, mathematics, physics, logic and future technical subjects.
@@ -77,5 +89,3 @@ Notes:
 - Use `estimated_seconds` only as a mastery signal, not as a harsh student-facing judgment.
 - Use `mastery_weight` `1` by default. Increase it only for important or harder questions.
 - Store historical answer analysis from metadata snapshots so edited questions do not rewrite old results.
-
-The public test API intentionally omits answer keys and explanations. Solutions are available only through the explicit `/api/questions/{id}/solution/` endpoint, and submitted session results are calculated and snapshotted by the backend.
