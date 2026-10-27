@@ -512,7 +512,31 @@ export type ApiRoleProfile = {
   updated_at: string;
 };
 
+export type ApiAuthUser = {
+  id: number;
+  username: string;
+  email: string;
+  display_name: string;
+};
+
+export type ApiAuthResponse = {
+  token: string;
+  user: ApiAuthUser;
+  profile: ApiRoleProfile;
+};
+
 export const questApi = {
+  authRegister: (payload: {
+    username: string;
+    password: string;
+    email?: string;
+    display_name?: string;
+    role?: ApiRoleProfile["active_role"];
+  }) => apiPost<ApiAuthResponse>("/auth/register/", payload),
+  authLogin: (payload: { username: string; password: string }) =>
+    apiPost<ApiAuthResponse>("/auth/login/", payload),
+  authMe: () => apiGet<ApiAuthResponse>("/auth/me/"),
+  authLogout: () => apiPost<{ detail: string }>("/auth/logout/"),
   subjects: () => apiGet<ApiSubject[]>("/subjects/"),
   topics: (subjectSlug?: string) => apiGet<ApiTopic[]>(`/topics/${subjectSlug ? `?subject=${subjectSlug}` : ""}`),
   skills: () => apiGet<ApiSkill[]>("/skills/"),

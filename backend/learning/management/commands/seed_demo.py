@@ -217,4 +217,7 @@ class Command(BaseCommand):
         for order, question in enumerate([q5, q1], start=1):
             TestQuestion.objects.update_or_create(test=advanced_2, question=question, defaults={"order": order})
 
-        self.stdout.write(self.style.SUCCESS("Seeded demo data."))
+        from django.core.management import call_command
+        call_command("seed_math_150")
+
+        self.stdout.write(self.style.SUCCESS("Seeded demo data and 150+ math test starter kit."))

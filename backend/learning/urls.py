@@ -12,6 +12,10 @@ from learning.views import (
     TestSessionViewSet,
     TestViewSet,
     TopicViewSet,
+    auth_login,
+    auth_logout,
+    auth_me,
+    auth_register,
     mistakes_summary,
     health_check,
     profile_mastery,
@@ -33,6 +37,10 @@ router.register("schools", SchoolViewSet)
 
 urlpatterns = [
     path("health/", health_check),
+    path("auth/register/", auth_register, name="auth-register"),
+    path("auth/login/", auth_login, name="auth-login"),
+    path("auth/me/", auth_me, name="auth-me"),
+    path("auth/logout/", auth_logout, name="auth-logout"),
     path("profile/summary/", profile_summary),
     path("profile/mastery/", profile_mastery),
     path("profile/role/", role_profile),

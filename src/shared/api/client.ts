@@ -45,9 +45,22 @@ async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, ret
   throw new Error("Backend server is unavailable.");
 }
 
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (typeof window !== "undefined") {
+    const token = window.localStorage.getItem("questlab-auth-token");
+    if (token) {
+      headers["Authorization"] = `Token ${token}`;
+    }
+  }
+  return headers;
+}
+
 export async function apiGet<T>(path: string): Promise<T> {
   try {
-    const res = await fetchWithTimeout(getApiBaseUrl() + path, { cache: "no-store" }, true);
+    const headers = getAuthHeaders();
+    delete headers["Content-Type"];
+    const res = await fetchWithTimeout(getApiBaseUrl() + path, { headers, cache: "no-store" }, true);
     if (!res.ok) throw new Error(`API GET ${path} failed: ${res.status}`);
     return unwrapApiPayload<T>(await res.json());
   } catch (error) {
@@ -58,7 +71,7 @@ export async function apiGet<T>(path: string): Promise<T> {
 export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
   const res = await fetchWithTimeout(getApiBaseUrl() + path, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
     body: body ? JSON.stringify(body) : undefined,
     cache: "no-store",
   });
@@ -69,7 +82,7 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
 export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
   const res = await fetchWithTimeout(getApiBaseUrl() + path, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
     body: JSON.stringify(body),
     cache: "no-store",
   });
@@ -78,7 +91,9 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
 }
 
 export async function apiDelete<T>(path: string): Promise<T> {
-  const res = await fetchWithTimeout(getApiBaseUrl() + path, { method: "DELETE", cache: "no-store" });
+  const headers = getAuthHeaders();
+  delete headers["Content-Type"];
+  const res = await fetchWithTimeout(getApiBaseUrl() + path, { method: "DELETE", headers, cache: "no-store" });
   if (!res.ok) throw new Error(await apiErrorMessage(res, `API DELETE ${path} failed: ${res.status}`));
   if (res.status === 204) return undefined as T;
   return unwrapApiPayload<T>(await res.json());

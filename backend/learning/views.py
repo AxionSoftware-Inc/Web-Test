@@ -3,9 +3,12 @@ from django.db.models import Count, Prefetch, Q
 from django.shortcuts import get_object_or_404
 from django.utils.text import slugify
 from django.utils import timezone
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
+from rest_framework.authtoken.models import Token
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import decorators, mixins, response, status, viewsets
+from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import decorators, mixins, response, serializers, status, viewsets
 
 from learning.models import (
     Answer,
@@ -241,6 +244,217 @@ def exam_pack_title_exists(title, exclude_id=None):
     if exclude_id:
         queryset = queryset.exclude(id=exclude_id)
     return queryset.exists()
+
+
+@extend_schema(
+    request=inline_serializer(
+        name="AuthRegisterRequest",
+        fields={
+            "username": serializers.CharField(),
+            "password": serializers.CharField(),
+            "email": serializers.EmailField(required=False, allow_blank=True),
+            "display_name": serializers.CharField(required=False, allow_blank=True),
+            "role": serializers.ChoiceField(choices=RoleProfile.Role.choices, required=False),
+        },
+    ),
+    responses={
+        201: inline_serializer(
+            name="AuthResponse",
+            fields={
+                "token": serializers.CharField(),
+                "user": inline_serializer(
+                    name="AuthUserInfo",
+                    fields={
+                        "id": serializers.IntegerField(),
+                        "username": serializers.CharField(),
+                        "email": serializers.EmailField(),
+                        "display_name": serializers.CharField(),
+                    },
+                ),
+                "profile": RoleProfileSerializer(),
+            },
+        )
+    },
+)
+@decorators.api_view(["POST"])
+@decorators.permission_classes([])
+def auth_register(request):
+    username = str(request.data.get("username", "")).strip()
+    password = str(request.data.get("password", "")).strip()
+    email = str(request.data.get("email", "")).strip()
+    display_name = str(request.data.get("display_name", "")).strip() or username
+    role = str(request.data.get("role", RoleProfile.Role.STUDENT)).strip()
+
+    if not username:
+        return response.Response({"detail": "Foydalanuvchi nomi kiritilishi shart."}, status=status.HTTP_400_BAD_REQUEST)
+    if not password:
+        return response.Response({"detail": "Parol kiritilishi shart."}, status=status.HTTP_400_BAD_REQUEST)
+    if len(password) < 6:
+        return response.Response({"detail": "Parol kamida 6 ta belgidan iborat bo'lishi kerak."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if User.objects.filter(username__iexact=username).exists():
+        return response.Response({"detail": "Ushbu foydalanuvchi nomi band."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if email and User.objects.filter(email__iexact=email).exists():
+        return response.Response({"detail": "Ushbu elektron pochta band."}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = User.objects.create_user(username=username, email=email, password=password, first_name=display_name)
+    token, _ = Token.objects.get_or_create(user=user)
+
+    identity_code = f"user-{user.id}"
+    chosen_role = role if role in RoleProfile.Role.values else RoleProfile.Role.STUDENT
+    profile, _ = RoleProfile.objects.get_or_create(
+        identity_code=identity_code,
+        defaults={
+            "display_name": display_name,
+            "email": email,
+            "active_role": chosen_role,
+            "available_roles": [chosen_role],
+        },
+    )
+
+    return response.Response(
+        {
+            "token": token.key,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "display_name": display_name,
+            },
+            "profile": RoleProfileSerializer(profile).data,
+        },
+        status=status.HTTP_201_CREATED,
+    )
+
+
+@extend_schema(
+    request=inline_serializer(
+        name="AuthLoginRequest",
+        fields={
+            "username": serializers.CharField(),
+            "password": serializers.CharField(),
+        },
+    ),
+    responses={200: inline_serializer(
+        name="AuthLoginResponse",
+        fields={
+            "token": serializers.CharField(),
+            "user": inline_serializer(
+                name="AuthLoginUserInfo",
+                fields={
+                    "id": serializers.IntegerField(),
+                    "username": serializers.CharField(),
+                    "email": serializers.EmailField(),
+                    "display_name": serializers.CharField(),
+                },
+            ),
+            "profile": RoleProfileSerializer(),
+        },
+    )},
+)
+@decorators.api_view(["POST"])
+@decorators.permission_classes([])
+def auth_login(request):
+    username_or_email = str(request.data.get("username", "")).strip()
+    password = str(request.data.get("password", "")).strip()
+
+    if not username_or_email or not password:
+        return response.Response({"detail": "Foydalanuvchi nomi va parol kiritilishi shart."}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = None
+    if "@" in username_or_email:
+        user_obj = User.objects.filter(email__iexact=username_or_email).first()
+        if user_obj:
+            user = authenticate(username=user_obj.username, password=password)
+    else:
+        user = authenticate(username=username_or_email, password=password)
+
+    if not user:
+        return response.Response({"detail": "Foydalanuvchi nomi yoki parol noto'g'ri."}, status=status.HTTP_401_UNAUTHORIZED)
+
+    token, _ = Token.objects.get_or_create(user=user)
+    identity_code = f"user-{user.id}"
+    display_name = user.first_name or user.username
+    profile, _ = RoleProfile.objects.get_or_create(
+        identity_code=identity_code,
+        defaults={
+            "display_name": display_name,
+            "email": user.email,
+            "active_role": RoleProfile.Role.STUDENT,
+            "available_roles": [RoleProfile.Role.STUDENT],
+        },
+    )
+
+    return response.Response(
+        {
+            "token": token.key,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "display_name": display_name,
+            },
+            "profile": RoleProfileSerializer(profile).data,
+        }
+    )
+
+
+@extend_schema(responses={200: inline_serializer(
+    name="AuthMeResponse",
+    fields={
+        "token": serializers.CharField(),
+        "user": inline_serializer(
+            name="AuthMeUserInfo",
+            fields={
+                "id": serializers.IntegerField(),
+                "username": serializers.CharField(),
+                "email": serializers.EmailField(),
+                "display_name": serializers.CharField(),
+            },
+        ),
+        "profile": RoleProfileSerializer(),
+    },
+)})
+@decorators.api_view(["GET"])
+def auth_me(request):
+    if not request.user or not request.user.is_authenticated:
+        return response.Response({"detail": "Autentifikatsiyadan o'tilmagan."}, status=status.HTTP_401_UNAUTHORIZED)
+
+    user = request.user
+    identity_code = f"user-{user.id}"
+    display_name = user.first_name or user.username
+    profile, _ = RoleProfile.objects.get_or_create(
+        identity_code=identity_code,
+        defaults={
+            "display_name": display_name,
+            "email": user.email,
+            "active_role": RoleProfile.Role.STUDENT,
+            "available_roles": [RoleProfile.Role.STUDENT],
+        },
+    )
+    token, _ = Token.objects.get_or_create(user=user)
+
+    return response.Response(
+        {
+            "token": token.key,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "display_name": display_name,
+            },
+            "profile": RoleProfileSerializer(profile).data,
+        }
+    )
+
+
+@extend_schema(responses={200: inline_serializer(name="AuthLogoutResponse", fields={"detail": serializers.CharField()})})
+@decorators.api_view(["POST"])
+def auth_logout(request):
+    if request.user and request.user.is_authenticated:
+        Token.objects.filter(user=request.user).delete()
+    return response.Response({"detail": "Muvaffaqiyatli tizimdan chiqildi."})
 
 
 @extend_schema(responses={200: HealthSerializer, 503: HealthSerializer})

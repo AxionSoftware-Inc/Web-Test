@@ -178,6 +178,8 @@ function AccountSettings({ profile, onProfileChange }: { profile: ApiRoleProfile
   }
 
   function logout() {
+    questApi.authLogout().catch(() => {});
+    window.localStorage.removeItem("questlab-auth-token");
     window.localStorage.removeItem("questlab-auth-identity");
     window.localStorage.removeItem("questlab-auth-email");
     window.localStorage.removeItem("questlab-is-admin");
