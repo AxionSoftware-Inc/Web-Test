@@ -1,61 +1,52 @@
 "use client";
 
-import { ArrowRight, BarChart3, BookOpen, Building2, GraduationCap, Home, Info, LayoutDashboard, PackageCheck, Plus, Settings, Sliders, Target, TriangleAlert, UserRound, UsersRound } from "lucide-react";
+import {
+  ArrowRight,
+  BarChart3,
+  BookOpen,
+  BookOpenCheck,
+  Building2,
+  GraduationCap,
+  Home,
+  Info,
+  LayoutDashboard,
+  Package,
+  PackageCheck,
+  Plus,
+  Settings,
+  Sliders,
+  Target,
+  TriangleAlert,
+  UserRound,
+  UsersRound,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import React, { useEffect, useState, useSyncExternalStore } from "react";
 
 import { cn } from "@/shared/lib/cn";
 import { roles, type UserRole } from "@/shared/model/roles";
 import { RoleSwitcher } from "@/shared/ui/role-switcher";
+import { useCoreKernel } from "@/core";
 
-const roleNavItems: Record<UserRole, Array<{ label: string; href: string; icon: typeof Home }>> = {
-  student: [
-    { label: "Home", href: "/student/home", icon: Home },
-    { label: "Tests", href: "/student/tests", icon: LayoutDashboard },
-    { label: "Mistakes", href: "/student/mistakes", icon: TriangleAlert },
-    { label: "Progress", href: "/student/progress", icon: BarChart3 },
-  ],
-  teacher: [
-    { label: "Bosh sahifa", href: "/teacher/home", icon: Home },
-    { label: "Sinflar", href: "/teacher/classes", icon: GraduationCap },
-    { label: "O'quvchilar", href: "/teacher/students", icon: UsersRound },
-    { label: "Test qo'shish", href: "/teacher/add-test", icon: Plus },
-    { label: "Bazalar", href: "/teacher/packs", icon: PackageCheck },
-    { label: "Natijalar", href: "/teacher/results", icon: BarChart3 },
-  ],
-  school: [
-    { label: "Home", href: "/school/home", icon: Home },
-    { label: "Classes", href: "/school/classes", icon: GraduationCap },
-    { label: "Teachers", href: "/school/teachers", icon: UsersRound },
-    { label: "Students", href: "/school/students", icon: UserRound },
-    { label: "Reports", href: "/school/reports", icon: BarChart3 },
-    { label: "Settings", href: "/school/settings", icon: Settings },
-  ],
-  creator: [
-    { label: "Home", href: "/creator/home", icon: Home },
-    { label: "Add Pack", href: "/creator/add-pack", icon: Plus },
-    { label: "Packs", href: "/creator/packs", icon: PackageCheck },
-    { label: "Tests", href: "/creator/tests", icon: LayoutDashboard },
-    { label: "Questions", href: "/creator/questions", icon: LayoutDashboard },
-  ],
-  admin: [
-    { label: "Home", href: "/admin/home", icon: Home },
-    { label: "Schools", href: "/admin/schools", icon: Building2 },
-    { label: "Classes", href: "/admin/classes", icon: GraduationCap },
-    { label: "Tests", href: "/admin/tests", icon: LayoutDashboard },
-    { label: "Packs", href: "/admin/packs", icon: PackageCheck },
-    { label: "Reports", href: "/admin/reports", icon: BarChart3 },
-    { label: "Settings", href: "/admin/settings", icon: Settings },
-  ],
+const iconMap: Record<string, React.ElementType> = {
+  Home,
+  LayoutDashboard,
+  TriangleAlert,
+  BarChart3,
+  GraduationCap,
+  UsersRound,
+  Plus,
+  PackageCheck,
+  Building2,
+  UserRound,
+  Settings,
+  BookOpen,
+  BookOpenCheck,
+  Target,
+  Package,
+  Sliders,
 };
-
-const publicNavItems: Array<{ label: string; href: string; icon: typeof Home }> = [
-  { label: "Tests", href: "/tests", icon: LayoutDashboard },
-  { label: "Subjects", href: "/subjects", icon: BookOpen },
-  { label: "Practice", href: "/practice", icon: Target },
-  { label: "Questions", href: "/questions", icon: BookOpen },
-];
 
 function subscribeToAuth(callback: () => void) {
   window.addEventListener("storage", callback);
@@ -87,11 +78,14 @@ export function AppHeader() {
   const isAuthRoute = pathname.startsWith("/auth/");
   const isAuthed = useSyncExternalStore(subscribeToAuth, getAuthSnapshot, getServerAuthSnapshot);
   const isAdmin = useSyncExternalStore(subscribeToAuth, getAdminSnapshot, getServerAdminSnapshot);
+
   const [roleId, setRoleId] = useState<UserRole>(() => {
     if (typeof window === "undefined") return "student";
     const stored = window.localStorage.getItem("questlab-role") as UserRole | null;
     return stored && roles.some((role) => role.id === stored) ? stored : "student";
   });
+
+  const { getNavItems, isModuleEnabled } = useCoreKernel();
 
   useEffect(() => {
     function onRoleChange(event: Event) {
@@ -103,9 +97,19 @@ export function AppHeader() {
     return () => window.removeEventListener("questlab-role-change", onRoleChange);
   }, []);
 
-  const navItems = isAuthed ? (roleNavItems[roleId] ?? roleNavItems.student) : publicNavItems;
+  // Yadroviy dinamik navigatsiya: faqat faol modullarning elementlari
+  const currentRole = isAuthed ? roleId : "public";
+  const dynamicNavItems = getNavItems(currentRole);
+  const isTestCreatorActive = isModuleEnabled("test-generator");
+
   const canSwitchRoles = isAuthed && isAdmin;
   const normalizedPathname = pathname.replace(/\/$/, "") || "/";
+
+  function isActive(href: string) {
+    const normalizedHref = href.replace(/\/$/, "") || "/";
+    if (normalizedHref === "/") return normalizedPathname === "/";
+    return normalizedPathname === normalizedHref || normalizedPathname.startsWith(`${normalizedHref}/`);
+  }
 
   if (pathname === "/") {
     return (
@@ -125,13 +129,15 @@ export function AppHeader() {
             </Link>
           </nav>
           <div className="flex items-center gap-2">
-            <Link
-              href="/create-test"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-black/15 bg-white px-3.5 py-2 text-xs font-bold text-ink shadow-sm transition hover:bg-black/5"
-            >
-              <Plus className="size-3.5 text-emerald-600" />
-              <span>Test yaratish</span>
-            </Link>
+            {isTestCreatorActive && (
+              <Link
+                href="/create-test"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-black/15 bg-white px-3.5 py-2 text-xs font-bold text-ink shadow-sm transition hover:bg-black/5"
+              >
+                <Plus className="size-3.5 text-emerald-600" />
+                <span>Test yaratish</span>
+              </Link>
+            )}
             {isAuthed ? (
               <Link href="/profile" className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-ink/62 hover:bg-white hover:text-ink sm:inline-flex">Profile</Link>
             ) : (
@@ -144,12 +150,6 @@ export function AppHeader() {
         </div>
       </header>
     );
-  }
-
-  function isActive(href: string) {
-    const normalizedHref = href.replace(/\/$/, "") || "/";
-    if (normalizedHref === "/") return normalizedPathname === "/";
-    return normalizedPathname === normalizedHref || normalizedPathname.startsWith(`${normalizedHref}/`);
   }
 
   return (
@@ -167,13 +167,13 @@ export function AppHeader() {
 
         {!isAuthRoute ? (
           <nav className="flex max-w-[66vw] items-center gap-1 overflow-x-auto rounded-2xl border border-black/8 bg-white p-1 shadow-[0_10px_30px_rgba(0,0,0,0.04)] md:max-w-none">
-            {navItems.map((item) => {
-              const Icon = item.icon;
+            {dynamicNavItems.map((item) => {
+              const Icon = iconMap[item.iconName] || Home;
               const active = isActive(item.href);
 
               return (
                 <Link
-                  key={item.href}
+                  key={item.id}
                   href={item.href}
                   className={cn(
                     "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-black/58 hover:bg-[#f3f3ec]",
@@ -210,13 +210,15 @@ export function AppHeader() {
 
         {!isAuthRoute ? (
           <div className="flex items-center gap-2">
-            <Link
-              href="/create-test"
-              className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
-            >
-              <Plus className="size-3.5" />
-              <span>Test qo&apos;shish</span>
-            </Link>
+            {isTestCreatorActive && (
+              <Link
+                href="/create-test"
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
+              >
+                <Plus className="size-3.5" />
+                <span>Test qo&apos;shish</span>
+              </Link>
+            )}
             {canSwitchRoles ? <RoleSwitcher /> : null}
             {isAuthed ? (
               <Link

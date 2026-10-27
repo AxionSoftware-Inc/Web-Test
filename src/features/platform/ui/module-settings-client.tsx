@@ -28,10 +28,7 @@ import {
 import React, { useId, useState } from "react";
 
 import { cn } from "@/shared/lib/cn";
-import {
-  type ModuleCategory,
-  useModules,
-} from "@/shared/modules";
+import { type ModuleCategory, useCoreKernel } from "@/core";
 
 const iconMap: Record<string, React.ElementType> = {
   CheckCircle2,
@@ -58,7 +55,7 @@ const categoryLabels: Record<ModuleCategory | "all", string> = {
 export function ModuleSettingsClient() {
   const {
     manifests,
-    isEnabled,
+    isModuleEnabled,
     getSettings,
     toggleModule,
     updateSettings,
@@ -66,7 +63,9 @@ export function ModuleSettingsClient() {
     resetAll,
     exportConfig,
     importConfig,
-  } = useModules();
+  } = useCoreKernel();
+
+  const isEnabled = isModuleEnabled;
 
   const [selectedCategory, setSelectedCategory] = useState<ModuleCategory | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
