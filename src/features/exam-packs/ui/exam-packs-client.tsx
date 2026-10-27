@@ -13,6 +13,7 @@ import { normalizeImportSource } from "../lib/teacher-import-parser";
 import type { DraftItem, ImportLayer, ImportMode, PackUsage } from "../lib/import-parser";
 import { cn } from "@/shared/lib/cn";
 import { getPackManageCode, savePackManageCode } from "@/shared/model/local-identity";
+import { ModuleGuard } from "@/shared/modules";
 import { Eyebrow, FieldShell, premiumInputClass } from "@/shared/ui/premium-shell";
 
 export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { initialPacks: ApiExamPack[]; tests: ApiTest[]; usageBySlug?: Record<string, PackUsage> }) {
@@ -376,8 +377,9 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
           : "Yangi baza yaratish";
 
   return (
-    <div className="grid gap-4">
-      {error || notice ? (
+    <ModuleGuard id="exam-packs">
+      <div className="grid gap-4">
+        {error || notice ? (
         <div className={cn("rounded-[var(--radius-card)] border px-5 py-4 text-sm font-semibold", error ? "border-danger-soft bg-danger-soft text-danger" : "border-success-soft bg-success-soft text-success")}>
           {error || notice}
         </div>
@@ -553,6 +555,7 @@ export function ExamPacksClient({ initialPacks, tests, usageBySlug = {} }: { ini
       </Card>
       </div>
     </div>
+    </ModuleGuard>
   );
 }
 

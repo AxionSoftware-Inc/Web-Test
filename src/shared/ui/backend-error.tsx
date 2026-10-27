@@ -10,7 +10,7 @@ export function BackendError({ title = "Backend server ishlamayapti" }: { title?
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-red-500">Connection error</p>
           <h1 className="mt-3 text-3xl font-semibold">{title}</h1>
           <p className="mt-3 text-sm leading-6 text-black/58">
-            Django API `http://127.0.0.1:8000` da ishlayotganini tekshiring, keyin sahifani refresh qiling.
+            Django API serveri (`http://127.0.0.1:8001` yoki NEXT_PUBLIC_API_BASE_URL) ishlayotganini tekshiring, keyin sahifani yangilang.
           </p>
           <Link href="/" className="mt-6 inline-block rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-white">
             Home

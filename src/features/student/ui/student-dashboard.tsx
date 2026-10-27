@@ -23,6 +23,7 @@ import { StudentShell } from "@/components/student/student-ui";
 import type { ApiExamPack, ApiMasteryProgress, ApiMistakesSummary, ApiProfileSummary, ApiSession, ApiTest } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { getStudentCode } from "@/shared/model/local-identity";
+import { ModuleGuard } from "@/shared/modules";
 
 export function nowMs() {
   return new Date().getTime();
@@ -103,8 +104,9 @@ export function StudentDashboard({
   const pendingTests = Math.max(0, assignedTests.filter((item) => item.status === "assigned").length || availableTests.length || activePackCount);
 
   return (
-    <StudentShell variant="wide">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+    <ModuleGuard id="student">
+      <StudentShell variant="wide">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-ink md:text-3xl">Welcome back</h1>
           <p className="mt-2 text-sm text-muted">Your tests, progress and weak topics are ready.</p>
@@ -139,6 +141,7 @@ export function StudentDashboard({
         </aside>
       </div>
     </StudentShell>
+    </ModuleGuard>
   );
 }
 

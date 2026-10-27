@@ -25,6 +25,7 @@ import type {
   TestSubject,
 } from "@/features/test-generator/model/test-generator-types";
 import { cn } from "@/shared/lib/cn";
+import { ModuleGuard } from "@/shared/modules";
 import { Container } from "@/shared/ui/container";
 
 const subjects: Array<"all" | TestSubject> = ["all", "mathematics", "physics", "programming"];
@@ -87,7 +88,8 @@ export function TestGeneratorPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background text-ink">
+    <ModuleGuard id="test-generator">
+      <main className="min-h-screen bg-background text-ink">
       <Container className="py-8">
         <header className="flex flex-col justify-between gap-5 border-b border-black/10 pb-8 lg:flex-row lg:items-end">
           <div>
@@ -153,6 +155,7 @@ export function TestGeneratorPage() {
         ) : null}
       </Container>
     </main>
+    </ModuleGuard>
   );
 }
 

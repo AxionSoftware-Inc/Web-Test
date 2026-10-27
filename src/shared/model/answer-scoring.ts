@@ -13,6 +13,7 @@ export function normalizeAnswer(value: unknown) {
   return String(value ?? "")
     .toLowerCase()
     .replace(/\s+/g, "")
+    .replace(/[$]/g, "")
     .replace(/[()]/g, "")
     .replace(/\\cdot/g, "*")
     .replace(/\\/g, "");

@@ -120,6 +120,10 @@ export function HeroSection() {
                 Explore the test library
                 <ArrowRight className="size-4" />
               </Link>
+              <Link href="/create-test" className="inline-flex items-center gap-2 rounded-xl border border-emerald-600/30 bg-emerald-50 px-5 py-3.5 text-sm font-bold text-emerald-800 shadow-sm transition hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-200">
+                <Sparkles className="size-4 text-emerald-600" />
+                Test qo&apos;shish
+              </Link>
               <Link href="#how-it-works" className="inline-flex items-center rounded-xl border border-ink/12 bg-white/75 px-5 py-3.5 text-sm font-semibold text-ink hover:border-brand/30 hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-ring">
                 See how it works
               </Link>

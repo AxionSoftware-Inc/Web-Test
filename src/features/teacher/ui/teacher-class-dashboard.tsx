@@ -30,6 +30,7 @@ import type { ApiClassAssignment, ApiClassResults, ApiTeacherClass, ApiTest } fr
 import { questApi } from "@/shared/api/questlab-api";
 import { cn } from "@/shared/lib/cn";
 import { getTeacherManageCode } from "@/shared/model/local-identity";
+import { ModuleGuard } from "@/shared/modules";
 import { Eyebrow, FieldShell, premiumInputClass } from "@/shared/ui/premium-shell";
 
 type Props = {
@@ -233,8 +234,9 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
   }
 
   return (
-    <QuestPage variant="table">
-      <div className="grid gap-6">
+    <ModuleGuard id="teacher">
+      <QuestPage variant="table">
+        <div className="grid gap-6">
         <header className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface shadow-[var(--shadow-card)]">
           <div className="grid gap-0 lg:grid-cols-[1fr_360px]">
             <div className="p-6 sm:p-8">
@@ -527,6 +529,7 @@ export function TeacherClassDashboard({ classroom, initialAssignments, results, 
         </section>
       </div>
     </QuestPage>
+    </ModuleGuard>
   );
 }
 

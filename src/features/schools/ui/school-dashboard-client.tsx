@@ -8,6 +8,7 @@ import { WeakTopicBars } from "@/components/questlab/charts/weak-topic-bars";
 import type { ApiRoleProfile, ApiSchool, ApiSchoolAnalytics, ApiTeacherClass } from "@/shared/api/questlab-api";
 import { questApi } from "@/shared/api/questlab-api";
 import { getSchoolManageCode, saveSchoolManageCode } from "@/shared/model/local-identity";
+import { ModuleGuard } from "@/shared/modules";
 import { Container } from "@/shared/ui/container";
 import { Eyebrow, FieldShell, premiumInputClass } from "@/shared/ui/premium-shell";
 
@@ -125,7 +126,8 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
   }
 
   return (
-    <main className="quest-page">
+    <ModuleGuard id="schools">
+      <main className="quest-page">
       <Container>
         <div className="grid gap-4 xl:grid-cols-[320px_1fr]">
           <aside className="grid gap-4">
@@ -229,6 +231,7 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
         {notice ? <p className="mt-4 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black/62">{notice}</p> : null}
       </Container>
     </main>
+    </ModuleGuard>
   );
 }
 

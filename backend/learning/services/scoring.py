@@ -12,7 +12,13 @@ def normalize_answer(value):
     return re.sub(
         r"\s+",
         "",
-        str(value or "").casefold().replace("\\cdot", "*").replace("\\", "").replace("(", "").replace(")", ""),
+        str(value or "")
+        .casefold()
+        .replace("$", "")
+        .replace("\\cdot", "*")
+        .replace("\\", "")
+        .replace("(", "")
+        .replace(")", ""),
     )
 
 

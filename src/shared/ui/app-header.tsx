@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, BarChart3, BookOpen, Building2, GraduationCap, Home, Info, LayoutDashboard, PackageCheck, Plus, Settings, Target, TriangleAlert, UserRound, UsersRound } from "lucide-react";
+import { ArrowRight, BarChart3, BookOpen, Building2, GraduationCap, Home, Info, LayoutDashboard, PackageCheck, Plus, Settings, Sliders, Target, TriangleAlert, UserRound, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
@@ -119,8 +119,19 @@ export function AppHeader() {
             <a href="#how-it-works" className="hover:text-brand">How it works</a>
             <a href="#subjects" className="hover:text-brand">Subjects</a>
             <a href="#teams" className="hover:text-brand">For teams</a>
+            <Link href="/settings/modules" className="inline-flex items-center gap-1.5 hover:text-brand">
+              <Sliders className="size-3.5" />
+              <span>Modullar</span>
+            </Link>
           </nav>
           <div className="flex items-center gap-2">
+            <Link
+              href="/create-test"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-black/15 bg-white px-3.5 py-2 text-xs font-bold text-ink shadow-sm transition hover:bg-black/5"
+            >
+              <Plus className="size-3.5 text-emerald-600" />
+              <span>Test yaratish</span>
+            </Link>
             {isAuthed ? (
               <Link href="/profile" className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-ink/62 hover:bg-white hover:text-ink sm:inline-flex">Profile</Link>
             ) : (
@@ -175,6 +186,16 @@ export function AppHeader() {
               );
             })}
             <Link
+              href="/settings/modules"
+              className={cn(
+                "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-black/58 hover:bg-[#f3f3ec]",
+                isActive("/settings/modules") && "bg-ink text-white shadow-sm hover:bg-ink",
+              )}
+            >
+              <Sliders className="size-4" />
+              <span className="hidden md:inline">Modullar</span>
+            </Link>
+            <Link
               href="/about"
               className={cn(
                 "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-black/58 hover:bg-[#f3f3ec]",
@@ -189,6 +210,13 @@ export function AppHeader() {
 
         {!isAuthRoute ? (
           <div className="flex items-center gap-2">
+            <Link
+              href="/create-test"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
+            >
+              <Plus className="size-3.5" />
+              <span>Test qo&apos;shish</span>
+            </Link>
             {canSwitchRoles ? <RoleSwitcher /> : null}
             {isAuthed ? (
               <Link

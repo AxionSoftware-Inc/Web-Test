@@ -709,3 +709,11 @@ export const questApi = {
   deleteSchoolTeacher: (slug: string, teacherId: number, manageCode?: string) =>
     apiDelete<ApiSchoolTeacher>(`/schools/${slug}/teachers/${teacherId}/${manageCode ? `?manage_code=${encodeURIComponent(manageCode)}` : ""}`),
 };
+
+export { assessmentApi } from "@/features/assessment/api/assessment-api";
+export { masteryApi } from "@/features/mastery-engine/api/mastery-api";
+export { examPacksApi } from "@/features/exam-packs/api/exam-packs-api";
+export { schoolsApi } from "@/features/schools/api/schools-api";
+export { teacherApi } from "@/features/teacher/api/teacher-api";
+export { studentApi } from "@/features/student/api/student-api";
+
