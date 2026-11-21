@@ -129,28 +129,28 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
     <ModuleGuard id="schools">
       <main className="quest-page">
       <Container>
-        <div className="grid gap-4 xl:grid-cols-[320px_1fr]">
+        <div className="grid gap-4 xl:grid-cols-[300px_1fr]">
           <aside className="grid gap-4">
             <Panel>
-              <Eyebrow>Admin schools</Eyebrow>
-              <h1 className="mt-2 text-2xl font-semibold">Schools</h1>
-              <div className="mt-4 grid gap-2">
+              <Eyebrow>O&apos;quv markazlar</Eyebrow>
+              <h1 className="mt-1 text-xl font-bold text-ink">Markazlar</h1>
+              <div className="mt-3.5 grid gap-2">
                 {schools.map((school) => (
-                  <button key={school.id} onClick={() => setActiveSlug(school.slug)} className={`rounded-2xl border p-4 text-left ${school.slug === activeSlug ? "border-ink bg-ink text-white" : "border-black/8 bg-white"}`}>
-                    <p className="font-semibold">{school.name}</p>
-                    <p className={`mt-1 text-sm ${school.slug === activeSlug ? "text-white/55" : "text-black/45"}`}>{school.teacher_count} teachers</p>
+                  <button key={school.id} onClick={() => setActiveSlug(school.slug)} className={`rounded-xl border p-3 text-left transition ${school.slug === activeSlug ? "border-ink bg-ink text-white" : "border-black/8 bg-[#fafaf8] hover:border-black/20 text-ink"}`}>
+                    <p className="font-semibold text-sm">{school.name}</p>
+                    <p className={`mt-0.5 text-xs ${school.slug === activeSlug ? "text-white/60" : "text-black/45"}`}>{school.teacher_count} o&apos;qituvchi</p>
                   </button>
                 ))}
               </div>
             </Panel>
 
             <Panel>
-              <Eyebrow>Create school</Eyebrow>
-              <div className="mt-4 grid gap-3">
-                <Input label="School name" value={name} onChange={setName} />
-                <Input label="Owner" value={owner} onChange={setOwner} />
-                <FieldShell label="Description"><textarea value={description} onChange={(event) => setDescription(event.target.value)} className={premiumInputClass} rows={3} /></FieldShell>
-                <button onClick={createSchool} disabled={busy} className="rounded-2xl bg-ink px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">Create school</button>
+              <Eyebrow>Yangi markaz</Eyebrow>
+              <div className="mt-3.5 grid gap-3">
+                <Input label="Markaz nomi" value={name} onChange={setName} />
+                <Input label="Mas'ul shaxs" value={owner} onChange={setOwner} />
+                <FieldShell label="Tavsif"><textarea value={description} onChange={(event) => setDescription(event.target.value)} className={premiumInputClass} rows={2} /></FieldShell>
+                <button onClick={createSchool} disabled={busy} className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50">Markaz yaratish</button>
               </div>
             </Panel>
           </aside>
@@ -159,31 +159,31 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
             <Panel>
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <Eyebrow>Selected school</Eyebrow>
-                  <h2 className="mt-2 text-4xl font-semibold">{activeSchool?.name ?? "School tanlang"}</h2>
-                  <p className="mt-3 max-w-2xl text-sm leading-6 text-black/55">{activeSchool?.description || "School boshqaruvi, teacherlar, classlar va analytics."}</p>
+                  <Eyebrow>Tanlangan markaz</Eyebrow>
+                  <h2 className="mt-1 text-2xl font-bold text-ink md:text-3xl">{activeSchool?.name ?? "Markaz tanlang"}</h2>
+                  <p className="mt-1 max-w-xl text-xs leading-5 text-black/55">{activeSchool?.description || "Markaz boshqaruvi, o'qituvchilar, sinflar va tahlil."}</p>
                 </div>
                 <div className="grid grid-cols-4 gap-2">
-                  <Metric icon={UsersRound} label="Teachers" value={analytics?.teacher_count ?? 0} />
-                  <Metric icon={GraduationCap} label="Classes" value={analytics?.class_count ?? 0} />
-                  <Metric icon={UsersRound} label="Students" value={analytics?.students_submitted ?? 0} />
-                  <Metric icon={BarChart3} label="Avg" value={`${analytics?.average_score ?? 0}%`} />
+                  <Metric icon={UsersRound} label="O'qituvchilar" value={analytics?.teacher_count ?? 0} />
+                  <Metric icon={GraduationCap} label="Sinflar" value={analytics?.class_count ?? 0} />
+                  <Metric icon={UsersRound} label="O'quvchilar" value={analytics?.students_submitted ?? 0} />
+                  <Metric icon={BarChart3} label="O'rtacha" value={`${analytics?.average_score ?? 0}%`} />
                 </div>
               </div>
             </Panel>
 
-            <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
+            <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
               <Panel>
-                <Eyebrow>Add teacher</Eyebrow>
-                <div className="mt-4 grid gap-3">
-                  <FieldShell label="Registered teacher email">
+                <Eyebrow>O&apos;qituvchi biriktirish</Eyebrow>
+                <div className="mt-3.5 grid gap-3">
+                  <FieldShell label="Ro'yxatdan o'tgan teacher emaili">
                     <div className="relative">
                       <input value={teacherEmail} onChange={(event) => void searchTeachers(event.target.value)} className={premiumInputClass} placeholder="teacher@email.com" />
                       {teacherMatches.length ? (
-                        <div className="absolute z-20 mt-2 w-full rounded-2xl border border-black/8 bg-white p-2 shadow-xl">
+                        <div className="absolute z-20 mt-2 w-full rounded-xl border border-black/8 bg-white p-2 shadow-xl">
                           {teacherMatches.map((profile) => (
-                            <button key={profile.identity_code} onClick={() => pickTeacher(profile)} className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-background">
-                              <span className="font-semibold">{profile.display_name || profile.email}</span>
+                            <button key={profile.identity_code} onClick={() => pickTeacher(profile)} className="block w-full rounded-lg px-3 py-2 text-left text-xs hover:bg-[#fafaf8]">
+                              <span className="font-semibold text-ink">{profile.display_name || profile.email}</span>
                               <span className="block text-black/45">{profile.email}</span>
                             </button>
                           ))}
@@ -191,44 +191,44 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
                       ) : null}
                     </div>
                   </FieldShell>
-                  <Input label="Teacher name" value={teacherName} onChange={setTeacherName} />
-                  <FieldShell label="Attach classes">
-                    <select multiple value={selectedClasses.map(String)} onChange={(event) => setSelectedClasses(Array.from(event.target.selectedOptions).map((option) => Number(option.value)))} className="min-h-32 rounded-2xl border border-black/10 bg-white px-4 py-3 outline-none">
+                  <Input label="O'qituvchi ismi" value={teacherName} onChange={setTeacherName} />
+                  <FieldShell label="Sinflarni bog'lash">
+                    <select multiple value={selectedClasses.map(String)} onChange={(event) => setSelectedClasses(Array.from(event.target.selectedOptions).map((option) => Number(option.value)))} className="min-h-28 rounded-xl border border-black/10 bg-white px-3 py-2 text-xs outline-none">
                       {classOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
                     </select>
                   </FieldShell>
-                  <button onClick={addTeacher} disabled={busy || !activeSlug} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-ink px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"><Plus className="size-4" />Add teacher</button>
+                  <button onClick={addTeacher} disabled={busy || !activeSlug} className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"><Plus className="size-4" />O&apos;qituvchi qo&apos;shish</button>
                 </div>
               </Panel>
 
               <Panel>
-                <Eyebrow>Weak skills</Eyebrow>
-                <div className="mt-4">
-                  {weakSkillRows.length ? <WeakTopicBars rows={weakSkillRows} /> : <p className="rounded-2xl bg-white p-5 text-sm text-black/56">Hali weak skill analytics yo&apos;q.</p>}
+                <Eyebrow>Kuchsiz mavzular</Eyebrow>
+                <div className="mt-3.5">
+                  {weakSkillRows.length ? <WeakTopicBars rows={weakSkillRows} /> : <p className="rounded-xl border border-dashed border-black/10 bg-[#fafaf8] p-5 text-center text-xs text-black/50">Hali tahlil ma&apos;lumotlari yo&apos;q.</p>}
                 </div>
               </Panel>
             </div>
 
             <Panel>
               <div className="flex items-center justify-between gap-3">
-                <div><Eyebrow>Classes</Eyebrow><h2 className="mt-2 text-2xl font-semibold">Class list</h2></div>
-                <Link href="/schools/classes" className="rounded-2xl bg-ink px-4 py-3 text-sm font-semibold text-white">Open classes</Link>
+                <div><Eyebrow>Sinflar</Eyebrow><h2 className="mt-1 text-xl font-bold text-ink">Guruhlar ro&apos;yxati</h2></div>
+                <Link href="/schools/classes" className="rounded-xl bg-ink px-3.5 py-2 text-xs font-semibold text-white transition hover:opacity-90">Sinflarni ochish</Link>
               </div>
-              <div className="mt-5 grid gap-3">
+              <div className="mt-4 grid gap-2.5">
                 {schoolClasses.map((item) => (
-                  <Link key={item.class_id} href={`/schools/classes/${item.class_slug}`} className="grid gap-3 rounded-2xl border border-black/8 bg-white p-4 hover:bg-surface-soft md:grid-cols-[1fr_170px_120px_100px] md:items-center">
-                    <div><p className="font-semibold">{item.class_name}</p><p className="text-sm text-black/45">Teacher: {item.teacher_name}</p></div>
-                    <p className="text-sm text-black/58">{item.sessions_total} sessions</p>
-                    <p className="text-sm text-black/58">{item.students_submitted} students</p>
-                    <span className="rounded-xl bg-brand-soft px-3 py-2 text-center text-sm font-semibold text-brand">{item.average_score}%</span>
+                  <Link key={item.class_id} href={`/schools/classes/${item.class_slug}`} className="group grid gap-3 rounded-xl border border-black/8 bg-white p-3.5 shadow-sm transition hover:border-black/20 md:grid-cols-[1fr_160px_120px_90px] md:items-center">
+                    <div><p className="font-semibold text-sm text-ink group-hover:text-brand transition-colors">{item.class_name}</p><p className="text-xs text-black/45">O&apos;qituvchi: {item.teacher_name}</p></div>
+                    <p className="text-xs text-black/60">{item.sessions_total} sessiya</p>
+                    <p className="text-xs text-black/60">{item.students_submitted} o&apos;quvchi</p>
+                    <span className="rounded-lg bg-brand-soft px-2.5 py-1 text-center text-xs font-bold text-brand">{item.average_score}%</span>
                   </Link>
                 ))}
-                {!schoolClasses.length ? <p className="rounded-2xl bg-white p-5 text-sm text-black/56">Bu schoolga hali class bog&apos;lanmagan.</p> : null}
+                {!schoolClasses.length ? <p className="rounded-xl border border-dashed border-black/10 bg-[#fafaf8] p-5 text-center text-xs text-black/50">Bu markazga hali sinflar bog&apos;lanmagan.</p> : null}
               </div>
             </Panel>
           </section>
         </div>
-        {notice ? <p className="mt-4 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black/62">{notice}</p> : null}
+        {notice ? <p className="mt-4 rounded-xl border border-black/8 bg-white px-4 py-2.5 text-xs font-semibold text-black/60">{notice}</p> : null}
       </Container>
     </main>
     </ModuleGuard>
@@ -236,7 +236,7 @@ export function SchoolDashboardClient({ initialSchools, classes }: { initialScho
 }
 
 function Panel({ children }: { children: React.ReactNode }) {
-  return <section className="quest-panel p-5">{children}</section>;
+  return <section className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm">{children}</section>;
 }
 
 function Input({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
@@ -244,5 +244,11 @@ function Input({ label, value, onChange }: { label: string; value: string; onCha
 }
 
 function Metric({ icon: Icon, label, value }: { icon: typeof Building2; label: string; value: string | number }) {
-  return <div className="min-w-24 rounded-2xl border border-black/8 bg-white p-3"><Icon className="size-4 text-brand" /><p className="mt-2 text-xs font-semibold text-black/38">{label}</p><p className="mt-1 text-xl font-semibold">{value}</p></div>;
+  return (
+    <div className="rounded-xl border border-black/4 bg-[#fafaf8] p-2.5 text-center">
+      <Icon className="mx-auto size-4 text-brand" />
+      <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-black/40">{label}</p>
+      <p className="mt-0.5 text-base font-bold text-ink">{value}</p>
+    </div>
+  );
 }

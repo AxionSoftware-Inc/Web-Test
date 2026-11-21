@@ -1,16 +1,24 @@
 import type { Metadata } from "next";
 
-import { AlgebraTopicPage } from "@/features/subjects/mathematics/ui/algebra-topic-page";
+import { TopicDetailPage } from "@/features/subjects/ui/topic-detail-page";
 import { questApi } from "@/shared/api/questlab-api";
 
 export const metadata: Metadata = {
-  title: "Algebra | QuestLab Math",
-  description: "Algebra levels, tests, practice roadmap and progress for QuestLab mathematics MVP.",
+  title: "Algebra | QuestLab",
+  description: "Algebra darajalari, testlari va mashqlari.",
 };
 
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
   const levels = await questApi.topicLevels("algebra");
-  return <AlgebraTopicPage levels={levels} />;
+  return (
+    <TopicDetailPage
+      subjectSlug="mathematics"
+      subjectTitle="Matematika"
+      topicSlug="algebra"
+      topicTitle="Algebra"
+      levels={levels}
+    />
+  );
 }

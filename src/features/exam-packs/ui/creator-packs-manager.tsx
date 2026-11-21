@@ -43,57 +43,62 @@ export function CreatorPacksManager({ initialPacks, usageBySlug }: { initialPack
 
   return (
     <div className="grid gap-4">
-      {notice ? <p className="rounded-[var(--radius-card)] border border-success-soft bg-success-soft px-4 py-3 text-sm font-semibold text-success">{notice}</p> : null}
-      {error ? <p className="rounded-[var(--radius-card)] border border-danger-soft bg-danger-soft px-4 py-3 text-sm font-semibold text-danger">{error}</p> : null}
+      {notice ? <p className="rounded-xl border border-success/20 bg-success-soft px-4 py-2.5 text-sm font-semibold text-success">{notice}</p> : null}
+      {error ? <p className="rounded-xl border border-danger/20 bg-danger-soft px-4 py-2.5 text-sm font-semibold text-danger">{error}</p> : null}
       {packs.length ? (
         <div className="quest-card-grid-3">
           {packs.map((pack) => {
             const usage = usageBySlug[pack.slug];
             return (
-              <Card key={pack.slug} className="flex min-h-[220px] flex-col p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h3 className="line-clamp-2 text-base font-semibold">{pack.title}</h3>
-                    <p className="mt-1 text-sm text-muted">{pack.exam_type || "Pack"}</p>
+              <Card key={pack.slug} className="group flex min-h-[200px] flex-col justify-between rounded-2xl border border-black/8 bg-white p-4.5 shadow-sm transition hover:border-black/20">
+                <div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="line-clamp-2 text-base font-semibold text-ink group-hover:text-brand transition-colors">{pack.title}</h3>
+                      <p className="mt-0.5 text-xs text-black/50">{pack.exam_type || "Pack"}</p>
+                    </div>
+                    <Badge variant={pack.is_active ? "success" : "default"}>{pack.is_active ? "published" : "inactive"}</Badge>
                   </div>
-                  <Badge variant={pack.is_active ? "success" : "default"}>{pack.is_active ? "published" : "inactive"}</Badge>
+                  {pack.description ? <p className="mt-2 line-clamp-2 text-xs leading-5 text-black/60">{pack.description}</p> : null}
                 </div>
-                {pack.description ? <p className="mt-3 line-clamp-2 text-sm leading-6 text-muted">{pack.description}</p> : null}
-                <div className="mt-5 grid grid-cols-3 gap-2 text-center">
-                  <MiniStat label="Tests" value={pack.item_count} />
-                  <MiniStat label="Usage" value={usage?.attempts ?? 0} />
-                  <MiniStat label="Avg" value={`${usage?.average_score ?? 0}%`} />
-                </div>
-                <div className="mt-auto grid grid-cols-3 gap-2 pt-5">
-                  <Button asChild variant="secondary" size="sm">
-                    <Link href={`/exam-packs/${pack.slug}`}>
-                    <Pencil className="size-4" />
-                    Edit
-                    </Link>
-                  </Button>
-                  <Button asChild variant="secondary" size="sm">
-                    <Link href={`/creator/packs/${pack.slug}`}>
-                    <ExternalLink className="size-4" />
-                    Open
-                    </Link>
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={() => void deletePack(pack)}
-                    disabled={busySlug === pack.slug}
-                    variant="destructive"
-                    size="sm"
-                  >
-                    <Trash2 className="size-4" />
-                    Delete
-                  </Button>
+                <div>
+                  <div className="mt-3.5 grid grid-cols-3 gap-2 text-center">
+                    <MiniStat label="Testlar" value={pack.item_count} />
+                    <MiniStat label="Topshirildi" value={usage?.attempts ?? 0} />
+                    <MiniStat label="O'rtacha" value={`${usage?.average_score ?? 0}%`} />
+                  </div>
+                  <div className="mt-3.5 grid grid-cols-3 gap-2">
+                    <Button asChild variant="secondary" size="sm" className="rounded-xl">
+                      <Link href={`/exam-packs/${pack.slug}`}>
+                        <Pencil className="size-3.5" />
+                        Edit
+                      </Link>
+                    </Button>
+                    <Button asChild variant="secondary" size="sm" className="rounded-xl">
+                      <Link href={`/creator/packs/${pack.slug}`}>
+                        <ExternalLink className="size-3.5" />
+                        Ochish
+                      </Link>
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => void deletePack(pack)}
+                      disabled={busySlug === pack.slug}
+                      variant="destructive"
+                      size="sm"
+                      className="rounded-xl"
+                    >
+                      <Trash2 className="size-3.5" />
+                      O&apos;chirish
+                    </Button>
+                  </div>
                 </div>
               </Card>
             );
           })}
         </div>
       ) : (
-        <div className="rounded-[var(--radius-card)] border border-dashed border-line bg-surface p-8 text-center text-sm font-semibold text-muted">Pack topilmadi.</div>
+        <div className="rounded-2xl border border-dashed border-black/12 bg-[#fafaf8] p-8 text-center text-sm font-semibold text-black/50">Pack topilmadi.</div>
       )}
     </div>
   );
@@ -101,9 +106,9 @@ export function CreatorPacksManager({ initialPacks, usageBySlug }: { initialPack
 
 function MiniStat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-[var(--radius-control)] bg-surface-soft px-3 py-3">
-      <p className="text-base font-semibold">{value}</p>
-      <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-subtle">{label}</p>
+    <div className="rounded-xl bg-[#fafaf8] border border-black/4 px-2.5 py-2">
+      <p className="text-sm font-semibold text-ink">{value}</p>
+      <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-black/40">{label}</p>
     </div>
   );
 }

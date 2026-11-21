@@ -59,8 +59,124 @@ export function StudentMistakes({ initialSummary: _initialSummary }: { initialSu
   }));
   const statusRows = topCounts(engineMistakes.map((item) => item.status), 5);
   const focus = report?.recommendedActions[0];
+  const learningPath = report?.learningPath;
+  const decayedTopics = report?.decayedTopics ?? [];
+
   return (
     <StudentShell variant="table">
+      {learningPath ? (
+        <Section title="O'quv yo'li xaritasi (Learning Journey)">
+          <div className="quest-card p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-student">Kursdagi joriy bekat</p>
+                <h3 className="mt-1 text-xl font-bold">{learningPath.nextRecommendedNode?.title ?? "Barcha bekatlar tayyor"}</h3>
+                <p className="mt-1 text-sm text-muted">{learningPath.nextRecommendedNode?.whyNext ?? "Kurs muvaffaqiyatli o'zlashtirilmoqda."}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl border border-line bg-surface-soft px-4 py-2 text-right">
+                  <span className="block text-[11px] font-bold text-muted uppercase">Yo'l progressi</span>
+                  <span className="text-2xl font-black text-brand">{learningPath.pathProgressPercent}%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Metro bekatlari / Yol chizmasi */}
+            <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+              {learningPath.nodes.map((node) => {
+                const isCurrent = node.isCurrentFrontier;
+                const isDone = node.isCompleted;
+                const isBlocked = node.isBlocked;
+
+                return (
+                  <div
+                    key={node.topicSlug}
+                    className={cn(
+                      "flex flex-col justify-between rounded-xl border p-3 text-xs transition",
+                      isCurrent
+                        ? "border-brand bg-brand/10 ring-2 ring-brand/20"
+                        : isDone
+                        ? "border-success/40 bg-success/5"
+                        : isBlocked
+                        ? "border-line bg-surface-soft opacity-65"
+                        : "border-line bg-surface"
+                    )}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-muted">#{node.order}</span>
+                        <span
+                          className={cn(
+                            "rounded px-1.5 py-0.5 text-[9px] font-bold uppercase",
+                            isDone ? "bg-success text-white" : isCurrent ? "bg-brand text-white" : "bg-muted/20 text-muted"
+                          )}
+                        >
+                          {isDone ? "O'zlashtirildi" : isCurrent ? "Hozirgi" : isBlocked ? "Kutilmoqda" : "Ochiq"}
+                        </span>
+                      </div>
+                      <p className="mt-2 font-semibold line-clamp-1">{node.title}</p>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between pt-2 border-t border-line/40 text-[11px] text-muted">
+                      <span>{node.mastery}%</span>
+                      <span className="capitalize">{node.depthStatus}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </Section>
+      ) : null}
+
+      {/* Sayoz va Xotirada so'ngan mavzular ogohlantirishi */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Section title="Kognitiv chuqurlik (Sayoz vs Chuqur)">
+          <div className="quest-card p-4 space-y-3">
+            {(report?.topics ?? []).slice(0, 4).map((topic) => (
+              <div key={topic.topicSlug} className="flex items-center justify-between border-b border-line pb-2 last:border-b-0">
+                <div>
+                  <p className="font-semibold text-sm">{topic.topic}</p>
+                  <p className="text-xs text-muted">{topic.depthAnalysis.depthSummary}</p>
+                </div>
+                <span
+                  className={cn(
+                    "rounded-md px-2 py-1 text-xs font-bold uppercase",
+                    topic.depthAnalysis.depthStatus === "deep"
+                      ? "bg-success/20 text-success"
+                      : topic.depthAnalysis.depthStatus === "shallow"
+                      ? "bg-danger/20 text-danger"
+                      : "bg-warning/20 text-warning"
+                  )}
+                >
+                  {topic.depthAnalysis.depthStatus}
+                </span>
+              </div>
+            ))}
+            {!(report?.topics?.length) ? <Empty text="Mavzular bo'yicha chuqurlik ma'lumoti yo'q." /> : null}
+          </div>
+        </Section>
+
+        <Section title="Oraliq takrorlash (Spaced Repetition)">
+          <div className="quest-card p-4 space-y-3">
+            {decayedTopics.slice(0, 4).map((topic) => (
+              <div key={topic.topicSlug} className="flex items-center justify-between border-b border-line pb-2 last:border-b-0">
+                <div>
+                  <p className="font-semibold text-sm">{topic.topic}</p>
+                  <p className="text-xs text-muted">Oxirgi mashqdan beri {topic.retention.daysSincePractice} kun o'tdi</p>
+                </div>
+                <div className="text-right">
+                  <span className="block text-xs font-bold text-warning">{topic.retention.retentionScore}% saqlangan</span>
+                  <Link href={`/practice/${topic.topicSlug}`} className="text-xs text-brand hover:underline">Takrorlash</Link>
+                </div>
+              </div>
+            ))}
+            {!decayedTopics.length ? (
+              <div className="p-4 text-center text-sm text-muted">Barcha mavzular xotirada yangi holatda saqlanmoqda.</div>
+            ) : null}
+          </div>
+        </Section>
+      </div>
+
       <div className="quest-main-aside-grid">
         <Section title="Skill weakness index">
           <AnalyticsBars rows={skillRows} tone="critical" empty="Skill data hali yo'q." />
@@ -268,6 +384,15 @@ export function StudentMistakeDetail({ initialSummary, mistakeId }: { initialSum
             <p><strong>Signals:</strong> {mistake.status} · {mistake.timeQuality} · {mistake.mistakeType}</p>
             <p><strong>Skills:</strong> {mistake.skills.length ? mistake.skills.join(", ") : "general"}</p>
           </div>
+          {mistake.misconceptionReason ? (
+            <div className="mt-4 rounded-xl border border-warning/30 bg-warning/10 p-3 text-sm">
+              <p className="font-semibold text-warning">Diagnostika (Xato ildizi):</p>
+              <p className="mt-1 text-ink">{mistake.misconceptionReason}</p>
+              {mistake.remedialTip ? (
+                <p className="mt-2 text-xs text-muted"><strong>Maslahat:</strong> {mistake.remedialTip}</p>
+              ) : null}
+            </div>
+          ) : null}
           {mistake.explanation ? <div className="mt-4 rounded-xl bg-surface-soft p-4 text-sm leading-6 text-muted"><LatexText text={mistake.explanation} /></div> : null}
         </div>
       </Section>
@@ -281,9 +406,15 @@ export function StudentMistakeDetail({ initialSummary, mistakeId }: { initialSum
 function EngineMistakeCard({ mistake }: { mistake: NonNullable<MasteryReport["mistakes"][number]> }) {
   return (
     <Link href={`/student/mistakes/${mistake.id}`} className="quest-card flex min-h-[170px] flex-col p-4 transition hover:bg-surface-soft">
-      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-student">{mistake.topic}</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-student">{mistake.topic}</p>
+        <span className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase bg-surface-soft text-muted">{mistake.mistakeType.replace("_", " ")}</span>
+      </div>
       <h3 className="mt-2 line-clamp-2 text-sm font-semibold leading-5 sm:text-base"><LatexText text={mistake.questionPreview} /></h3>
-      <div className="mt-auto pt-4 text-xs text-muted">
+      {mistake.misconceptionReason ? (
+        <p className="mt-2 line-clamp-2 text-xs text-muted leading-4">{mistake.misconceptionReason}</p>
+      ) : null}
+      <div className="mt-auto pt-3 text-xs text-muted">
         <p className="line-clamp-1">{mistake.priority} priority · {mistake.status}</p>
         <p className="line-clamp-1">{mistake.skills.join(", ") || "general"}</p>
       </div>
@@ -315,6 +446,22 @@ function toDiagnosticTopic(item: ApiMasteryProgress["topics"][number]): TopicMas
     expectedAverageTimeSeconds: 0,
     confidence: item.confidence,
     status: item.status as TopicMasteryView["status"],
+    bktProbability: item.mastery / 100,
+    depthAnalysis: {
+      recallAccuracy: item.accuracy,
+      proceduralAccuracy: item.accuracy,
+      analyticalAccuracy: item.accuracy,
+      depthScore: item.mastery,
+      depthStatus: item.mastery >= 75 ? "deep" : item.mastery >= 50 ? "procedural" : "shallow",
+      depthSummary: "Server profil ma'lumoti",
+    },
+    retention: {
+      retentionScore: item.mastery,
+      stabilityDays: 30,
+      daysSincePractice: 0,
+      isDecayed: false,
+      recommendedReviewDate: new Date().toISOString(),
+    },
     isFundamental: item.is_fundamental,
     prerequisites: item.prerequisites,
     lastPracticedAt: item.last_practiced_at ?? undefined,

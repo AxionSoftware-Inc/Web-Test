@@ -1,5 +1,7 @@
 export type QuestionLevel = "beginner" | "intermediate" | "advanced";
 export type QuestionDifficulty = "easy" | "medium" | "hard";
+export type CognitiveLevel = "recall" | "procedural" | "conceptual" | "analytical";
+export type DepthStatus = "shallow" | "fragile" | "procedural" | "deep";
 export type TimeQuality = "too_fast" | "normal" | "slow" | "very_slow";
 export type ConfidenceLevel = "low" | "medium" | "high";
 export type TopicStatus = "not_started" | "learning" | "weak" | "needs_practice" | "improving" | "good" | "mastered" | "stale";
@@ -15,6 +17,7 @@ export type TopicNode = {
   level: "foundation" | "core" | "advanced";
   importance: "low" | "medium" | "high";
   prerequisites: string[];
+  order?: number;
 };
 
 export type QuestionMetadataSnapshot = {
@@ -31,6 +34,7 @@ export type QuestionMetadataSnapshot = {
   skills: string[];
   level: QuestionLevel;
   difficulty: QuestionDifficulty;
+  cognitiveLevel?: CognitiveLevel;
   estimatedSeconds: number;
   masteryWeight: number;
   isFundamental: boolean;
@@ -57,6 +61,8 @@ export type SessionAnswerSnapshot = {
   topicSlug: string;
   skills: string[];
   difficulty: QuestionDifficulty;
+  cognitiveLevel?: CognitiveLevel;
+  questionOptions?: string[];
   estimatedSeconds: number;
   masteryWeight: number;
   isFundamental: boolean;
@@ -75,10 +81,39 @@ export type MasteryEvidence = {
   skillSlugs: string[];
   correct: boolean;
   difficulty: QuestionDifficulty;
+  cognitiveLevel?: CognitiveLevel;
   timeQuality: TimeQuality;
   masteryWeight: number;
   isFundamental: boolean;
   createdAt: string;
+};
+
+export type DepthAnalysis = {
+  recallAccuracy: number;
+  proceduralAccuracy: number;
+  analyticalAccuracy: number;
+  depthScore: number;
+  depthStatus: DepthStatus;
+  depthSummary: string;
+  templateDiversityIndex?: number;
+  cognitiveGradient?: number;
+  transferIndex?: number;
+  isRoteMemorized?: boolean;
+};
+
+export type RetentionState = {
+  retentionScore: number;
+  stabilityDays: number;
+  daysSincePractice: number;
+  isDecayed: boolean;
+  recommendedReviewDate: string;
+};
+
+export type BKTParams = {
+  pL0: number; // Prior knowledge probability
+  pT: number;  // Transition/learn probability
+  pG: number;  // Guess probability
+  pS: number;  // Slip probability
 };
 
 export type TopicMastery = {
@@ -91,6 +126,12 @@ export type TopicMastery = {
   wrong: number;
   accuracy: number;
   mastery: number;
+  bktProbability: number;
+  irtTheta?: number;
+  standardError?: number;
+  hubScore?: number;
+  depthAnalysis: DepthAnalysis;
+  retention: RetentionState;
   averageTimeSeconds: number;
   expectedAverageTimeSeconds: number;
   confidence: ConfidenceLevel;
@@ -143,12 +184,15 @@ export type StudentMistake = {
   correctAnswer: string;
   explanation: string;
   difficulty: QuestionDifficulty;
+  cognitiveLevel?: CognitiveLevel;
   timeSpentSeconds: number;
   estimatedSeconds: number;
   timeQuality: TimeQuality;
   status: MistakeStatus;
   priority: PriorityLevel;
   mistakeType: MistakeType;
+  misconceptionReason?: string;
+  remedialTip?: string;
   recommendedAction: RecommendedAction;
   createdAt: string;
   reviewedAt?: string;
@@ -181,6 +225,32 @@ export type PracticeBlueprintItem = {
   reason: "weak_topic" | "current_topic" | "prerequisite" | "maintenance" | "low_confidence";
 };
 
+export type LearningPathNode = {
+  topicSlug: string;
+  title: string;
+  subject: string;
+  level: "foundation" | "core" | "advanced";
+  status: TopicStatus;
+  depthStatus: DepthStatus;
+  mastery: number;
+  order: number;
+  isCompleted: boolean;
+  isCurrentFrontier: boolean;
+  isBlocked: boolean;
+  blockingPrerequisites: string[];
+  whyNext: string;
+};
+
+export type LearningPathSummary = {
+  subject: string;
+  totalNodes: number;
+  completedNodesCount: number;
+  pathProgressPercent: number;
+  currentFrontier: LearningPathNode[];
+  nextRecommendedNode?: LearningPathNode;
+  nodes: LearningPathNode[];
+};
+
 export type MasteryReport = {
   studentId: string;
   generatedAt: string;
@@ -189,6 +259,11 @@ export type MasteryReport = {
   mistakes: StudentMistake[];
   weakTopics: TopicMastery[];
   masteredTopics: TopicMastery[];
+  decayedTopics: TopicMastery[];
+  overallDepth: DepthStatus;
+  learningPath?: LearningPathSummary;
+  testIntegrityScore?: number;
+  integrityFlags?: string[];
   recommendedActions: RecommendedAction[];
   practiceBlueprint: PracticeBlueprintItem[];
 };

@@ -8,6 +8,9 @@ export function clampPercent(value: number) {
   return Math.round(Math.max(0, Math.min(100, value)));
 }
 
+/**
+ * Vaqt sifati indeksi (Kognitiv yuklama va tezlik nisbati)
+ */
 export function getTimeQuality(timeSpentSeconds: number, estimatedSeconds: number): TimeQuality {
   if (!estimatedSeconds || estimatedSeconds <= 0 || !timeSpentSeconds || timeSpentSeconds <= 0) return "normal";
   const ratio = timeSpentSeconds / estimatedSeconds;
@@ -50,7 +53,13 @@ export function getConfidence(attempts: number): ConfidenceLevel {
   return "low";
 }
 
-export function getTopicStatus(attempts: number, accuracy: number, confidence: ConfidenceLevel, lastPracticedAt?: string, staleDays = 60): TopicStatus {
+export function getTopicStatus(
+  attempts: number,
+  accuracy: number,
+  confidence: ConfidenceLevel,
+  lastPracticedAt?: string,
+  staleDays = 60
+): TopicStatus {
   if (attempts === 0) return "not_started";
   if (lastPracticedAt && accuracy >= 85 && isOlderThanDays(lastPracticedAt, staleDays)) return "stale";
   if (confidence === "low") return "learning";
@@ -70,21 +79,81 @@ export function calculateMastery(accuracy: number, confidence: ConfidenceLevel, 
   return clampPercent(mastery);
 }
 
-export function getStudentTopicPriority(topic: Pick<TopicMastery, "wrong" | "mastery" | "confidence" | "isFundamental" | "status">) {
-  let score = 0;
-  score += topic.wrong * 2;
-  score += Math.max(0, 70 - topic.mastery);
-  if (topic.confidence === "high") score += 15;
-  if (topic.confidence === "medium") score += 8;
-  if (topic.isFundamental) score += 20;
-  if (topic.status === "weak") score += 20;
-  if (topic.status === "needs_practice") score += 10;
-  return Math.round(score);
+/**
+ * Advanced kompozit mastery: IRT (Latent Ability), BKT (Bayesian Tracing), va Cognitive Depth (Transfer) birlashmasi
+ */
+export function calculateAdvancedMastery(input: {
+  accuracy: number;
+  confidence: ConfidenceLevel;
+  averageTimeRatio: number;
+  irtMasteryPercent?: number;
+  bktProbability?: number;
+  depthScore?: number;
+  isRoteMemorized?: boolean;
+}): number {
+  const base = calculateMastery(input.accuracy, input.confidence, input.averageTimeRatio);
+
+  const irtComponent = input.irtMasteryPercent ?? base;
+  const bktComponent = (input.bktProbability ?? (base / 100)) * 100;
+  const depthComponent = input.depthScore ?? base;
+
+  // Matematik og'irliklar: 40% IRT (psixometrik qobiliyat), 35% BKT (dinamika), 25% Kognitiv chuqurlik
+  let composite = 0.40 * irtComponent + 0.35 * bktComponent + 0.25 * depthComponent;
+
+  // Agar sayoz yodlab olinganlik (Rote Memorization) aniqlansa, soxta yuqori ballni tuzatish
+  if (input.isRoteMemorized) {
+    composite = Math.min(68, composite * 0.80);
+  }
+
+  return clampPercent(composite);
+}
+
+/**
+ * Remediation Yield Priority: Axborot noaniqligi, Graph Centrality va Kognitiv Bo'shliq asosidagi ilmiy ustuvorlik
+ */
+export function getStudentTopicPriority(
+  topic: Pick<TopicMastery, "wrong" | "mastery" | "confidence" | "isFundamental" | "status"> & {
+    depthAnalysis?: { depthStatus?: string; isRoteMemorized?: boolean; transferIndex?: number };
+    retention?: { isDecayed?: boolean; retentionScore?: number };
+    hubScore?: number;
+    standardError?: number;
+  }
+): number {
+  let priority = 0;
+
+  // 1. Bilim kamomadi (Deficit gap): 100 dan uzoqligi
+  const gap = Math.max(0, 75 - topic.mastery);
+  priority += gap * 0.8;
+
+  // 2. Xatolar chastotasi
+  priority += topic.wrong * 2.5;
+
+  // 3. Graf poydevorlik darajasi (Graph Centrality / Hub impact)
+  if (topic.isFundamental) priority += 22;
+  if (topic.hubScore) priority += Math.min(25, topic.hubScore * 0.5);
+
+  // 4. Kognitiv Sayozlik (Rote Memorization / Negative Transfer): eng xatarli bo'shliq
+  if (topic.depthAnalysis?.depthStatus === "shallow" || topic.depthAnalysis?.isRoteMemorized) {
+    priority += 24;
+  } else if (topic.depthAnalysis?.transferIndex && topic.depthAnalysis.transferIndex < -0.2) {
+    priority += 15;
+  }
+
+  // 5. Xotirada so'nish (Decayed)
+  if (topic.retention?.isDecayed) {
+    const decayGap = Math.max(0, 70 - (topic.retention.retentionScore ?? 50));
+    priority += 12 + decayGap * 0.3;
+  }
+
+  // 6. Noaniqlik (Standard Error): agar ishonch past bo'lsa, tezroq diagnostika qilish kerak
+  if (topic.confidence === "low") priority += 8;
+
+  return Math.round(priority);
 }
 
 export function priorityFromScore(score: number): PriorityLevel {
-  if (score >= 70) return "high";
-  if (score >= 35) return "medium";
+  if (score >= 65) return "high";
+  if (score >= 30) return "medium";
   return "low";
 }
 
@@ -96,10 +165,10 @@ export function calculateClassTopicSeverity(input: {
   isFundamental: boolean;
 }) {
   let score = 0;
-  score += input.wrong;
-  score += input.affectedStudentCount * 2;
-  if (input.classAccuracy < 50) score += 20;
-  if (input.classAccuracy < 70) score += 10;
+  score += input.wrong * 1.5;
+  score += input.affectedStudentCount * 2.5;
+  if (input.classAccuracy < 50) score += 25;
+  else if (input.classAccuracy < 70) score += 12;
   if (input.isFundamental) score += 25;
   const affectedRatio = input.affectedStudentCount / Math.max(1, input.totalStudentCount);
   if (affectedRatio >= 0.75) score += 30;

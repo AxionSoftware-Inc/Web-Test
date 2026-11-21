@@ -1,4 +1,3 @@
-import { AnalyticsSection } from "@/features/landing/ui/analytics-section";
 import { FinalCtaSection } from "@/features/landing/ui/final-cta-section";
 import { HeroSection } from "@/features/landing/ui/hero-section";
 import { HowItWorksSection } from "@/features/landing/ui/how-it-works-section";
@@ -14,7 +13,6 @@ export function LandingPage() {
       <HowItWorksSection />
       <SubjectMapSection />
       <PositioningSection />
-      <AnalyticsSection />
       <FinalCtaSection />
     </main>
   );

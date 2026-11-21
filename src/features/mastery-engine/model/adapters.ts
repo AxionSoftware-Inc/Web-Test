@@ -47,6 +47,7 @@ export function apiSessionToAnswerSnapshots(input: {
       prerequisites: defaultPrerequisites(input.test.topic_slug),
       questionTitle: input.test.title,
       questionPreview: row.question.prompt,
+      questionOptions: row.question.options,
       explanation: row.question.explanation ?? "",
       visibility: input.visibility ?? (session.classroom ? "class" : "personal"),
       classId: input.classId ?? (session.classroom ? String(session.classroom) : undefined),

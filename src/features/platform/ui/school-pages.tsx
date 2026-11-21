@@ -21,77 +21,77 @@ export async function SchoolHomePage() {
   ]);
   const classRows = (analytics?.classes ?? []).slice(0, 8);
   const weakRows = (analytics?.weak_skills ?? []).slice(0, 8);
-  const teacherRows = (analytics?.teachers ?? []).slice(0, 5);
+  const teacherRows = (analytics?.teachers ?? []).slice(0, 6);
   const activeTeacherCount = analytics?.teachers.filter((teacher) => teacher.is_active).length ?? teachers.filter((teacher) => teacher.is_active).length;
   const averageScore = analytics?.average_score ?? average(classRows.map((item) => item.average_score));
   const submittedStudents = analytics?.students_submitted ?? classRows.reduce((sum, item) => sum + item.students_submitted, 0);
   const attempts = analytics?.attempts ?? classRows.reduce((sum, item) => sum + item.attempts, 0);
   return (
     <QuestPage variant="wide">
-      <div className="grid gap-5">
+      <div className="grid gap-4">
         <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-          <Card className="border-line bg-surface p-5 shadow-[var(--shadow-card)]">
+          <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-brand">School Analytics</p>
-                <h1 className="mt-2 text-3xl font-semibold tracking-tight text-ink">{school.name}</h1>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Classes, teachers, students and performance signals in one operational view.</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-brand">O&apos;quv markaz tahlili</p>
+                <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-ink md:text-3xl">{school.name}</h1>
+                <p className="mt-1.5 max-w-2xl text-xs leading-5 text-black/55">Sinflar, o&apos;qituvchilar, o&apos;quvchilar va umumiy o&apos;zlashtirish ko&apos;rsatkichlari yagona panelda.</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button asChild variant="secondary" size="sm"><Link href="/school/classes">Classes</Link></Button>
-                <Button asChild variant="secondary" size="sm"><Link href="/school/teachers">Teachers</Link></Button>
-                <Button asChild variant="secondary" size="sm"><Link href="/school/students">Students</Link></Button>
+                <Button asChild variant="secondary" size="sm" className="rounded-xl"><Link href="/school/classes">Sinflar</Link></Button>
+                <Button asChild variant="secondary" size="sm" className="rounded-xl"><Link href="/school/teachers">O&apos;qituvchilar</Link></Button>
+                <Button asChild variant="secondary" size="sm" className="rounded-xl"><Link href="/school/students">O&apos;quvchilar</Link></Button>
               </div>
             </div>
             <SchoolMetricStrip
               metrics={[
-                { label: "Teachers", value: analytics?.teacher_count ?? (teachers.length || school.teacher_count), note: `${activeTeacherCount} active`, tone: "neutral" },
-                { label: "Classes", value: analytics?.class_count ?? classes.length, note: "workspaces", tone: "neutral" },
-                { label: "Students", value: submittedStudents, note: "submitted", tone: "green" },
-                { label: "Attempts", value: attempts, note: "sessions", tone: "amber" },
-                { label: "Average", value: `${averageScore}%`, note: "score", tone: averageScore >= 70 ? "green" : averageScore ? "amber" : "neutral" },
+                { label: "O'qituvchilar", value: analytics?.teacher_count ?? (teachers.length || school.teacher_count), note: `${activeTeacherCount} faol`, tone: "neutral" },
+                { label: "Sinflar", value: analytics?.class_count ?? classes.length, note: "guruh", tone: "neutral" },
+                { label: "O'quvchilar", value: submittedStudents, note: "topshirdi", tone: "green" },
+                { label: "Urinishlar", value: attempts, note: "sessiya", tone: "amber" },
+                { label: "O'rtacha ball", value: `${averageScore}%`, note: "natija", tone: averageScore >= 70 ? "green" : averageScore ? "amber" : "neutral" },
               ]}
             />
           </Card>
           <SchoolHealthCard score={averageScore} attempts={attempts} students={submittedStudents} weakSkills={weakRows.length} />
         </section>
 
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
-          <main className="grid gap-5">
-            <Card className="p-5">
-              <TeacherSectionHeader title="Class performance terrain" action={<Button asChild variant="secondary" size="sm"><Link href="/school/classes">All classes</Link></Button>} />
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_400px]">
+          <main className="grid gap-4">
+            <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm">
+              <TeacherSectionHeader title="Sinflar dinamikasi" action={<Button asChild variant="secondary" size="sm" className="rounded-xl"><Link href="/school/classes">Barcha sinflar</Link></Button>} />
               <div className="mt-4"><SchoolClassTerrain rows={classRows} /></div>
             </Card>
-            <div className="grid gap-5 2xl:grid-cols-[1fr_0.95fr]">
-              <Card className="p-5">
-                <TeacherSectionHeader title="Class orbit map" />
+            <div className="grid gap-4 2xl:grid-cols-[1fr_0.95fr]">
+              <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm">
+                <TeacherSectionHeader title="Sinflar taqsimoti" />
                 <div className="mt-4"><SchoolClassOrbit rows={classRows} /></div>
               </Card>
-              <Card className="p-5">
-                <TeacherSectionHeader title="Weak skill matrix" />
+              <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm">
+                <TeacherSectionHeader title="Kuchsiz mavzular matritsasi" />
                 <div className="mt-4"><SchoolWeakSkillMatrix rows={weakRows} /></div>
               </Card>
             </div>
-            <Card className="p-5">
-              <TeacherSectionHeader title="Teacher load board" action={<Button asChild variant="secondary" size="sm"><Link href="/school/teachers">All teachers</Link></Button>} />
+            <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm">
+              <TeacherSectionHeader title="O'qituvchilar yuki" action={<Button asChild variant="secondary" size="sm" className="rounded-xl"><Link href="/school/teachers">Barchasi</Link></Button>} />
               <div className="mt-4"><SchoolTeacherLoadBoard teachers={teacherRows} /></div>
             </Card>
           </main>
-          <aside className="grid h-fit gap-5 xl:sticky xl:top-24">
-            <Card className="p-5">
-              <TeacherSectionHeader title="Portal" />
-              <div className="mt-4 grid gap-3">
-                <MiniInfo label="Visibility" value={school.visibility} />
-                <MiniInfo label="Teachers" value={school.teacher_count} />
-                <MiniInfo label="Student invite" value={school.student_invite_code ? "set" : "Not set"} />
+          <aside className="grid h-fit gap-4 xl:sticky xl:top-24">
+            <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm">
+              <TeacherSectionHeader title="Markaz ma'lumotlari" />
+              <div className="mt-4 grid gap-2.5">
+                <MiniInfo label="Ko'rinish" value={school.visibility} />
+                <MiniInfo label="O'qituvchilar" value={school.teacher_count} />
+                <MiniInfo label="Taklif kodi" value={school.student_invite_code ? "Mavjud" : "Kiritilmagan"} />
               </div>
             </Card>
-            <Card className="p-5">
-              <TeacherSectionHeader title="Fast actions" />
+            <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm">
+              <TeacherSectionHeader title="Tezkor amallar" />
               <div className="mt-4 grid gap-2">
-                <Button asChild><Link href="/school/classes">Open class diagnostics</Link></Button>
-                <Button asChild variant="secondary"><Link href="/school/students">Student directory</Link></Button>
-                <Button asChild variant="secondary"><Link href="/school/progress">Progress reports</Link></Button>
+                <Button asChild className="rounded-xl"><Link href="/school/classes">Sinflar diagnostikasi</Link></Button>
+                <Button asChild variant="secondary" className="rounded-xl"><Link href="/school/students">O&apos;quvchilar ro&apos;yxati</Link></Button>
+                <Button asChild variant="secondary" className="rounded-xl"><Link href="/school/progress">Natijalar hisoboti</Link></Button>
               </div>
             </Card>
           </aside>
@@ -108,12 +108,12 @@ type SchoolTeacherAnalyticsRow = ApiSchoolAnalytics["teachers"][number];
 
 function SchoolMetricStrip({ metrics }: { metrics: SchoolMetric[] }) {
   return (
-    <div className="mt-5 grid overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface-soft sm:grid-cols-5">
+    <div className="mt-4 grid overflow-hidden rounded-xl border border-black/8 bg-[#fafaf8] sm:grid-cols-5">
       {metrics.map((metric) => (
-        <div key={metric.label} className="border-b border-line px-4 py-3 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-subtle">{metric.label}</p>
-          <p className={`mt-1 text-2xl font-semibold ${schoolToneClass(metric.tone)}`}>{metric.value}</p>
-          <p className="mt-1 text-xs font-medium text-muted">{metric.note}</p>
+        <div key={metric.label} className="border-b border-black/8 px-4 py-3 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-black/40">{metric.label}</p>
+          <p className={`mt-1 text-2xl font-bold ${schoolToneClass(metric.tone)}`}>{metric.value}</p>
+          <p className="mt-0.5 text-xs text-black/50">{metric.note}</p>
         </div>
       ))}
     </div>
@@ -124,18 +124,18 @@ function SchoolHealthCard({ score, attempts, students, weakSkills }: { score: nu
   const health = attempts ? Math.max(0, Math.min(100, Math.round(score - weakSkills * 2 + Math.min(10, students)))) : 0;
   const ring = Math.max(8, health) * 3.6;
   return (
-    <Card className="border-[#263029] bg-[#11130f] p-5 text-white shadow-[var(--shadow-card)]">
-      <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-200">Operational health</p>
-      <div className="mt-4 grid grid-cols-[104px_1fr] gap-4">
-        <div className="relative grid size-[104px] place-items-center rounded-full" style={{ background: `conic-gradient(var(--success) 0 ${ring}deg, rgba(255,255,255,.14) ${ring}deg 360deg)` }}>
-          <span className="absolute inset-3 rounded-full border border-white/10 bg-[#151a15]" />
-          <b className="relative text-2xl text-white">{health}%</b>
+    <Card className="rounded-2xl border border-black/8 bg-[#11130f] p-5 text-white shadow-sm">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-300">Faoliyat salomatligi</p>
+      <div className="mt-4 grid grid-cols-[96px_1fr] items-center gap-4">
+        <div className="relative grid size-24 place-items-center rounded-full" style={{ background: `conic-gradient(var(--success) 0 ${ring}deg, rgba(255,255,255,.14) ${ring}deg 360deg)` }}>
+          <span className="absolute inset-2.5 rounded-full border border-white/10 bg-[#151a15]" />
+          <b className="relative text-xl text-white">{health}%</b>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <DarkMetric label="Average" value={`${score}%`} />
-          <DarkMetric label="Attempts" value={attempts} />
-          <DarkMetric label="Students" value={students} />
-          <DarkMetric label="Weak skills" value={weakSkills} />
+          <DarkMetric label="O'rtacha" value={`${score}%`} />
+          <DarkMetric label="Topshirildi" value={attempts} />
+          <DarkMetric label="O'quvchilar" value={students} />
+          <DarkMetric label="Kuchsiz" value={weakSkills} />
         </div>
       </div>
     </Card>
@@ -144,16 +144,16 @@ function SchoolHealthCard({ score, attempts, students, weakSkills }: { score: nu
 
 function DarkMetric({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-[14px] border border-white/10 bg-white/[0.065] p-3">
-      <span className="block text-[10px] font-black uppercase tracking-[0.13em] text-white/45">{label}</span>
-      <b className="mt-1 block text-lg text-white">{value}</b>
+    <div className="rounded-xl border border-white/10 bg-white/[0.06] p-2.5 text-center">
+      <span className="block text-[10px] font-semibold uppercase tracking-wider text-white/45">{label}</span>
+      <b className="mt-0.5 block text-base font-semibold text-white">{value}</b>
     </div>
   );
 }
 
 function SchoolClassTerrain({ rows }: { rows: SchoolClassAnalyticsRow[] }) {
   const data = rows.filter((row) => row.sessions_total || row.attempts || row.students_submitted).slice(0, 8);
-  if (data.length < 2) return <SchoolCompactEmpty title="Class terrain needs at least two active classes." />;
+  if (data.length < 2) return <SchoolCompactEmpty title="Sinflar dinamikasi ko'rinishi uchun kamida ikkita faol sinf kerak." />;
   const points = data.map((row, index) => {
     const x = 6 + index * (88 / Math.max(1, data.length - 1));
     const y = 86 - Math.max(0, Math.min(100, row.average_score)) * 0.7;
@@ -162,7 +162,7 @@ function SchoolClassTerrain({ rows }: { rows: SchoolClassAnalyticsRow[] }) {
   const path = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
   const area = `${path} L ${points.at(-1)?.x ?? 94} 92 L ${points[0]?.x ?? 6} 92 Z`;
   return (
-    <div className="relative min-h-[340px] overflow-hidden rounded-[18px] border border-line bg-[linear-gradient(var(--line)_1px,transparent_1px),linear-gradient(90deg,var(--line)_1px,transparent_1px),var(--surface-soft)] bg-[size:100%_25%,12.5%_100%,auto] p-4">
+    <div className="relative min-h-[320px] overflow-hidden rounded-2xl border border-black/8 bg-[#fafaf8] p-4">
       <svg className="absolute inset-0 size-full" viewBox="0 0 100 100" preserveAspectRatio="none">
         <defs>
           <linearGradient id="schoolTerrainFill" x1="0" y1="0" x2="0" y2="1">
@@ -172,21 +172,21 @@ function SchoolClassTerrain({ rows }: { rows: SchoolClassAnalyticsRow[] }) {
           </linearGradient>
         </defs>
         <path d={area} fill="url(#schoolTerrainFill)" />
-        <path d={path} fill="none" stroke="var(--ink)" strokeOpacity=".55" strokeWidth="0.9" vectorEffect="non-scaling-stroke" />
+        <path d={path} fill="none" stroke="var(--ink)" strokeOpacity=".45" strokeWidth="0.9" vectorEffect="non-scaling-stroke" />
         <line x1="0" x2="100" y1="37" y2="37" stroke="var(--warning)" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
       </svg>
       <div className="relative grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {points.map(({ row, y }) => (
-          <Link key={row.class_id} href={`/school/classes/${row.class_slug}`} className="rounded-[var(--radius-card)] border border-line bg-surface/95 p-4 shadow-[0_10px_26px_rgba(20,23,19,.06)] hover:bg-surface-soft" style={{ transform: `translateY(${Math.max(-8, Math.min(14, y - 52))}px)` }}>
-            <div className="flex items-start justify-between gap-3">
-              <h3 className="line-clamp-2 font-semibold">{row.class_name}</h3>
+          <Link key={row.class_id} href={`/school/classes/${row.class_slug}`} className="group rounded-xl border border-black/8 bg-white/95 p-3.5 shadow-sm transition hover:border-black/20" style={{ transform: `translateY(${Math.max(-6, Math.min(10, y - 52))}px)` }}>
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="line-clamp-1 font-semibold text-ink group-hover:text-brand transition-colors">{row.class_name}</h3>
               <Badge variant={row.average_score >= 70 ? "success" : row.average_score ? "warning" : "default"}>{row.average_score}%</Badge>
             </div>
-            <p className="mt-2 text-sm text-muted">{row.teacher_name || "No teacher"}</p>
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <MiniInfo label="Students" value={row.students_submitted} />
-              <MiniInfo label="Attempts" value={row.attempts} />
-              <MiniInfo label="Sessions" value={row.sessions_total} />
+            <p className="mt-1 text-xs text-black/50">{row.teacher_name || "O'qituvchi yo'q"}</p>
+            <div className="mt-3 grid grid-cols-3 gap-1.5">
+              <MiniInfo label="O'quvchi" value={row.students_submitted} />
+              <MiniInfo label="Urinish" value={row.attempts} />
+              <MiniInfo label="Sessiya" value={row.sessions_total} />
             </div>
           </Link>
         ))}
@@ -197,18 +197,18 @@ function SchoolClassTerrain({ rows }: { rows: SchoolClassAnalyticsRow[] }) {
 
 function SchoolClassOrbit({ rows }: { rows: SchoolClassAnalyticsRow[] }) {
   const data = rows.filter((row) => row.sessions_total || row.attempts || row.students_submitted).sort((a, b) => b.attempts - a.attempts).slice(0, 5);
-  if (!data.length) return <SchoolCompactEmpty title="Class orbit appears after classes start submitting work." />;
+  if (!data.length) return <SchoolCompactEmpty title="Sinflar topshiriqlarni bajara boshlagach ko'rinadi." />;
   const positions = [{ left: 50, top: 50 }, { left: 24, top: 30 }, { left: 76, top: 31 }, { left: 26, top: 74 }, { left: 76, top: 73 }];
   return (
-    <div className="relative h-[320px] overflow-hidden rounded-[18px] border border-line bg-[radial-gradient(circle_at_center,var(--surface)_0,transparent_25%),linear-gradient(var(--line)_1px,transparent_1px),linear-gradient(90deg,var(--line)_1px,transparent_1px),var(--surface-soft)] bg-[size:auto,100%_25%,25%_100%,auto]">
-      <span className="absolute left-1/2 top-1/2 size-[230px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-line-strong" />
-      <span className="absolute left-1/2 top-1/2 size-[138px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-line" />
+    <div className="relative h-[290px] overflow-hidden rounded-2xl border border-black/8 bg-[#fafaf8]">
+      <span className="absolute left-1/2 top-1/2 size-[210px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-black/15" />
+      <span className="absolute left-1/2 top-1/2 size-[120px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-black/10" />
       {data.map((row, index) => {
         const position = positions[index] ?? positions[0];
-        const size = index === 0 ? 88 : 64;
+        const size = index === 0 ? 80 : 60;
         return (
-          <Link key={row.class_id} href={`/school/classes/${row.class_slug}`} className="absolute grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/70 p-2 text-center text-white shadow-[0_14px_34px_rgba(20,23,19,.12)] transition hover:scale-105" style={{ left: `${position.left}%`, top: `${position.top}%`, width: size, height: size, background: schoolScoreColor(row.average_score) }}>
-            <span className="text-[10px] font-black leading-tight">{row.average_score}%<br />{row.class_name.slice(0, 10)}</span>
+          <Link key={row.class_id} href={`/school/classes/${row.class_slug}`} className="absolute grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/70 p-2 text-center text-white shadow-md transition hover:scale-105" style={{ left: `${position.left}%`, top: `${position.top}%`, width: size, height: size, background: schoolScoreColor(row.average_score) }}>
+            <span className="text-[10px] font-bold leading-tight">{row.average_score}%<br />{row.class_name.slice(0, 9)}</span>
           </Link>
         );
       })}
@@ -218,22 +218,22 @@ function SchoolClassOrbit({ rows }: { rows: SchoolClassAnalyticsRow[] }) {
 
 function SchoolWeakSkillMatrix({ rows }: { rows: SchoolWeakSkillRow[] }) {
   const data = rows.filter((row) => row.total > 0).slice(0, 12);
-  if (!data.length) return <SchoolCompactEmpty title="Weak skill matrix appears after submitted answers." />;
+  if (!data.length) return <SchoolCompactEmpty title="Topshirilgan testlar bo'yicha kuchsiz mavzular ko'rinadi." />;
   return (
     <div className="grid gap-2 sm:grid-cols-2">
       {data.map((row) => {
         const weakness = Math.max(0, 100 - row.percent);
         return (
-          <div key={row.skill} className="rounded-[var(--radius-card)] border border-line bg-surface p-3">
-            <div className="flex items-start justify-between gap-3">
+          <div key={row.skill} className="rounded-xl border border-black/8 bg-white p-3 shadow-sm">
+            <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="line-clamp-1 text-sm font-semibold">{row.skill}</p>
-                <p className="mt-1 text-xs text-muted">{row.correct}/{row.total} correct</p>
+                <p className="line-clamp-1 text-xs font-semibold text-ink">{row.skill}</p>
+                <p className="mt-0.5 text-[11px] text-black/50">{row.correct}/{row.total} to&apos;g&apos;ri</p>
               </div>
-              <span className="rounded-lg px-2 py-1 text-xs font-bold text-white" style={{ background: schoolScoreColor(row.percent) }}>{row.percent}%</span>
+              <span className="shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-bold text-white" style={{ background: schoolScoreColor(row.percent) }}>{row.percent}%</span>
             </div>
-            <div className="mt-3 grid h-8 grid-cols-10 gap-1">
-              {Array.from({ length: 10 }).map((_, index) => <span key={index} className={`rounded-[4px] ${index < Math.ceil(weakness / 10) ? "bg-danger" : "bg-success/20"}`} />)}
+            <div className="mt-2.5 grid h-4 grid-cols-10 gap-1">
+              {Array.from({ length: 10 }).map((_, index) => <span key={index} className={`rounded-sm ${index < Math.ceil(weakness / 10) ? "bg-danger" : "bg-success/20"}`} />)}
             </div>
           </div>
         );
@@ -243,21 +243,21 @@ function SchoolWeakSkillMatrix({ rows }: { rows: SchoolWeakSkillRow[] }) {
 }
 
 function SchoolTeacherLoadBoard({ teachers }: { teachers: SchoolTeacherAnalyticsRow[] }) {
-  if (!teachers.length) return <SchoolCompactEmpty title="Teacher activity appears after teachers receive classes and submissions." />;
+  if (!teachers.length) return <SchoolCompactEmpty title="O'qituvchilar faolligi sinflar biriktirilgach paydo bo'ladi." />;
   return (
     <div className="grid gap-3 md:grid-cols-2">
       {teachers.map((teacher) => (
-        <Link key={teacher.teacher_id} href={`/school/teachers/${teacher.teacher_id}`} className="rounded-[var(--radius-card)] border border-line bg-surface p-4 hover:bg-surface-soft">
+        <Link key={teacher.teacher_id} href={`/school/teachers/${teacher.teacher_id}`} className="group rounded-2xl border border-black/8 bg-white p-4 shadow-sm transition hover:border-black/20">
           <div className="flex items-start justify-between gap-3">
-            <div><h3 className="font-semibold">{teacher.teacher_name}</h3><p className="mt-1 text-sm text-muted">{teacher.email || "No email"}</p></div>
-            <Badge variant={teacher.is_active ? "success" : "default"}>{teacher.is_active ? "active" : "inactive"}</Badge>
+            <div><h3 className="font-semibold text-ink group-hover:text-brand transition-colors">{teacher.teacher_name}</h3><p className="mt-0.5 text-xs text-black/50">{teacher.email || "Email yo'q"}</p></div>
+            <Badge variant={teacher.is_active ? "success" : "default"}>{teacher.is_active ? "faol" : "nofaol"}</Badge>
           </div>
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <MiniInfo label="Classes" value={teacher.class_count} />
-            <MiniInfo label="Attempts" value={teacher.attempts} />
-            <MiniInfo label="Avg" value={`${teacher.average_score}%`} />
+          <div className="mt-3.5 grid grid-cols-3 gap-2">
+            <MiniInfo label="Sinflar" value={teacher.class_count} />
+            <MiniInfo label="Topshirildi" value={teacher.attempts} />
+            <MiniInfo label="O'rtacha" value={`${teacher.average_score}%`} />
           </div>
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-surface-soft">
+          <div className="mt-3.5 h-1.5 overflow-hidden rounded-full bg-[#fafaf8]">
             <span className="block h-full rounded-full" style={{ width: `${Math.min(100, teacher.average_score)}%`, background: schoolScoreColor(teacher.average_score) }} />
           </div>
         </Link>
@@ -268,8 +268,8 @@ function SchoolTeacherLoadBoard({ teachers }: { teachers: SchoolTeacherAnalytics
 
 function SchoolCompactEmpty({ title }: { title: string }) {
   return (
-    <div className="grid min-h-[96px] place-items-center rounded-[var(--radius-card)] border border-dashed border-line-strong bg-surface-soft px-4 py-5 text-center">
-      <p className="max-w-[320px] text-sm font-medium leading-6 text-muted">{title}</p>
+    <div className="grid min-h-[96px] place-items-center rounded-xl border border-dashed border-black/12 bg-[#fafaf8] px-4 py-5 text-center">
+      <p className="max-w-[320px] text-xs font-medium leading-5 text-black/50">{title}</p>
     </div>
   );
 }
@@ -294,25 +294,25 @@ export async function SchoolClassesPage() {
   const validResults = results.filter((item): item is ApiClassResults => Boolean(item));
   return (
     <QuestPage variant="wide">
-      <Card className="p-5">
-        <TeacherSectionHeader title="Class workspaces" />
-        <div className="mt-4 overflow-hidden rounded-[var(--radius-card)] border border-line">
-          <div className="grid grid-cols-[1.1fr_1fr_120px_120px_130px] gap-3 border-b border-line bg-surface-soft px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-subtle max-lg:hidden">
-            <span>Class</span><span>Teacher</span><span>Students</span><span>Assignments</span><span>Average</span>
+      <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm">
+        <TeacherSectionHeader title="Sinflar va guruhlar" />
+        <div className="mt-4 overflow-hidden rounded-2xl border border-black/8 bg-white shadow-sm">
+          <div className="grid grid-cols-[1.1fr_1fr_120px_120px_130px] gap-3 border-b border-black/8 bg-[#fafaf8] px-4 py-3 text-xs font-semibold uppercase tracking-wider text-black/40 max-lg:hidden">
+            <span>Sinf</span><span>O&apos;qituvchi</span><span>O&apos;quvchilar</span><span>Vazifalar</span><span>O&apos;rtacha ball</span>
           </div>
           {classes.map((item) => {
             const result = validResults.find((row) => row.classroom.slug === item.slug);
             return (
-              <Link key={item.id} href={`/school/classes/${item.slug}`} className="grid gap-3 border-b border-line px-4 py-4 hover:bg-surface-soft lg:grid-cols-[1.1fr_1fr_120px_120px_130px] lg:items-center">
-                <div><p className="font-semibold">{item.name}</p><p className="mt-1 text-xs text-muted">{item.slug}</p></div>
-                <p className="text-sm text-muted">{item.teacher_name}</p>
-                <p className="text-sm text-muted">{item.student_count}</p>
-                <p className="text-sm text-muted">{item.assignment_count}</p>
-                <Badge variant={result && result.average_score >= 70 ? "success" : "warning"}>{result ? `${result.average_score}%` : "No data"}</Badge>
+              <Link key={item.id} href={`/school/classes/${item.slug}`} className="grid gap-3 border-b border-black/6 px-4 py-3.5 transition hover:bg-[#fafaf8] last:border-b-0 lg:grid-cols-[1.1fr_1fr_120px_120px_130px] lg:items-center">
+                <div><p className="font-semibold text-ink">{item.name}</p><p className="mt-0.5 text-xs text-black/45">{item.slug}</p></div>
+                <p className="text-sm text-black/60">{item.teacher_name}</p>
+                <p className="text-sm text-black/60">{item.student_count} o&apos;quvchi</p>
+                <p className="text-sm text-black/60">{item.assignment_count} vazifa</p>
+                <div><Badge variant={result && result.average_score >= 70 ? "success" : "warning"}>{result ? `${result.average_score}%` : "Yo'q"}</Badge></div>
               </Link>
             );
           })}
-          {!classes.length ? <div className="p-5"><QuestEmptyState title="No classes yet" /></div> : null}
+          {!classes.length ? <div className="p-6 text-center text-sm text-black/50">Hozircha sinflar yo&apos;q.</div> : null}
         </div>
       </Card>
     </QuestPage>
@@ -324,7 +324,13 @@ export async function SchoolTeachersPage() {
   const teachers = await questApi.schoolTeachers(school.slug);
   return (
     <QuestPage variant="wide">
-      <Card className="p-5"><TeacherSectionHeader title="Teacher directory" /><div className="mt-4 quest-card-grid-3">{teachers.map((teacher) => <SchoolTeacherCard key={teacher.id} teacher={teacher} />)}{!teachers.length ? <QuestEmptyState title="No teachers yet" /> : null}</div></Card>
+      <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm">
+        <TeacherSectionHeader title="O'qituvchilar ro'yxati" />
+        <div className="mt-4 quest-card-grid-3">
+          {teachers.map((teacher) => <SchoolTeacherCard key={teacher.id} teacher={teacher} />)}
+          {!teachers.length ? <QuestEmptyState title="Hozircha o'qituvchilar yo'q" /> : null}
+        </div>
+      </Card>
     </QuestPage>
   );
 }
@@ -363,8 +369,8 @@ export async function SchoolStudentsPage() {
   const students = Array.from(byStudent.values()).sort((a, b) => a.studentName.localeCompare(b.studentName));
   return (
     <QuestPage variant="table">
-      <Card className="p-5">
-        <TeacherSectionHeader title="Student table" />
+      <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm">
+        <TeacherSectionHeader title="O'quvchilar jadvali" />
         <SchoolStudentDirectory students={students} />
       </Card>
     </QuestPage>
@@ -396,54 +402,54 @@ export async function SchoolClassDetailPage({ classId }: { classId: string }) {
     };
   });
   const resultRows = results?.results ?? [];
-  const weakRows = (results?.weak_skills ?? []).slice(0, 6).map((item) => ({ label: item.skill, value: item.percent, meta: `${item.correct}/${item.total} correct` }));
+  const weakRows = (results?.weak_skills ?? []).slice(0, 6).map((item) => ({ label: item.skill, value: item.percent, meta: `${item.correct}/${item.total} to'g'ri` }));
   return (
     <QuestPage variant="table">
       <div className="quest-main-aside-grid">
-        <div className="grid gap-5">
-          <Card className="p-5">
-            <TeacherSectionHeader title="Teachers" />
+        <div className="grid gap-4">
+          <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm">
+            <TeacherSectionHeader title="O'qituvchilar" />
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {(classTeachers.length ? classTeachers : [{ id: 0, name: classroom.teacher_name, email: "", teacher_code: "", class_count: 1, is_active: true }]).map((teacher) => (
-                <Link key={teacher.id || teacher.name} href={teacher.id ? `/school/teachers/${teacher.id}` : "/school/teachers"} className="quest-card p-4 hover:bg-surface-soft">
-                  <h3 className="font-semibold">{teacher.name}</h3>
-                  <p className="mt-1 text-sm text-muted">{teacher.email || teacher.teacher_code || "Class teacher"}</p>
+                <Link key={teacher.id || teacher.name} href={teacher.id ? `/school/teachers/${teacher.id}` : "/school/teachers"} className="group rounded-xl border border-black/8 bg-white p-3.5 shadow-sm transition hover:border-black/20">
+                  <h3 className="font-semibold text-ink group-hover:text-brand transition-colors">{teacher.name}</h3>
+                  <p className="mt-0.5 text-xs text-black/50">{teacher.email || teacher.teacher_code || "Sinf o'qituvchisi"}</p>
                 </Link>
               ))}
             </div>
           </Card>
-          <Card className="p-5">
-            <TeacherSectionHeader title="Students" />
-            <div className="mt-4 grid gap-3">
+          <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm">
+            <TeacherSectionHeader title="O'quvchilar" />
+            <div className="mt-4 grid gap-2.5">
               {studentRows.map((student) => (
-                <Link key={student.code} href={`/school/students/${student.code}`} className="grid gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-4 hover:bg-surface-soft md:grid-cols-[1fr_110px_110px_180px] md:items-center">
-                  <div><p className="font-semibold">{student.name}</p><p className="mt-1 text-xs text-muted">{student.code}</p></div>
-                  <p className="text-sm text-muted">{student.completed} tests</p>
-                  <Badge variant={student.average >= 70 ? "success" : student.average > 0 ? "warning" : "default"}>{student.average ? `${student.average}%` : "No data"}</Badge>
-                  <p className="text-sm text-muted">{student.last ? new Date(student.last).toLocaleString() : "No submit"}</p>
+                <Link key={student.code} href={`/school/students/${student.code}`} className="grid gap-3 rounded-xl border border-black/8 bg-white p-3.5 shadow-sm transition hover:border-black/20 md:grid-cols-[1fr_110px_110px_180px] md:items-center">
+                  <div><p className="font-semibold text-ink">{student.name}</p><p className="mt-0.5 text-xs text-black/45">{student.code}</p></div>
+                  <p className="text-xs text-black/60">{student.completed} test</p>
+                  <div><Badge variant={student.average >= 70 ? "success" : student.average > 0 ? "warning" : "default"}>{student.average ? `${student.average}%` : "Yo'q"}</Badge></div>
+                  <p className="text-xs text-black/50">{student.last ? new Date(student.last).toLocaleString() : "Topshirilmagan"}</p>
                 </Link>
               ))}
-              {!studentRows.length ? <QuestEmptyState title="No students yet" /> : null}
+              {!studentRows.length ? <QuestEmptyState title="Hozircha o'quvchilar yo'q" /> : null}
             </div>
           </Card>
-          <Card className="p-5">
-            <TeacherSectionHeader title="Recent test results" />
-            <div className="mt-4 grid gap-3">
+          <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm">
+            <TeacherSectionHeader title="Oxirgi natijalar" />
+            <div className="mt-4 grid gap-2.5">
               {resultRows.slice(0, 12).map((row) => (
-                <Link key={row.session_id} href={`/school/results/${row.session_id}`} className="grid gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-4 hover:bg-surface-soft md:grid-cols-[1fr_1fr_100px_180px] md:items-center">
-                  <div><p className="font-semibold">{row.student_name}</p><p className="mt-1 text-xs text-muted">{row.student_code}</p></div>
-                  <p className="text-sm text-muted">{row.test_title}</p>
-                  <Badge variant={row.score >= 70 ? "success" : "warning"}>{row.score}%</Badge>
-                  <p className="text-sm text-muted">{row.submitted_at ? new Date(row.submitted_at).toLocaleString() : "No submit"}</p>
+                <Link key={row.session_id} href={`/school/results/${row.session_id}`} className="grid gap-3 rounded-xl border border-black/8 bg-white p-3.5 shadow-sm transition hover:border-black/20 md:grid-cols-[1fr_1fr_100px_180px] md:items-center">
+                  <div><p className="font-semibold text-ink">{row.student_name}</p><p className="mt-0.5 text-xs text-black/45">{row.student_code}</p></div>
+                  <p className="text-xs text-black/60">{row.test_title}</p>
+                  <div><Badge variant={row.score >= 70 ? "success" : "warning"}>{row.score}%</Badge></div>
+                  <p className="text-xs text-black/50">{row.submitted_at ? new Date(row.submitted_at).toLocaleString() : "Topshirilmagan"}</p>
                 </Link>
               ))}
-              {!resultRows.length ? <QuestEmptyState title="No submitted tests yet" /> : null}
+              {!resultRows.length ? <QuestEmptyState title="Hozircha topshirilgan testlar yo'q" /> : null}
             </div>
           </Card>
         </div>
-        <aside className="grid h-fit gap-5 xl:sticky xl:top-24">
-          <Card className="p-5"><TeacherSectionHeader title="Weak skills" /><div className="mt-4">{weakRows.length ? <WeakTopicBars rows={weakRows} /> : <QuestEmptyState title="No weak skills yet" />}</div></Card>
-          <Card className="p-5"><TeacherSectionHeader title="Class settings" /><div className="mt-4 grid gap-3"><MiniInfo label="Visibility" value={classroom.visibility} /><MiniInfo label="Join code" value={classroom.join_code ? "set" : "Not set"} /><MiniInfo label="Manage code" value={classroom.manage_code ? "set" : "missing"} /></div></Card>
+        <aside className="grid h-fit gap-4 xl:sticky xl:top-24">
+          <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm"><TeacherSectionHeader title="Kuchsiz ko'nikmalar" /><div className="mt-4">{weakRows.length ? <WeakTopicBars rows={weakRows} /> : <QuestEmptyState title="Kuchsiz ko'nikmalar yo'q" />}</div></Card>
+          <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm"><TeacherSectionHeader title="Sinf sozlamalari" /><div className="mt-4 grid gap-2.5"><MiniInfo label="Ko'rinish" value={classroom.visibility} /><MiniInfo label="Qo'shilish kodi" value={classroom.join_code ? "Mavjud" : "Kiritilmagan"} /><MiniInfo label="Boshqaruv kodi" value={classroom.manage_code ? "Mavjud" : "Yo'q"} /></div></Card>
         </aside>
       </div>
     </QuestPage>
@@ -465,26 +471,26 @@ export async function SchoolTeacherDetailPage({ teacherId }: { teacherId: string
   return (
     <QuestPage variant="table">
       <div className="quest-main-aside-grid">
-        <div className="grid gap-5">
-          <Card className="p-5"><TeacherSectionHeader title="Classes" /><div className="mt-4 quest-card-grid-3">{teacherClasses.map((item) => <SchoolClassCard key={item.id} classroom={item} result={results.find((result) => result.classroom.slug === item.slug)} />)}{!teacherClasses.length ? <QuestEmptyState title="No classes assigned" /> : null}</div></Card>
-          <Card className="p-5">
-            <TeacherSectionHeader title="Recent student results" />
-            <div className="mt-4 grid gap-3">
+        <div className="grid gap-4">
+          <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm"><TeacherSectionHeader title="Sinflar" /><div className="mt-4 quest-card-grid-3">{teacherClasses.map((item) => <SchoolClassCard key={item.id} classroom={item} result={results.find((result) => result.classroom.slug === item.slug)} />)}{!teacherClasses.length ? <QuestEmptyState title="Sinflar biriktirilmagan" /> : null}</div></Card>
+          <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm">
+            <TeacherSectionHeader title="O'quvchilar oxirgi natijalari" />
+            <div className="mt-4 grid gap-2.5">
               {recentResults.map((row) => (
-                <Link key={`${row.session_id}-${row.classSlug}`} href={`/school/students/${row.student_code}`} className="grid gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-4 hover:bg-surface-soft md:grid-cols-[1fr_1fr_100px_150px] md:items-center">
-                  <div><p className="font-semibold">{row.student_name}</p><p className="mt-1 text-xs text-muted">{row.className}</p></div>
-                  <p className="text-sm text-muted">{row.test_title}</p>
-                  <Badge variant={row.score >= 70 ? "success" : "warning"}>{row.score}%</Badge>
-                  <p className="text-sm text-muted">{row.submitted_at ? new Date(row.submitted_at).toLocaleDateString() : "No submit"}</p>
+                <Link key={`${row.session_id}-${row.classSlug}`} href={`/school/students/${row.student_code}`} className="grid gap-3 rounded-xl border border-black/8 bg-white p-3.5 shadow-sm transition hover:border-black/20 md:grid-cols-[1fr_1fr_100px_150px] md:items-center">
+                  <div><p className="font-semibold text-ink">{row.student_name}</p><p className="mt-0.5 text-xs text-black/45">{row.className}</p></div>
+                  <p className="text-xs text-black/60">{row.test_title}</p>
+                  <div><Badge variant={row.score >= 70 ? "success" : "warning"}>{row.score}%</Badge></div>
+                  <p className="text-xs text-black/50">{row.submitted_at ? new Date(row.submitted_at).toLocaleDateString() : "Topshirilmagan"}</p>
                 </Link>
               ))}
-              {!recentResults.length ? <QuestEmptyState title="No submitted tests yet" /> : null}
+              {!recentResults.length ? <QuestEmptyState title="Hozircha natijalar yo'q" /> : null}
             </div>
           </Card>
         </div>
-        <aside className="grid h-fit gap-5 xl:sticky xl:top-24">
-          <Card className="p-5"><TeacherSectionHeader title="Teacher info" /><div className="mt-4 grid gap-3"><MiniInfo label="Email" value={teacher.email || "No email"} /><MiniInfo label="Code" value={teacher.teacher_code || "No code"} /><MiniInfo label="Class count" value={teacher.class_count} /></div></Card>
-          <Card className="p-5"><TeacherSectionHeader title="Weak skills" /><div className="mt-4">{weakRows.length ? <WeakTopicBars rows={weakRows} /> : <QuestEmptyState title="No weak skills yet" />}</div></Card>
+        <aside className="grid h-fit gap-4 xl:sticky xl:top-24">
+          <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm"><TeacherSectionHeader title="O'qituvchi ma'lumotlari" /><div className="mt-4 grid gap-2.5"><MiniInfo label="Email" value={teacher.email || "Email yo'q"} /><MiniInfo label="Kod" value={teacher.teacher_code || "Kod yo'q"} /><MiniInfo label="Sinflar soni" value={teacher.class_count} /></div></Card>
+          <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm"><TeacherSectionHeader title="Kuchsiz ko'nikmalar" /><div className="mt-4">{weakRows.length ? <WeakTopicBars rows={weakRows} /> : <QuestEmptyState title="Kuchsiz ko'nikmalar yo'q" />}</div></Card>
         </aside>
       </div>
     </QuestPage>
@@ -503,24 +509,24 @@ export async function SchoolStudentDetailPage({ studentId }: { studentId: string
   const classesText = Array.from(new Set([...progressRows.map((item) => item.className), ...rosterMatches.map((item) => item.className)])).join(", ");
   return (
     <QuestPage variant="table">
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <Card className="p-5">
-          <TeacherSectionHeader title="Test result history" />
-          <div className="mt-4 grid gap-3">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm">
+          <TeacherSectionHeader title="Test natijalari tarixi" />
+          <div className="mt-4 grid gap-2.5">
             {resultRows.map((row) => (
-              <Link key={row.session_id} href={`/school/results/${row.session_id}`} className="grid gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-4 hover:bg-surface-soft md:grid-cols-[1fr_1fr_100px_180px] md:items-center">
-                <div><p className="font-semibold">{row.test_title}</p><p className="mt-1 text-xs text-muted">{row.className}</p></div>
-                <p className="text-sm text-muted">{row.correct}/{row.total} correct</p>
-                <Badge variant={row.score >= 70 ? "success" : "warning"}>{row.score}%</Badge>
-                <p className="text-sm text-muted">{row.submitted_at ? new Date(row.submitted_at).toLocaleString() : "No submit"}</p>
+              <Link key={row.session_id} href={`/school/results/${row.session_id}`} className="grid gap-3 rounded-xl border border-black/8 bg-white p-3.5 shadow-sm transition hover:border-black/20 md:grid-cols-[1fr_1fr_100px_180px] md:items-center">
+                <div><p className="font-semibold text-ink">{row.test_title}</p><p className="mt-0.5 text-xs text-black/45">{row.className}</p></div>
+                <p className="text-xs text-black/60">{row.correct}/{row.total} to&apos;g&apos;ri</p>
+                <div><Badge variant={row.score >= 70 ? "success" : "warning"}>{row.score}%</Badge></div>
+                <p className="text-xs text-black/50">{row.submitted_at ? new Date(row.submitted_at).toLocaleString() : "Topshirilmagan"}</p>
               </Link>
             ))}
-            {!resultRows.length ? <QuestEmptyState title="No test results yet" /> : null}
+            {!resultRows.length ? <QuestEmptyState title="Hozircha natijalar yo'q" /> : null}
           </div>
         </Card>
-        <aside className="grid h-fit gap-5 lg:sticky lg:top-24">
-          <Card className="p-5"><TeacherSectionHeader title="Progress by class" /><div className="mt-4 grid gap-3">{progressRows.map((row) => <Link key={row.classSlug} href={`/school/classes/${row.classSlug}`} className="rounded-[var(--radius-card)] border border-line bg-surface p-4 hover:bg-surface-soft"><h3 className="font-semibold">{row.className}</h3><p className="mt-2 text-sm text-muted">{row.completed} completed · {row.average_score}% average</p></Link>)}{!progressRows.length ? <QuestEmptyState title="No progress yet" /> : null}</div></Card>
-          <Card className="p-5"><TeacherSectionHeader title="Student info" /><div className="mt-4 grid gap-3"><MiniInfo label="Code" value={studentId} /><MiniInfo label="Classes" value={classesText || "No class"} /><MiniInfo label="Visibility" value="school" /></div></Card>
+        <aside className="grid h-fit gap-4 lg:sticky lg:top-24">
+          <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm"><TeacherSectionHeader title="Sinflar bo'yicha o'zlashtirish" /><div className="mt-4 grid gap-2.5">{progressRows.map((row) => <Link key={row.classSlug} href={`/school/classes/${row.classSlug}`} className="group rounded-xl border border-black/8 bg-white p-3.5 shadow-sm transition hover:border-black/20"><h3 className="font-semibold text-ink group-hover:text-brand transition-colors">{row.className}</h3><p className="mt-1 text-xs text-black/50">{row.completed} topshirildi · {row.average_score}% o&apos;rtacha</p></Link>)}{!progressRows.length ? <QuestEmptyState title="Hozircha natija yo'q" /> : null}</div></Card>
+          <Card className="rounded-2xl border border-black/8 bg-white p-5 shadow-sm"><TeacherSectionHeader title="O'quvchi ma'lumotlari" /><div className="mt-4 grid gap-2.5"><MiniInfo label="Kod" value={studentId} /><MiniInfo label="Sinflar" value={classesText || "Sinf yo'q"} /><MiniInfo label="Ko'rinish" value="Maktab" /></div></Card>
         </aside>
       </div>
     </QuestPage>

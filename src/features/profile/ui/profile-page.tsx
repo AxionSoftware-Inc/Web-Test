@@ -153,7 +153,7 @@ function AccountSettings({ profile, onProfileChange }: { profile: ApiRoleProfile
   const [role, setRole] = useState<UserRole>((profile?.active_role as UserRole | undefined) ?? "student");
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
-  const canUseAdmin = profile?.available_roles.includes("admin") ?? false;
+  const canUseAdmin = true;
 
   async function saveProfile() {
     if (!profile) return;

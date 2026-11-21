@@ -1,68 +1,63 @@
-import { ArrowRight, Binary, BookOpen, Calculator, ChartNoAxesColumn, CircleDot, FunctionSquare, Grid3X3, Infinity, PieChart, Sigma, Triangle } from "lucide-react";
+import {
+  Binary,
+  BookOpen,
+  Calculator,
+  ChartNoAxesColumn,
+  ChevronRight,
+  CircleDot,
+  FunctionSquare,
+  Grid3X3,
+  Infinity,
+  PieChart,
+  Sigma,
+  Triangle,
+} from "lucide-react";
 import Link from "next/link";
 
 import type { ApiTopic } from "@/shared/api/questlab-api";
 import { Container } from "@/shared/ui/container";
-import { GlassCard } from "@/shared/ui/glass-card";
 
 export function MathematicsPage({ topics }: { topics: ApiTopic[] }) {
   return (
     <main className="min-h-screen bg-background text-ink">
-      <Container className="py-8">
-        <header className="border-b border-black/10 pb-8">
-          <Link href="/" className="text-sm font-semibold text-brand">
-            QuestLab
-          </Link>
-          <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.85fr] lg:items-end">
-            <div>
-              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.16em] text-brand">
-                Mathematics module
-              </p>
-              <h1 className="max-w-3xl text-5xl font-semibold leading-tight">
-                Matematikani bo&apos;limlar orqali o&apos;rganish va test qilish.
-              </h1>
-              <p className="mt-5 max-w-2xl text-sm leading-6 text-black/62">
-                Avval bo&apos;limni tanlang: algebra, geometry, calculus yoki linear algebra.
-                Daraja va testlar har bir bo&apos;lim ichida chiqadi, shunda user o&apos;zi
-                izlayotgan mavzuga tez kiradi.
-              </p>
-            </div>
-            <div className="grid gap-3 rounded-lg border border-black/10 bg-white p-4 sm:grid-cols-3">
-              <Metric label="Topics" value={topics.length} />
-              <Metric label="Tests" value={topics.reduce((sum, topic) => sum + topic.test_count, 0)} />
-              <Metric label="Source" value="API" />
-            </div>
-          </div>
-        </header>
+      <Container className="py-8 sm:py-12">
+        <div className="pb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+            Matematika
+          </h1>
+          <p className="mt-2 text-sm text-ink/60 sm:text-base">
+            O&apos;rganmoqchi bo&apos;lgan bo&apos;limni tanlang va testlarni boshlang.
+          </p>
+        </div>
 
-        <section className="py-8">
-          <div className="mb-5 flex items-center gap-2">
-            <BookOpen className="size-5 text-brand" />
-            <h2 className="text-2xl font-semibold">Bo&apos;limni tanlang</h2>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <section className="py-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {topics.map((topic) => {
               const Icon = topicIcons[topic.slug] ?? BookOpen;
 
               return (
-                <GlassCard key={topic.slug} className="flex min-h-[210px] flex-col justify-between p-5">
-                  <div>
-                    <div className="grid size-14 place-items-center rounded-2xl bg-brand-soft text-brand">
-                      <Icon className="size-7" />
+                <Link
+                  key={topic.slug}
+                  href={`/subjects/mathematics/topics/${topic.slug}`}
+                  className="group flex items-center justify-between rounded-2xl border border-black/8 bg-white p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all duration-200 hover:-translate-y-0.5 hover:border-black/20 hover:shadow-[0_12px_32px_rgba(0,0,0,0.06)]"
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="grid size-12 shrink-0 place-items-center rounded-xl bg-surface-soft text-brand transition-colors duration-200 group-hover:bg-brand group-hover:text-white">
+                      <Icon className="size-6" />
                     </div>
-                    <h3 className="mt-5 text-xl font-semibold">{topic.title}</h3>
+                    <div className="min-w-0">
+                      <h3 className="truncate text-base font-semibold text-ink transition-colors group-hover:text-brand">
+                        {topic.title}
+                      </h3>
+                      <p className="mt-0.5 text-xs font-medium text-ink/45">
+                        {topic.test_count} ta test
+                      </p>
+                    </div>
                   </div>
-                  <div className="mt-5 flex flex-wrap items-center gap-2">
-                    <Link
-                      href={`/subjects/mathematics/topics/${topic.slug}`}
-                      className="inline-flex items-center gap-2 rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white"
-                    >
-                      Open topic
-                      <ArrowRight className="size-4" />
-                    </Link>
-                    <span className="text-sm text-black/45">{topic.test_count} test</span>
+                  <div className="grid size-8 shrink-0 place-items-center text-black/25 transition-all duration-200 group-hover:translate-x-1 group-hover:text-brand">
+                    <ChevronRight className="size-5" />
                   </div>
-                </GlassCard>
+                </Link>
               );
             })}
           </div>
@@ -72,14 +67,7 @@ export function MathematicsPage({ topics }: { topics: ApiTopic[] }) {
   );
 }
 
-function Metric({ label, value }: { label: string; value: number | string }) {
-  return (
-    <div className="rounded-md bg-background p-4 text-center">
-      <p className="text-3xl font-semibold">{value}</p>
-      <p className="mt-1 text-xs font-medium uppercase tracking-[0.12em] text-black/45">{label}</p>
-    </div>
-  );
-}
+
 
 const topicIcons: Record<string, typeof BookOpen> = {
   arithmetic: Calculator,

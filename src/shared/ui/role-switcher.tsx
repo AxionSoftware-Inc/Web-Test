@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { questApi } from "@/shared/api/questlab-api";
 import { getStudentCode } from "@/shared/model/local-identity";
 import { getRole, roles, type UserRole } from "@/shared/model/roles";
+import { useTranslation } from "@/shared/i18n/i18n-context";
 
 const storageKey = "questlab-role";
 
@@ -21,6 +22,12 @@ export function RoleSwitcher() {
   const menuRef = useRef<HTMLDivElement>(null);
   const activeRole = getRole(roleId);
   const Icon = activeRole.icon;
+  const { t } = useTranslation();
+
+  const getRoleLabel = (id: UserRole) => {
+    if (id in t.roles) return t.roles[id as keyof typeof t.roles];
+    return activeRole.label;
+  };
 
   useEffect(() => {
     function onClick(event: MouseEvent) {
@@ -44,12 +51,16 @@ export function RoleSwitcher() {
     setRoleId(nextRole);
     window.localStorage.setItem(storageKey, nextRole);
     window.dispatchEvent(new CustomEvent("questlab-role-change", { detail: nextRole }));
+    setOpen(false);
     try {
       const profile = await questApi.updateRoleProfile(getStudentCode(), { active_role: nextRole });
-      setRoleId(profile.active_role);
-      window.localStorage.setItem(storageKey, profile.active_role);
-      window.dispatchEvent(new CustomEvent("questlab-role-change", { detail: profile.active_role }));
-      setOpen(false);
+      if (profile?.active_role) {
+        setRoleId(profile.active_role);
+        window.localStorage.setItem(storageKey, profile.active_role);
+        window.dispatchEvent(new CustomEvent("questlab-role-change", { detail: profile.active_role }));
+      }
+    } catch {
+      // Backend offline bo'lsa ham mahalliy rol o'zgarishi saqlanadi
     } finally {
       setSaving(false);
     }
@@ -60,41 +71,43 @@ export function RoleSwitcher() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex items-center gap-2 rounded-xl border border-black/8 bg-white px-3 py-2 text-sm font-semibold text-black/70 shadow-[0_10px_30px_rgba(0,0,0,0.04)] disabled:opacity-60"
+        className="inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl border border-black/8 bg-white px-3 text-sm font-semibold text-ink shadow-[0_10px_30px_rgba(0,0,0,0.04)] transition hover:border-black/20 hover:opacity-90 disabled:opacity-60"
         disabled={saving}
       >
-        <Icon className="size-4 text-brand" />
-        <span className="hidden sm:inline">{activeRole.label}</span>
-        <ChevronDown className="size-4 text-black/38" />
+        <Icon className="size-4 shrink-0 text-brand" />
+        <span className="hidden whitespace-nowrap sm:inline">{getRoleLabel(activeRole.id)}</span>
+        <ChevronDown className="size-4 shrink-0 text-black/40" />
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-12 z-50 w-80 rounded-3xl border border-black/8 bg-white p-2 shadow-[0_24px_70px_rgba(21,23,19,0.14)]">
+        <div className="absolute right-0 top-12 z-50 w-72 overflow-hidden rounded-2xl border border-black/8 bg-white p-2 shadow-[0_20px_50px_rgba(0,0,0,0.12)]">
           {roles.map((role) => {
             const RoleIcon = role.icon;
+            const isCurrent = role.id === activeRole.id;
             return (
               <button
                 key={role.id}
                 type="button"
                 onClick={() => selectRole(role.id)}
-                className="flex w-full items-start gap-3 rounded-2xl p-3 text-left hover:bg-surface-soft"
+                className={`flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition ${
+                  isCurrent ? "bg-surface-soft font-semibold" : "hover:bg-surface-soft"
+                }`}
               >
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand">
-                  <RoleIcon className="size-5" />
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand">
+                  <RoleIcon className="size-4" />
                 </span>
-                <span>
-                  <span className="flex items-center gap-2 font-semibold">
-                    {role.label}
-                    {role.id === activeRole.id ? <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-brand">Active</span> : null}
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center justify-between">
+                    <span className="text-sm text-ink">{getRoleLabel(role.id)}</span>
+                    {isCurrent ? <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[10px] font-bold text-brand">Faol</span> : null}
                   </span>
-                  <span className="mt-1 block text-xs leading-5 text-black/50">{role.description}</span>
                 </span>
               </button>
             );
           })}
-          <div className="mt-2 border-t border-black/8 p-2">
-            <Link href={activeRole.home} className="block rounded-2xl bg-ink px-4 py-3 text-center text-sm font-semibold text-white" onClick={() => setOpen(false)}>
-              Open {activeRole.label} workspace
+          <div className="mt-2 border-t border-black/8 pt-2">
+            <Link href={activeRole.home} className="block rounded-xl bg-ink px-3 py-2 text-center text-xs font-semibold text-white transition hover:opacity-90" onClick={() => setOpen(false)}>
+              {getRoleLabel(activeRole.id)} panelini ochish
             </Link>
           </div>
         </div>
